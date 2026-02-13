@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ahorro Challenge</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#10b981">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+    </script>
+    <style>
+        body { background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); min-height: 100vh; }
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .badge-active { background: #10b981 !important; color: white !important; }
+        /* Cabecera Fija */
+        .sticky-header { position: sticky; top: 0; z-index: 50; padding-top: 1rem; padding-bottom: 1rem; }
+    </style>
+</head>
+<body class="font-body text-slate-800">
+
+    <div class="sticky-header glass-card border-b border-slate-200 mb-4 px-4">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="w-full md:w-auto text-center md:text-left">
+                <h1 class="text-2xl font-display font-bold text-slate-900">Ahorro <span class="text-primary">Challenge</span></h1>
+                <div class="flex gap-2 mt-1 justify-center md:justify-start">
+                    <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary">COLECTIVO</button>
+                    <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400">INDIVIDUAL</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 bg-white/50 p-3 rounded-2xl border border-white shadow-sm min-w-[280px]">
+                <div class="relative w-12 h-12 shrink-0">
+                    <svg class="w-full h-full transform -rotate-90">
+                        <circle cx="24" cy="24" r="21" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
+                        <circle id="globalProgressCircle" cx="24" cy="24" r="21" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="131.9" stroke-dashoffset="131.9" class="text-primary transition-all duration-700" />
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold" id="progressPercentage">0%</div>
+                </div>
+                <div>
+                    <div class="text-[9px] font-bold uppercase text-slate-400" id="statsTitle">Total Colectivo</div>
+                    <div class="text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
+                    <div class="text-[10px] font-semibold text-primary">Meta: 13.780.000 Gs. c/u</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 pb-10">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <aside class="space-y-4">
+                <div class="glass-card rounded-2xl p-4 shadow-sm">
+                    <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
+                        <button onclick="addParticipant()" class="bg-primary text-white p-2 rounded-lg hover:bg-emerald-600 transition-colors">+</button>
+                    </div>
+                    <div id="participantList" class="space-y-1"></div>
+                </div>
+                <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500 transition-colors">RESETEAR TODO</button>
+            </aside>
+
+            <main class="lg:col-span-3">
+                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[130px] z-40 py-2">
+                    <button onclick="filterPhase('ALL')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
+                    <button onclick="filterPhase('EMPEZAR')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
+                    <button onclick="filterPhase('SOSTENER')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
+                    <button onclick="filterPhase('CONSTANCIA')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
+                    <button onclick="filterPhase('RESULTADOS')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
+                </div>
+                <div id="goalsList" class="space-y-2"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let challengeData = []; let participants = []; let activeParticipant = ""; let currentFilter = "ALL"; let statsView = "COLECTIVO";
+        const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
+
+        function generateWeeks() {
+            challengeData = [];
+            for (let i = 1; i <= 52; i++) {
+                let phase = i <= 13 ? "EMPEZAR" : i <= 26 ? "SOSTENER" : i <= 39 ? "CONSTANCIA" : "RESULTADOS";
+                challengeData.push({ week: i, amount: i * 10000, phase: phase, completions: [] });
+            }
+        }
+
+        function save() { localStorage.setItem('ahorro_v15_final', JSON.stringify({ challengeData, participants, activeParticipant, statsView })); }
+
+        function load() {
+            const saved = localStorage.getItem('ahorro_v15_final');
+            if (saved) {
+                const p = JSON.parse(saved);
+                challengeData = p.challengeData; participants = p.participants; activeParticipant = p.activeParticipant; statsView = p.statsView || "COLECTIVO";
+            } else { generateWeeks(); }
+        }
+
+        function renderParticipants() {
+            const list = document.getElementById('participantList');
+            if (participants.length === 0) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic px-2 text-center">Sin nombres</p>`; return; }
+            list.innerHTML = participants.map(p => `
+                <div class="flex items-center bg-white/50 rounded-lg p-1 border border-transparent">
+                    <button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button>
+                    <button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500">×</button>
+                </div>
+            `).join('');
+        }
+
+        function addParticipant() {
+            const name = document.getElementById('newParticipantInput').value.trim().toUpperCase();
+            if (name && !participants.includes(name)) {
+                participants.push(name); if (!activeParticipant) activeParticipant = name;
+                document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
+            }
+        }
+
+        function deleteParticipant(name) {
+            if (confirm(`¿Eliminar a ${name}?`)) {
+                participants = participants.filter(p => p !== name);
+                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== name));
+                if (activeParticipant === name) activeParticipant = participants[0] || "";
+                save(); renderParticipants(); renderGoals(); updateStats();
+            }
+        }
+
+        function setActiveParticipant(name) { activeParticipant = name; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
+
+        function setStatsView(view) {
+            statsView = view; updateStats();
+            document.getElementById('btnViewCol').className = view === 'COLECTIVO' ? 'px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary' : 'px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400';
+            document.getElementById('btnViewInd').className = view === 'INDIVIDUAL' ? 'px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary' : 'px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400';
+        }
+
+        function toggle(idx) {
+            if (!activeParticipant) return alert("Selecciona o agrega un nombre");
+            const goal = challengeData[idx];
+            const cIdx = goal.completions.findIndex(c => c.participant === activeParticipant);
+            
+            if (cIdx > -1) {
+                goal.completions.splice(cIdx, 1);
+            } else {
+                const now = new Date();
+                const dateStr = now.toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
+                goal.completions.push({ participant: activeParticipant, date: dateStr });
+            }
+            save(); renderGoals(); updateStats();
+        }
+
+        function updateStats() {
+            let total = 0, met = 0;
+            if (statsView === 'COLECTIVO') {
+                total = challengeData.reduce((s, g) => s + (g.completions.length * g.amount), 0);
+                met = challengeData.filter(g => g.completions.length > 0).length;
+                document.getElementById('statsTitle').innerText = "Total Colectivo";
+            } else {
+                total = challengeData.reduce((s, g) => s + (g.completions.some(c => c.participant === activeParticipant) ? g.amount : 0), 0);
+                met = challengeData.filter(g => g.completions.some(c => c.participant === activeParticipant)).length;
+                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant || '...'}`;
+            }
+            const percent = (met / 52) * 100;
+            document.getElementById('totalSavedCounter').innerText = formatPYG(total);
+            document.getElementById('progressPercentage').innerText = Math.round(percent) + '%';
+            document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (percent / 100 * 131.9);
+        }
+
+        function renderGoals() {
+            const container = document.getElementById('goalsList');
+            const data = currentFilter === 'ALL' ? challengeData : challengeData.filter(g => g.phase === currentFilter);
+            const colors = { 'EMPEZAR': 'bg-emerald-500', 'SOSTENER': 'bg-sky-500', 'CONSTANCIA': 'bg-indigo-500', 'RESULTADOS': 'bg-rose-500' };
+            
+            container.innerHTML = data.map((g) => {
+                const doneByActive = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
+                return `
+                    <div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${doneByActive ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
+                        <div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div>
+                        <div class="flex-grow">
+                            <div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div>
+                            <div class="text-[8px] uppercase text-slate-400 font-bold">${g.phase}</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 px-1">
+                            ${g.completions.map(c => `
+                                <div class="flex items-center gap-1 bg-slate-100 rounded-full pl-1 pr-2 py-0.5 border border-white">
+                                    <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div>
+                                    <span class="text-[7px] font-bold text-slate-500 uppercase">${c.date}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <button onclick="toggle(${g.week - 1})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${doneByActive ? 'bg-primary text-white' : 'bg-white border border-slate-200 text-slate-500'}">
+                            ${doneByActive ? 'LISTO' : 'MARCAR'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function scrollToNext() {
+            if (!activeParticipant) return;
+            const nextGoal = challengeData.find(g => !g.completions.some(c => c.participant === activeParticipant));
+            if (nextGoal) {
+                setTimeout(() => {
+                    const el = document.getElementById(`goal-${nextGoal.week}`);
+                    if (el) {
+                        const yOffset = -180; // Ajuste para que la cabecera fija no tape la meta
+                        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                        window.scrollTo({top: y, behavior: 'smooth'});
+                    }
+                }, 300);
+            }
+        }
+
+        function filterPhase(p) { currentFilter = p; renderGoals(); }
+        function confirmReset() { if (confirm("¿Borrar todo permanentemente?")) { localStorage.clear(); location.reload(); } }
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+
+        load(); 
+        renderParticipants(); 
+        renderGoals(); 
+        updateStats(); 
+        setStatsView(statsView);
+        // Al iniciar, llevar al usuario a su siguiente meta
+        window.onload = scrollToNext;
+    </script>
+</body>
+</html>
