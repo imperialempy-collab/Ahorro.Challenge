@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ahorro LAB (Pruebas)</title>
+    <title>Ahorro Challenge LAB</title>
     
-    <link rel="manifest" href="./manifest.json">
-    <link rel="icon" type="image/png" href="https://i.ibb.co/m5p3Srk/image.png">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/m5p3Srk/image.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -30,7 +30,7 @@
 </head>
 <body class="font-body text-slate-800">
 
-    <div class="sticky-header glass-card border-b border-slate-200 mb-4 px-4">
+    <div class="sticky-header glass-card border-b border-slate-200 px-4">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="w-full md:w-auto text-center md:text-left">
                 <h1 class="text-2xl font-display font-bold text-slate-900 italic">LAB: Ahorro <span class="text-primary text-xs">(Versión de Prueba)</span></h1>
@@ -58,7 +58,7 @@
     </div>
 
     <div class="max-w-6xl mx-auto px-4 pb-10">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
             <aside class="space-y-4">
                 <div class="glass-card rounded-2xl p-4 shadow-sm">
                     <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
@@ -72,12 +72,12 @@
             </aside>
 
             <main class="lg:col-span-3">
-                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[130px] z-40 py-2">
-                    <button onclick="filterPhase('ALL')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
-                    <button onclick="filterPhase('EMPEZAR')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
-                    <button onclick="filterPhase('SOSTENER')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
-                    <button onclick="filterPhase('CONSTANCIA')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
-                    <button onclick="filterPhase('RESULTADOS')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
+                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[150px] md:top-[100px] z-40 py-2">
+                    <button onclick="filterPhase('ALL')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
+                    <button onclick="filterPhase('EMPEZAR')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
+                    <button onclick="filterPhase('SOSTENER')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
+                    <button onclick="filterPhase('CONSTANCIA')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
+                    <button onclick="filterPhase('RESULTADOS')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
                 </div>
                 <div id="goalsList" class="space-y-2"></div>
             </main>
@@ -85,10 +85,9 @@
     </div>
 
     <script>
-        // --- LLAVE DE MEMORIA DIFERENTE PARA PRUEBAS ---
-        const DB_KEY = 'ahorro_test_v1'; 
-
+        const DB_KEY = 'ahorro_lab_v16'; 
         let challengeData = []; let participants = []; let activeParticipant = ""; let currentFilter = "ALL"; let statsView = "COLECTIVO";
+
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
 
         function generateWeeks() {
@@ -121,23 +120,23 @@
         }
 
         function addParticipant() {
-            const name = document.getElementById('newParticipantInput').value.trim().toUpperCase();
-            if (name && !participants.includes(name)) {
-                participants.push(name); if (!activeParticipant) activeParticipant = name;
+            const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
+            if (n && !participants.includes(n)) {
+                participants.push(n); if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
             }
         }
 
-        function deleteParticipant(name) {
-            if (confirm(`¿Eliminar a ${name}?`)) {
-                participants = participants.filter(p => p !== name);
-                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== name));
-                if (activeParticipant === name) activeParticipant = participants[0] || "";
+        function deleteParticipant(n) {
+            if (confirm(`¿Eliminar a ${n}?`)) {
+                participants = participants.filter(p => p !== n);
+                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== n));
+                if (activeParticipant === n) activeParticipant = participants[0] || "";
                 save(); renderParticipants(); renderGoals(); updateStats();
             }
         }
 
-        function setActiveParticipant(name) { activeParticipant = name; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
+        function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
 
         function setStatsView(view) {
             statsView = view; updateStats();
@@ -146,7 +145,7 @@
         }
 
         function toggle(idx) {
-            if (!activeParticipant) return alert("Agrega un nombre");
+            if (!activeParticipant) return alert("Agrega un nombre primero");
             const goal = challengeData[idx]; const cIdx = goal.completions.findIndex(c => c.participant === activeParticipant);
             if (cIdx > -1) goal.completions.splice(cIdx, 1);
             else { const now = new Date(); const d = now.toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); goal.completions.push({ participant: activeParticipant, date: d }); }
@@ -158,11 +157,9 @@
             if (statsView === 'COLECTIVO') {
                 t = challengeData.reduce((s, g) => s + (g.completions.length * g.amount), 0);
                 m = challengeData.filter(g => g.completions.length > 0).length;
-                document.getElementById('statsTitle').innerText = "Total Colectivo";
             } else {
                 t = challengeData.reduce((s, g) => s + (g.completions.some(c => c.participant === activeParticipant) ? g.amount : 0), 0);
                 m = challengeData.filter(g => g.completions.some(c => c.participant === activeParticipant)).length;
-                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant || '...'}`;
             }
             const p = (m / 52) * 100;
             document.getElementById('totalSavedCounter').innerText = formatPYG(t);
@@ -174,9 +171,18 @@
             const container = document.getElementById('goalsList');
             const data = currentFilter === 'ALL' ? challengeData : challengeData.filter(g => g.phase === currentFilter);
             const colors = { 'EMPEZAR': 'bg-emerald-500', 'SOSTENER': 'bg-sky-500', 'CONSTANCIA': 'bg-indigo-500', 'RESULTADOS': 'bg-rose-500' };
+            
             container.innerHTML = data.map((g) => {
                 const done = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
-                return `<div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${done ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">${g.phase}</div></div><div class="flex flex-col items-end gap-1 px-1">${g.completions.map(c => `<div class="flex items-center gap-1 bg-slate-100 rounded-full pl-1 pr-2 py-0.5 border border-white"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div><span class="text-[7px] font-bold text-slate-500 uppercase">${c.date}</span></div>`).join('')}</div><button onclick="toggle(${g.week - 1})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${done ? 'bg-primary text-white' : 'bg-white border border-slate-200 text-slate-500'}">${done ? 'LISTO' : 'MARCAR'}</button></div>`;
+                return `
+                    <div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${done ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
+                        <div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div>
+                        <div class="flex-grow"><div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div><div class="text-[9px] uppercase text-slate-400 font-bold">${g.phase}</div></div>
+                        <div class="flex flex-col items-end gap-1 px-1">
+                            ${g.completions.map(c => `<div class="flex items-center gap-1 bg-slate-100 rounded-full pl-1 pr-2 py-0.5 border border-white"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div><span class="text-[7px] font-bold text-slate-500 uppercase">${c.date}</span></div>`).join('')}
+                        </div>
+                        <button onclick="toggle(${g.week - 1})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${done ? 'bg-primary text-white' : 'bg-white border border-slate-200 text-slate-500'}">${done ? 'LISTO' : 'MARCAR'}</button>
+                    </div>`;
             }).join('');
         }
 
@@ -189,8 +195,8 @@
         function filterPhase(p) { currentFilter = p; renderGoals(); }
         function confirmReset() { if (confirm("¿Borrar todo en este LAB?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
 
+        init();
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-        init(); window.onload = scrollToNext;
     </script>
 </body>
 </html>
