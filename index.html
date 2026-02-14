@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ahorro Challenge FLEX</title>
+    <title>Ahorro Challenge DINÁMICO</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -25,16 +25,18 @@
     </style>
 </head>
 <body class="font-body text-slate-800">
+
     <div class="sticky-header glass-card border-b border-slate-200 px-4">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="w-full md:w-auto text-center md:text-left">
-                <h1 class="text-2xl font-display font-bold text-slate-900 italic">Ahorro <span class="text-primary">FLEX</span></h1>
+                <h1 class="text-2xl font-display font-bold text-slate-900">Ahorro <span class="text-primary uppercase tracking-tighter">Dinámico</span></h1>
                 <div class="flex gap-2 mt-1 justify-center md:justify-start">
-                    <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary">COLECTIVO</button>
-                    <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400">INDIVIDUAL</button>
+                    <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary transition-all">COLECTIVO</button>
+                    <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400 transition-all">INDIVIDUAL</button>
                 </div>
             </div>
-            <div class="flex items-center gap-4 bg-white/50 p-3 rounded-2xl border border-white shadow-sm min-w-[280px]">
+
+            <div class="flex items-center gap-4 bg-white/50 p-3 rounded-2xl border border-white shadow-sm min-w-[300px]">
                 <div class="relative w-12 h-12 shrink-0">
                     <svg class="w-full h-full transform -rotate-90">
                         <circle cx="24" cy="24" r="21" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
@@ -42,181 +44,241 @@
                     </svg>
                     <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold" id="progressPercentage">0%</div>
                 </div>
-                <div>
+                <div class="flex-grow">
                     <div class="text-[9px] font-bold uppercase text-slate-400" id="statsTitle">Total Colectivo</div>
                     <div class="text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
                     <div class="text-[10px] font-semibold text-primary" id="metaLabel">Meta: 13.780.000 Gs. c/u</div>
                 </div>
+                <button onclick="configReto()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 pb-10">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+    <div class="max-w-6xl mx-auto px-4 pb-10 mt-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <aside class="space-y-4">
-                <div class="glass-card rounded-2xl p-4 shadow-sm">
+                <div class="glass-card rounded-2xl p-4 shadow-sm border border-white">
                     <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
                     <div class="flex gap-2 mb-4">
                         <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
-                        <button onclick="addParticipant()" class="bg-primary text-white p-2 rounded-lg hover:bg-emerald-600">+</button>
+                        <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600">+</button>
                     </div>
                     <div id="participantList" class="space-y-1"></div>
                 </div>
                 <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500">RESETEAR TODO</button>
             </aside>
+
             <main class="lg:col-span-3">
-                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[150px] md:top-[100px] z-40 py-2">
-                    <button onclick="filterPhase('ALL')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
-                    <button onclick="filterPhase('EMPEZAR')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
-                    <button onclick="filterPhase('SOSTENER')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
-                    <button onclick="filterPhase('CONSTANCIA')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
-                    <button onclick="filterPhase('RESULTADOS')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
-                </div>
                 <div id="goalsList" class="space-y-2"></div>
             </main>
         </div>
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_flex_v3_teclado'; 
-        const META_FINAL = 13780000;
-        let challengeData = []; let participants = []; let activeParticipant = ""; let currentFilter = "ALL"; let statsView = "COLECTIVO";
+        const DB_KEY = 'ahorro_dinamico_v1';
+        let config = { meta: 13780000, semanas: 52 };
+        let participants = []; 
+        let activeParticipant = ""; 
+        let statsView = "COLECTIVO";
+        // Estructura de datos: data[nombre_participante] = [{semana: 1, pagado: 10000, fecha: "13 feb"}, ...]
+        let userProgress = {}; 
 
-        const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(n || 0) + ' Gs.';
+        const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
-        function generateWeeks() {
-            challengeData = [];
-            for (let i = 1; i <= 52; i++) {
-                let phase = i <= 13 ? "EMPEZAR" : i <= 26 ? "SOSTENER" : i <= 39 ? "CONSTANCIA" : "RESULTADOS";
-                challengeData.push({ week: i, amount: i * 10000, phase: phase, completions: [] });
-            }
+        function save() { 
+            localStorage.setItem(DB_KEY, JSON.stringify({ config, participants, activeParticipant, statsView, userProgress })); 
         }
-
-        function save() { localStorage.setItem(DB_KEY, JSON.stringify({ challengeData, participants, activeParticipant, statsView })); }
 
         function load() {
             const saved = localStorage.getItem(DB_KEY);
             if (saved) {
                 const p = JSON.parse(saved);
-                challengeData = p.challengeData || []; participants = p.participants || []; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO";
+                config = p.config || config;
+                participants = p.participants || [];
+                activeParticipant = p.activeParticipant || "";
+                statsView = p.statsView || "COLECTIVO";
+                userProgress = p.userProgress || {};
             }
-            if (challengeData.length === 0) generateWeeks();
         }
 
-        function renderParticipants() {
-            const list = document.getElementById('participantList');
-            if (!participants || participants.length === 0) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic px-2 text-center">Agregá un nombre</p>`; return; }
-            list.innerHTML = participants.map(p => `<div class="flex items-center bg-white/50 rounded-lg p-1 border border-transparent"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500">×</button></div>`).join('');
+        function configReto() {
+            const m = prompt("¿Cuál es la meta total de ahorro?", config.meta);
+            const s = prompt("¿En cuántas semanas/pagos?", config.semanas);
+            if (m && s) {
+                if (confirm("Al cambiar la meta global se reiniciará el progreso de todos. ¿Continuar?")) {
+                    config.meta = parseInt(m.replace(/\D/g,''));
+                    config.semanas = parseInt(s.replace(/\D/g,''));
+                    userProgress = {};
+                    save();
+                    location.reload();
+                }
+            }
+        }
+
+        // --- CÁLCULO DE LA ESCALERA DINÁMICA ---
+        function getWeeklyTarget(semanaActual, nombreUser) {
+            const metaTotal = config.meta;
+            const totalSemanas = config.semanas;
+            
+            // 1. Calcular cuánto ya pagó este usuario
+            const misPagos = userProgress[nombreUser] || [];
+            const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0);
+            const semanasPagadas = misPagos.length;
+            
+            // 2. ¿Cuánto falta y en cuántas semanas?
+            const restoDinero = metaTotal - yaPagado;
+            const semanasRestantes = totalSemanas - semanasPagadas;
+            
+            if (semanasRestantes <= 0) return 0;
+
+            // 3. Lógica de escalera: El primer pago es menor que el último.
+            // Usamos una proporción simple para que los últimos pagos sean más pesados.
+            // Esta fórmula asegura que la suma de la progresión sea igual al restoDinero.
+            const promedioRestante = restoDinero / semanasRestantes;
+            
+            // Ajustamos el monto para que crezca gradualmente según la posición de la semana
+            // en el grupo de las semanas que faltan.
+            const factorPosicion = (semanaActual - semanasPagadas); 
+            const ajuste = (factorPosicion - (semanasRestantes + 1) / 2) * (promedioRestante * 0.05); // El 5% es la "pendiente"
+            
+            let montoCalculado = promedioRestante + ajuste;
+            return Math.ceil(montoCalculado / 1000) * 1000; // Redondeo a 1.000 Gs.
         }
 
         function addParticipant() {
             const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
             if (n && !participants.includes(n)) {
-                participants.push(n); if (!activeParticipant) activeParticipant = n;
+                participants.push(n);
+                userProgress[n] = [];
+                if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
-            }
-        }
-
-        function deleteParticipant(n) {
-            if (confirm(`¿Eliminar a ${n}?`)) {
-                participants = participants.filter(p => p !== n);
-                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== n));
-                if (activeParticipant === n) activeParticipant = participants[0] || "";
-                save(); renderParticipants(); renderGoals(); updateStats();
             }
         }
 
         function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
 
-        function setStatsView(view) {
-            statsView = view; updateStats();
-            document.getElementById('btnViewCol').className = view === 'COLECTIVO' ? 'px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary' : 'px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400';
-            document.getElementById('btnViewInd').className = view === 'INDIVIDUAL' ? 'px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary' : 'px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400';
-        }
-
-        function toggle(idx, manualAmount = null) {
+        function toggle(semana, manualAmount = null) {
             if (!activeParticipant) return alert("Seleccioná un participante");
-            const goal = challengeData[idx]; 
-            const cIdx = goal.completions.findIndex(c => c.participant === activeParticipant);
-            if (cIdx > -1 && manualAmount === null) {
-                goal.completions.splice(cIdx, 1);
+            
+            if (!userProgress[activeParticipant]) userProgress[activeParticipant] = [];
+            const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semana);
+
+            if (pIdx > -1 && manualAmount === null) {
+                userProgress[activeParticipant].splice(pIdx, 1);
             } else {
-                let savedValue = manualAmount !== null ? manualAmount : goal.amount;
+                const sugerido = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
+                let monto = manualAmount !== null ? manualAmount : sugerido;
                 const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
-                if (cIdx > -1) { goal.completions[cIdx].saved = savedValue; goal.completions[cIdx].date = d; }
-                else { goal.completions.push({ participant: activeParticipant, date: d, saved: savedValue }); }
+                
+                if (pIdx > -1) {
+                    userProgress[activeParticipant][pIdx].pagado = monto;
+                } else {
+                    userProgress[activeParticipant].push({ semana: userProgress[activeParticipant].length + 1, pagado: monto, fecha: d });
+                }
             }
             save(); renderGoals(); updateStats();
         }
 
-        function promptManual(idx) {
-            // El truco del teclado numérico: usamos un prompt pero validando que sea número
-            const current = challengeData[idx].amount;
-            const val = prompt("Ingresá el monto ahorrado (Solo números):", current);
-            
+        function promptManual(sem) {
+            const sugerido = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
+            const val = prompt("¿Cuánto ingresaste realmente?", sugerido);
             if (val !== null) {
-                const cleanedVal = val.replace(/\D/g,''); // Elimina cualquier cosa que no sea número
-                if (cleanedVal !== "" && parseInt(cleanedVal) > 0) {
-                    toggle(idx, parseInt(cleanedVal));
-                } else if (val !== "") {
-                    alert("Por favor, ingresá solo números válidos.");
-                }
+                const num = parseInt(val.replace(/\D/g,''));
+                if (num > 0) toggle(sem, num);
             }
         }
 
         function updateStats() {
-            let t = 0;
+            let total = 0;
+            Object.values(userProgress).forEach(pagos => {
+                pagos.forEach(p => total += p.pagado);
+            });
+
             if (statsView === 'COLECTIVO') {
-                t = challengeData.reduce((s, g) => s + g.completions.reduce((acc, c) => acc + (c.saved || 0), 0), 0);
                 document.getElementById('statsTitle').innerText = "Total Colectivo";
-                document.getElementById('metaLabel').innerText = `Meta: ${formatPYG(META_FINAL)} c/u`;
+                document.getElementById('metaLabel').innerText = `Meta: ${formatPYG(config.meta)} c/u`;
+                const metaColectiva = config.meta * (participants.length || 1);
+                const p = (total / metaColectiva) * 100;
+                document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
+                document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
             } else {
-                t = challengeData.reduce((s, g) => {
-                    const c = g.completions.find(comp => comp.participant === activeParticipant);
-                    return s + (c ? (c.saved || 0) : 0);
-                }, 0);
-                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant || '...'}`;
-                const rest = META_FINAL - t;
-                document.getElementById('metaLabel').innerText = rest > 0 ? `Faltan: ${formatPYG(rest)}` : "¡META ALCANZADA!";
+                const misPagos = userProgress[activeParticipant] || [];
+                const miTotal = misPagos.reduce((acc, p) => acc + p.pagado, 0);
+                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant}`;
+                const falta = config.meta - miTotal;
+                document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!";
+                const p = (miTotal / config.meta) * 100;
+                document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
+                document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
+                total = miTotal;
             }
-            const denom = (statsView === 'COLECTIVO' ? (META_FINAL * Math.max(participants.length, 1)) : META_FINAL);
-            const p = (t / denom) * 100;
-            document.getElementById('totalSavedCounter').innerText = formatPYG(t);
-            document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
-            document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
+            document.getElementById('totalSavedCounter').innerText = formatPYG(total);
         }
 
         function renderGoals() {
             const container = document.getElementById('goalsList');
-            const data = currentFilter === 'ALL' ? challengeData : challengeData.filter(g => g.phase === currentFilter);
-            const colors = { 'EMPEZAR': 'bg-emerald-500', 'SOSTENER': 'bg-sky-500', 'CONSTANCIA': 'bg-indigo-500', 'RESULTADOS': 'bg-rose-500' };
-            container.innerHTML = data.map((g) => {
-                const done = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
-                return `<div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${done ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
-                    <div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div>
-                    <div class="flex-grow"><div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div><div class="text-[9px] uppercase text-slate-400 font-bold">${g.phase}</div></div>
-                    <div class="flex flex-col items-end gap-1 px-1">${g.completions.map(c => `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${c.date} • ${new Intl.NumberFormat('es-PY').format(c.saved || 0)}</span></div>`).join('')}</div>
+            let html = "";
+            
+            for (let i = 1; i <= config.semanas; i++) {
+                const globalCompletions = [];
+                participants.forEach(p => {
+                    const pago = (userProgress[p] || []).find(up => up.semana === i);
+                    if (pago) globalCompletions.push({ name: p, ...pago });
+                });
+
+                const hechoPorMi = activeParticipant && (userProgress[activeParticipant] || []).some(up => up.semana === i);
+                const montoEstaSemana = activeParticipant ? getWeeklyTarget(i, activeParticipant) : (config.meta / config.semanas);
+
+                html += `
+                <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
+                    <div class="flex-grow">
+                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoEstaSemana)}</div>
+                        <div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div>
+                    </div>
+                    <div class="flex flex-col items-end gap-1">
+                        ${globalCompletions.map(c => `
+                            <div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm">
+                                <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.name[0]}</div>
+                                <span class="text-[7px] font-bold text-slate-600 uppercase">${c.fecha} • ${formatPYG(c.pagado)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
                     <div class="flex gap-1">
-                        <button onclick="promptManual(${g.week - 1})" class="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                        <button onclick="toggle(${g.week - 1})" class="px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${done ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}">${done ? 'LISTO' : 'MARCAR'}</button>
-                    </div></div>`;
-            }).join('');
+                        <button onclick="promptManual(${i})" class="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-primary transition-colors">✏️</button>
+                        <button onclick="toggle(${i})" class="px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}">
+                            ${hechoPorMi ? 'LISTO' : 'MARCAR'}
+                        </button>
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderParticipants() {
+            const list = document.getElementById('participantList');
+            if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center">Agrega nombres</p>`; return; }
+            list.innerHTML = participants.map(p => `<div class="flex items-center bg-white/50 rounded-lg p-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 text-xs font-semibold rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button></div>`).join('');
         }
 
         function scrollToNext() {
             if (!activeParticipant) return;
-            const next = challengeData.find(g => !g.completions.some(c => c.participant === activeParticipant));
-            if (next) { setTimeout(() => { const el = document.getElementById(`goal-${next.week}`); if (el) { const y = el.getBoundingClientRect().top + window.pageYOffset - 180; window.scrollTo({top: y, behavior: 'smooth'}); } }, 300); }
+            const misPagos = userProgress[activeParticipant] || [];
+            const nextIndex = misPagos.length + 1;
+            if (nextIndex <= config.semanas) {
+                setTimeout(() => {
+                    const el = document.getElementById(`goal-${nextIndex}`);
+                    if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'});
+                }, 300);
+            }
         }
 
-        function filterPhase(p) { currentFilter = p; renderGoals(); }
-        function confirmReset() { if (confirm("¿Borrar todo el historial?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
+        function setStatsView(v) { statsView = v; updateStats(); }
+        function confirmReset() { if (confirm("¿Borrar todo?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
 
-        load(); 
-        renderParticipants(); 
-        renderGoals(); 
-        updateStats(); 
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        load(); renderParticipants(); renderGoals(); updateStats();
     </script>
 </body>
 </html>
