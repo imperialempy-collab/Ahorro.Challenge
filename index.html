@@ -79,17 +79,18 @@
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_dinamico_vFinal_Fix';
+        const DB_KEY = 'ahorro_dinamico_vSólida';
         let config = { meta: 13780000, semanas: 52 };
         let participants = []; 
         let activeParticipant = ""; 
         let statsView = "COLECTIVO";
         let userProgress = {}; 
+        let userSchedules = {}; // Aquí guardamos la escalera fija por usuario
 
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
         function save() { 
-            localStorage.setItem(DB_KEY, JSON.stringify({ config, participants, activeParticipant, statsView, userProgress })); 
+            localStorage.setItem(DB_KEY, JSON.stringify({ config, participants, activeParticipant, statsView, userProgress, userSchedules })); 
         }
 
         function load() {
@@ -101,35 +102,71 @@
                 activeParticipant = p.activeParticipant || "";
                 statsView = p.statsView || "COLECTIVO";
                 userProgress = p.userProgress || {};
+                userSchedules = p.userSchedules || {};
             }
         }
 
         function configReto() {
-            const m = prompt("¿Cuál es la meta total de ahorro?", config.meta);
+            const m = prompt("¿Cuál es la meta total?", config.meta);
             const s = prompt("¿En cuántas semanas?", config.semanas);
             if (m && s) {
-                if (confirm("Se reiniciará el progreso para ajustar la nueva meta. ¿Continuar?")) {
+                if (confirm("Se reiniciará el progreso para el nuevo plan. ¿Continuar?")) {
                     config.meta = parseInt(m.replace(/\D/g,''));
                     config.semanas = parseInt(s.replace(/\D/g,''));
                     userProgress = {};
+                    userSchedules = {};
                     save();
                     location.reload();
                 }
             }
         }
 
-        function getWeeklyTarget(numeroDeposito, nombreUser) {
+        // --- GENERACIÓN Y RECALCULADO ---
+        function generateSchedule(nombreUser) {
+            const metaTotal = config.meta;
+            const totalSemanas = config.semanas;
+            let schedule = [];
+            
+            // Progresión aritmética básica inicial
+            const promedio = metaTotal / totalSemanas;
+            const incremento = (promedio * 0.8) / totalSemanas;
+            
+            for (let i = 1; i <= totalSemanas; i++) {
+                const factor = i - (totalSemanas + 1) / 2;
+                let monto = promedio + (factor * incremento);
+                schedule.push(Math.ceil(Math.max(monto, 5000) / 1000) * 1000);
+            }
+            userSchedules[nombreUser] = schedule;
+        }
+
+        function recalculateRemaining(nombreUser) {
             const metaTotal = config.meta;
             const totalSemanas = config.semanas;
             const misPagos = userProgress[nombreUser] || [];
+            
             const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0);
             const semanasRestantes = totalSemanas - misPagos.length;
-            if (semanasRestantes <= 0) return 0;
-            const promedio = (metaTotal - yaPagado) / semanasRestantes;
+            
+            if (semanasRestantes <= 0) return;
+
+            const restoDinero = metaTotal - yaPagado;
+            const promedio = restoDinero / semanasRestantes;
             const incremento = (promedio * 0.8) / semanasRestantes;
-            const factorProgresion = (numeroDeposito - misPagos.length) - (semanasRestantes + 1) / 2;
-            let monto = promedio + (factorProgresion * incremento);
-            return Math.ceil(Math.max(monto, 5000) / 1000) * 1000;
+            
+            let newSchedule = [...userSchedules[nombreUser]];
+            
+            // Solo recalculamos las posiciones que NO han sido pagadas
+            let count = 1;
+            for (let i = 0; i < totalSemanas; i++) {
+                const yaEstaPaga = misPagos.some(p => p.semana === (i + 1));
+                if (!yaEstaPaga) {
+                    const factor = count - (semanasRestantes + 1) / 2;
+                    let monto = promedio + (factor * incremento);
+                    newSchedule[i] = Math.ceil(Math.max(monto, 5000) / 1000) * 1000;
+                    count++;
+                }
+            }
+            userSchedules[nombreUser] = newSchedule;
         }
 
         function addParticipant() {
@@ -137,6 +174,7 @@
             if (n && !participants.includes(n)) {
                 participants.push(n);
                 userProgress[n] = [];
+                generateSchedule(n); // Generar su escalera fija al crear
                 if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
             }
@@ -146,6 +184,7 @@
             if (confirm(`¿Eliminar a ${n}?`)) {
                 participants = participants.filter(p => p !== n);
                 delete userProgress[n];
+                delete userSchedules[n];
                 if (activeParticipant === n) activeParticipant = participants[0] || "";
                 save(); renderParticipants(); renderGoals(); updateStats();
             }
@@ -153,12 +192,7 @@
 
         function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
 
-        function setStatsView(v) { 
-            statsView = v; 
-            updateStats(); 
-            updateViewButtons(); 
-            renderGoals();
-        }
+        function setStatsView(v) { statsView = v; updateStats(); updateViewButtons(); renderGoals(); }
 
         function updateViewButtons() {
             const colBtn = document.getElementById('btnViewCol');
@@ -174,30 +208,36 @@
 
         function toggle(semanaNum) {
             if (!activeParticipant) return alert("Seleccioná un participante");
-            if (!userProgress[activeParticipant]) userProgress[activeParticipant] = [];
             const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum);
+            
             if (pIdx > -1) {
                 userProgress[activeParticipant].splice(pIdx, 1);
+                recalculateRemaining(activeParticipant); // Re-equilibrar al desmarcar
             } else {
-                const monto = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
+                // Usa el monto que ya estaba "congelado" en su schedule
+                const montoOriginal = userSchedules[activeParticipant][semanaNum - 1];
                 const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
-                userProgress[activeParticipant].push({ semana: semanaNum, pagado: monto, fecha: d });
+                userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d });
+                // NO recalculamos si el monto es el original
             }
             save(); renderGoals(); updateStats();
         }
 
         function promptManual(semNum) {
             if (!activeParticipant) return alert("Seleccioná un participante");
-            const sugerido = getWeeklyTarget((userProgress[activeParticipant]?.length || 0) + 1, activeParticipant);
-            const val = prompt("Ingresá el monto ahorrado:", sugerido);
+            const previsto = userSchedules[activeParticipant][semNum - 1];
+            const val = prompt("Ingresá el monto real:", previsto);
             if (val !== null) {
                 const num = parseInt(val.replace(/\D/g,''));
                 if (num > 0) {
-                    if (!userProgress[activeParticipant]) userProgress[activeParticipant] = [];
                     const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum);
                     const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
+                    
                     if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; }
                     else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); }
+                    
+                    // SI recalculamos porque hubo un cambio manual
+                    recalculateRemaining(activeParticipant);
                     save(); renderGoals(); updateStats();
                 }
             }
@@ -235,12 +275,15 @@
                     if (pago) globalCompletions.push({ name: p, ...pago });
                 });
                 const hechoPorMi = activeParticipant && (userProgress[activeParticipant] || []).some(up => up.semana === i);
-                const miPagoSemana = hechoPorMi ? (userProgress[activeParticipant].find(up => up.semana === i).pagado) : getWeeklyTarget(i, activeParticipant);
+                
+                // Leemos el monto congelado del schedule para mostrarlo
+                const montoMostrado = activeParticipant ? userSchedules[activeParticipant][i-1] : (config.meta / config.semanas);
+                
                 html += `
                 <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
                     <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
                     <div class="flex-grow">
-                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(miPagoSemana)}</div>
+                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div>
                         <div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div>
                     </div>
                     <div class="flex flex-col items-end gap-1 px-1">
