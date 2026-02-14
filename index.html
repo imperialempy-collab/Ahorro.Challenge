@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ahorro Challenge</title>
+    <title>Ahorro Challenge FLEX</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
@@ -24,17 +24,16 @@
         body { background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); min-height: 100vh; }
         .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .badge-active { background: #10b981 !important; color: white !important; }
-        /* Cabecera Fija */
+        .badge-active { background: #10b981 !important; color: white !important; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
         .sticky-header { position: sticky; top: 0; z-index: 50; padding-top: 1rem; padding-bottom: 1rem; }
     </style>
 </head>
 <body class="font-body text-slate-800">
 
-    <div class="sticky-header glass-card border-b border-slate-200 mb-4 px-4">
+    <div class="sticky-header glass-card border-b border-slate-200 px-4">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="w-full md:w-auto text-center md:text-left">
-                <h1 class="text-2xl font-display font-bold text-slate-900">Ahorro <span class="text-primary">Challenge</span></h1>
+                <h1 class="text-2xl font-display font-bold text-slate-900">Ahorro <span class="text-primary">FLEX</span></h1>
                 <div class="flex gap-2 mt-1 justify-center md:justify-start">
                     <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary">COLECTIVO</button>
                     <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400">INDIVIDUAL</button>
@@ -52,33 +51,33 @@
                 <div>
                     <div class="text-[9px] font-bold uppercase text-slate-400" id="statsTitle">Total Colectivo</div>
                     <div class="text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
-                    <div class="text-[10px] font-semibold text-primary">Meta: 13.780.000 Gs. c/u</div>
+                    <div class="text-[10px] font-semibold text-primary" id="metaLabel">Meta: 13.780.000 Gs. c/u</div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="max-w-6xl mx-auto px-4 pb-10">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
             <aside class="space-y-4">
                 <div class="glass-card rounded-2xl p-4 shadow-sm">
                     <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
                     <div class="flex gap-2 mb-4">
                         <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
-                        <button onclick="addParticipant()" class="bg-primary text-white p-2 rounded-lg hover:bg-emerald-600 transition-colors">+</button>
+                        <button onclick="addParticipant()" class="bg-primary text-white p-2 rounded-lg hover:bg-emerald-600">+</button>
                     </div>
                     <div id="participantList" class="space-y-1"></div>
                 </div>
-                <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500 transition-colors">RESETEAR TODO</button>
+                <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500">RESETEAR TODO</button>
             </aside>
 
             <main class="lg:col-span-3">
-                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[130px] z-40 py-2">
-                    <button onclick="filterPhase('ALL')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
-                    <button onclick="filterPhase('EMPEZAR')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
-                    <button onclick="filterPhase('SOSTENER')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
-                    <button onclick="filterPhase('CONSTANCIA')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
-                    <button onclick="filterPhase('RESULTADOS')" class="flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
+                <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[150px] md:top-[100px] z-40 py-2">
+                    <button onclick="filterPhase('ALL')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
+                    <button onclick="filterPhase('EMPEZAR')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
+                    <button onclick="filterPhase('SOSTENER')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
+                    <button onclick="filterPhase('CONSTANCIA')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
+                    <button onclick="filterPhase('RESULTADOS')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
                 </div>
                 <div id="goalsList" class="space-y-2"></div>
             </main>
@@ -86,7 +85,10 @@
     </div>
 
     <script>
+        const DB_KEY = 'ahorro_flex_v1'; 
+        const META_FINAL = 13780000;
         let challengeData = []; let participants = []; let activeParticipant = ""; let currentFilter = "ALL"; let statsView = "COLECTIVO";
+
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
 
         function generateWeeks() {
@@ -97,10 +99,10 @@
             }
         }
 
-        function save() { localStorage.setItem('ahorro_v15_final', JSON.stringify({ challengeData, participants, activeParticipant, statsView })); }
+        function save() { localStorage.setItem(DB_KEY, JSON.stringify({ challengeData, participants, activeParticipant, statsView })); }
 
         function load() {
-            const saved = localStorage.getItem('ahorro_v15_final');
+            const saved = localStorage.getItem(DB_KEY);
             if (saved) {
                 const p = JSON.parse(saved);
                 challengeData = p.challengeData; participants = p.participants; activeParticipant = p.activeParticipant; statsView = p.statsView || "COLECTIVO";
@@ -109,7 +111,7 @@
 
         function renderParticipants() {
             const list = document.getElementById('participantList');
-            if (participants.length === 0) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic px-2 text-center">Sin nombres</p>`; return; }
+            if (participants.length === 0) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic px-2 text-center">Agrega un nombre</p>`; return; }
             list.innerHTML = participants.map(p => `
                 <div class="flex items-center bg-white/50 rounded-lg p-1 border border-transparent">
                     <button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button>
@@ -119,23 +121,23 @@
         }
 
         function addParticipant() {
-            const name = document.getElementById('newParticipantInput').value.trim().toUpperCase();
-            if (name && !participants.includes(name)) {
-                participants.push(name); if (!activeParticipant) activeParticipant = name;
+            const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
+            if (n && !participants.includes(n)) {
+                participants.push(n); if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
             }
         }
 
-        function deleteParticipant(name) {
-            if (confirm(`¿Eliminar a ${name}?`)) {
-                participants = participants.filter(p => p !== name);
-                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== name));
-                if (activeParticipant === name) activeParticipant = participants[0] || "";
+        function deleteParticipant(n) {
+            if (confirm(`¿Eliminar a ${n}?`)) {
+                participants = participants.filter(p => p !== n);
+                challengeData.forEach(g => g.completions = g.completions.filter(c => c.participant !== n));
+                if (activeParticipant === n) activeParticipant = participants[0] || "";
                 save(); renderParticipants(); renderGoals(); updateStats();
             }
         }
 
-        function setActiveParticipant(name) { activeParticipant = name; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
+        function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
 
         function setStatsView(view) {
             statsView = view; updateStats();
@@ -143,36 +145,55 @@
             document.getElementById('btnViewInd').className = view === 'INDIVIDUAL' ? 'px-3 py-1 text-[10px] font-bold rounded-full border border-primary text-primary' : 'px-3 py-1 text-[10px] font-bold rounded-full border border-slate-200 text-slate-400';
         }
 
-        function toggle(idx) {
-            if (!activeParticipant) return alert("Selecciona o agrega un nombre");
-            const goal = challengeData[idx];
+        function toggle(idx, manualAmount = null) {
+            if (!activeParticipant) return alert("Agrega un nombre primero");
+            const goal = challengeData[idx]; 
             const cIdx = goal.completions.findIndex(c => c.participant === activeParticipant);
             
-            if (cIdx > -1) {
+            if (cIdx > -1 && manualAmount === null) {
                 goal.completions.splice(cIdx, 1);
             } else {
+                let amountToSave = manualAmount !== null ? manualAmount : goal.amount;
                 const now = new Date();
-                const dateStr = now.toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
-                goal.completions.push({ participant: activeParticipant, date: dateStr });
+                const d = now.toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
+                
+                if (cIdx > -1) {
+                    goal.completions[cIdx].saved = amountToSave;
+                    goal.completions[cIdx].date = d;
+                } else {
+                    goal.completions.push({ participant: activeParticipant, date: d, saved: amountToSave });
+                }
             }
             save(); renderGoals(); updateStats();
         }
 
-        function updateStats() {
-            let total = 0, met = 0;
-            if (statsView === 'COLECTIVO') {
-                total = challengeData.reduce((s, g) => s + (g.completions.length * g.amount), 0);
-                met = challengeData.filter(g => g.completions.length > 0).length;
-                document.getElementById('statsTitle').innerText = "Total Colectivo";
-            } else {
-                total = challengeData.reduce((s, g) => s + (g.completions.some(c => c.participant === activeParticipant) ? g.amount : 0), 0);
-                met = challengeData.filter(g => g.completions.some(c => c.participant === activeParticipant)).length;
-                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant || '...'}`;
+        function promptManual(idx) {
+            const current = challengeData[idx].amount;
+            const val = prompt("¿Cuánto dinero vas a ingresar para esta semana?", current);
+            if (val !== null && !isNaN(val) && val > 0) {
+                toggle(idx, parseInt(val));
             }
-            const percent = (met / 52) * 100;
-            document.getElementById('totalSavedCounter').innerText = formatPYG(total);
-            document.getElementById('progressPercentage').innerText = Math.round(percent) + '%';
-            document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (percent / 100 * 131.9);
+        }
+
+        function updateStats() {
+            let t = 0;
+            if (statsView === 'COLECTIVO') {
+                t = challengeData.reduce((s, g) => s + g.completions.reduce((acc, c) => acc + c.saved, 0), 0);
+                document.getElementById('statsTitle').innerText = "Total Colectivo";
+                document.getElementById('metaLabel').innerText = `Meta: ${formatPYG(META_FINAL)} c/u`;
+            } else {
+                t = challengeData.reduce((s, g) => {
+                    const c = g.completions.find(comp => comp.participant === activeParticipant);
+                    return s + (c ? c.saved : 0);
+                }, 0);
+                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant || '...'}`;
+                const rest = META_FINAL - t;
+                document.getElementById('metaLabel').innerText = rest > 0 ? `Faltan: ${formatPYG(rest)}` : "¡META ALCANZADA!";
+            }
+            const p = (t / (statsView === 'COLECTIVO' ? (META_FINAL * (participants.length || 1)) : META_FINAL)) * 100;
+            document.getElementById('totalSavedCounter').innerText = formatPYG(t);
+            document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
+            document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
         }
 
         function renderGoals() {
@@ -181,57 +202,45 @@
             const colors = { 'EMPEZAR': 'bg-emerald-500', 'SOSTENER': 'bg-sky-500', 'CONSTANCIA': 'bg-indigo-500', 'RESULTADOS': 'bg-rose-500' };
             
             container.innerHTML = data.map((g) => {
-                const doneByActive = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
+                const done = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
                 return `
-                    <div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${doneByActive ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
+                    <div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${done ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
                         <div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div>
                         <div class="flex-grow">
                             <div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div>
-                            <div class="text-[8px] uppercase text-slate-400 font-bold">${g.phase}</div>
+                            <div class="text-[9px] uppercase text-slate-400 font-bold">${g.phase}</div>
                         </div>
                         <div class="flex flex-col items-end gap-1 px-1">
                             ${g.completions.map(c => `
-                                <div class="flex items-center gap-1 bg-slate-100 rounded-full pl-1 pr-2 py-0.5 border border-white">
+                                <div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm">
                                     <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div>
-                                    <span class="text-[7px] font-bold text-slate-500 uppercase">${c.date}</span>
+                                    <span class="text-[7px] font-bold text-slate-600 uppercase">${c.date} • ${new Intl.NumberFormat('es-PY').format(c.saved)}</span>
                                 </div>
                             `).join('')}
                         </div>
-                        <button onclick="toggle(${g.week - 1})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${doneByActive ? 'bg-primary text-white' : 'bg-white border border-slate-200 text-slate-500'}">
-                            ${doneByActive ? 'LISTO' : 'MARCAR'}
-                        </button>
-                    </div>
-                `;
+                        <div class="flex gap-1">
+                            <button onclick="promptManual(${g.week - 1})" class="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-primary transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onclick="toggle(${g.week - 1})" class="px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${done ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}">
+                                ${done ? 'LISTO' : 'MARCAR'}
+                            </button>
+                        </div>
+                    </div>`;
             }).join('');
         }
 
         function scrollToNext() {
             if (!activeParticipant) return;
-            const nextGoal = challengeData.find(g => !g.completions.some(c => c.participant === activeParticipant));
-            if (nextGoal) {
-                setTimeout(() => {
-                    const el = document.getElementById(`goal-${nextGoal.week}`);
-                    if (el) {
-                        const yOffset = -180; // Ajuste para que la cabecera fija no tape la meta
-                        const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                        window.scrollTo({top: y, behavior: 'smooth'});
-                    }
-                }, 300);
-            }
+            const next = challengeData.find(g => !g.completions.some(c => c.participant === activeParticipant));
+            if (next) { setTimeout(() => { const el = document.getElementById(`goal-${next.week}`); if (el) { const y = el.getBoundingClientRect().top + window.pageYOffset - 180; window.scrollTo({top: y, behavior: 'smooth'}); } }, 300); }
         }
 
         function filterPhase(p) { currentFilter = p; renderGoals(); }
-        function confirmReset() { if (confirm("¿Borrar todo permanentemente?")) { localStorage.clear(); location.reload(); } }
+        function confirmReset() { if (confirm("¿Borrar todo en este LAB?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
 
+        init();
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
-        load(); 
-        renderParticipants(); 
-        renderGoals(); 
-        updateStats(); 
-        setStatsView(statsView);
-        // Al iniciar, llevar al usuario a su siguiente meta
-        window.onload = scrollToNext;
     </script>
 </body>
 </html>
