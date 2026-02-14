@@ -66,11 +66,11 @@
             </aside>
             <main class="lg:col-span-3">
                 <div class="flex overflow-x-auto pb-3 gap-2 no-scrollbar mb-4 bg-background/50 sticky top-[150px] md:top-[100px] z-40 py-2">
-                    <button onclick="filterPhase('ALL')" class="px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
-                    <button onclick="filterPhase('EMPEZAR')" class="px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
-                    <button onclick="filterPhase('SOSTENER')" class="px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
-                    <button onclick="filterPhase('CONSTANCIA')" class="px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
-                    <button onclick="filterPhase('RESULTADOS')" class="px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
+                    <button onclick="filterPhase('ALL')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Todas</button>
+                    <button onclick="filterPhase('EMPEZAR')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 1</button>
+                    <button onclick="filterPhase('SOSTENER')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 2</button>
+                    <button onclick="filterPhase('CONSTANCIA')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 3</button>
+                    <button onclick="filterPhase('RESULTADOS')" class="phase-btn flex-none px-4 py-1.5 rounded-full bg-white border border-slate-200 text-[10px] font-bold">Fase 4</button>
                 </div>
                 <div id="goalsList" class="space-y-2"></div>
             </main>
@@ -78,7 +78,7 @@
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_flex_v2_fix'; 
+        const DB_KEY = 'ahorro_flex_v3_teclado'; 
         const META_FINAL = 13780000;
         let challengeData = []; let participants = []; let activeParticipant = ""; let currentFilter = "ALL"; let statsView = "COLECTIVO";
 
@@ -150,8 +150,18 @@
         }
 
         function promptManual(idx) {
-            const val = prompt("¿Cuánto vas a ahorrar esta semana?", challengeData[idx].amount);
-            if (val !== null && !isNaN(val) && val > 0) toggle(idx, parseInt(val));
+            // El truco del teclado numérico: usamos un prompt pero validando que sea número
+            const current = challengeData[idx].amount;
+            const val = prompt("Ingresá el monto ahorrado (Solo números):", current);
+            
+            if (val !== null) {
+                const cleanedVal = val.replace(/\D/g,''); // Elimina cualquier cosa que no sea número
+                if (cleanedVal !== "" && parseInt(cleanedVal) > 0) {
+                    toggle(idx, parseInt(cleanedVal));
+                } else if (val !== "") {
+                    alert("Por favor, ingresá solo números válidos.");
+                }
+            }
         }
 
         function updateStats() {
@@ -184,7 +194,7 @@
                 const done = activeParticipant ? g.completions.some(c => c.participant === activeParticipant) : false;
                 return `<div id="goal-${g.week}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${done ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
                     <div class="w-8 h-8 rounded-lg ${colors[g.phase]} flex items-center justify-center text-white text-[10px] font-bold shrink-0">${g.week}</div>
-                    <div class="flex-grow"><div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">${g.phase}</div></div>
+                    <div class="flex-grow"><div class="text-sm font-bold text-slate-800">${formatPYG(g.amount)}</div><div class="text-[9px] uppercase text-slate-400 font-bold">${g.phase}</div></div>
                     <div class="flex flex-col items-end gap-1 px-1">${g.completions.map(c => `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.participant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${c.date} • ${new Intl.NumberFormat('es-PY').format(c.saved || 0)}</span></div>`).join('')}</div>
                     <div class="flex gap-1">
                         <button onclick="promptManual(${g.week - 1})" class="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
