@@ -18,7 +18,7 @@
     </script>
     <style>
         body { background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); min-height: 100vh; }
-        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .badge-active { background: #10b981 !important; color: white !important; }
         .sticky-header { position: sticky; top: 0; z-index: 50; padding-top: 1rem; padding-bottom: 1rem; }
@@ -63,7 +63,7 @@
                     <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
                     <div class="flex gap-2 mb-4">
                         <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
-                        <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600">+</button>
+                        <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600 font-bold">+</button>
                     </div>
                     <div id="participantList" class="space-y-1"></div>
                 </div>
@@ -77,12 +77,11 @@
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_dinamico_v1';
+        const DB_KEY = 'ahorro_dinamico_vFinal';
         let config = { meta: 13780000, semanas: 52 };
         let participants = []; 
         let activeParticipant = ""; 
         let statsView = "COLECTIVO";
-        // Estructura de datos: data[nombre_participante] = [{semana: 1, pagado: 10000, fecha: "13 feb"}, ...]
         let userProgress = {}; 
 
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
@@ -105,9 +104,9 @@
 
         function configReto() {
             const m = prompt("¿Cuál es la meta total de ahorro?", config.meta);
-            const s = prompt("¿En cuántas semanas/pagos?", config.semanas);
+            const s = prompt("¿En cuántas semanas?", config.semanas);
             if (m && s) {
-                if (confirm("Al cambiar la meta global se reiniciará el progreso de todos. ¿Continuar?")) {
+                if (confirm("Se reiniciará el progreso para ajustar la nueva meta. ¿Continuar?")) {
                     config.meta = parseInt(m.replace(/\D/g,''));
                     config.semanas = parseInt(s.replace(/\D/g,''));
                     userProgress = {};
@@ -117,34 +116,29 @@
             }
         }
 
-        // --- CÁLCULO DE LA ESCALERA DINÁMICA ---
-        function getWeeklyTarget(semanaActual, nombreUser) {
+        // --- CÁLCULO PROGRESIVO REAL ---
+        function getWeeklyTarget(numeroDeposito, nombreUser) {
             const metaTotal = config.meta;
             const totalSemanas = config.semanas;
             
-            // 1. Calcular cuánto ya pagó este usuario
             const misPagos = userProgress[nombreUser] || [];
             const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0);
-            const semanasPagadas = misPagos.length;
+            const depositoActual = misPagos.length + 1;
             
-            // 2. ¿Cuánto falta y en cuántas semanas?
             const restoDinero = metaTotal - yaPagado;
-            const semanasRestantes = totalSemanas - semanasPagadas;
+            const semanasRestantes = totalSemanas - misPagos.length;
             
             if (semanasRestantes <= 0) return 0;
 
-            // 3. Lógica de escalera: El primer pago es menor que el último.
-            // Usamos una proporción simple para que los últimos pagos sean más pesados.
-            // Esta fórmula asegura que la suma de la progresión sea igual al restoDinero.
-            const promedioRestante = restoDinero / semanasRestantes;
+            // Fórmula de progresión aritmética para que los montos suban gradualmente
+            // Calculamos una base y una razón de incremento
+            const promedio = restoDinero / semanasRestantes;
+            const incremento = (promedio * 0.8) / semanasRestantes; // Pendiente suave
             
-            // Ajustamos el monto para que crezca gradualmente según la posición de la semana
-            // en el grupo de las semanas que faltan.
-            const factorPosicion = (semanaActual - semanasPagadas); 
-            const ajuste = (factorPosicion - (semanasRestantes + 1) / 2) * (promedioRestante * 0.05); // El 5% es la "pendiente"
+            const factorProgresion = (numeroDeposito - misPagos.length) - (semanasRestantes + 1) / 2;
+            let monto = promedio + (factorProgresion * incremento);
             
-            let montoCalculado = promedioRestante + ajuste;
-            return Math.ceil(montoCalculado / 1000) * 1000; // Redondeo a 1.000 Gs.
+            return Math.ceil(Math.max(monto, 5000) / 1000) * 1000;
         }
 
         function addParticipant() {
@@ -159,42 +153,47 @@
 
         function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
 
-        function toggle(semana, manualAmount = null) {
+        function toggle(semanaNum) {
             if (!activeParticipant) return alert("Seleccioná un participante");
-            
             if (!userProgress[activeParticipant]) userProgress[activeParticipant] = [];
-            const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semana);
+            
+            const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum);
 
-            if (pIdx > -1 && manualAmount === null) {
+            if (pIdx > -1) {
                 userProgress[activeParticipant].splice(pIdx, 1);
             } else {
-                const sugerido = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
-                let monto = manualAmount !== null ? manualAmount : sugerido;
+                // Si marca "Listo", toma el valor progresivo calculado
+                const monto = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
                 const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
-                
-                if (pIdx > -1) {
-                    userProgress[activeParticipant][pIdx].pagado = monto;
-                } else {
-                    userProgress[activeParticipant].push({ semana: userProgress[activeParticipant].length + 1, pagado: monto, fecha: d });
-                }
+                userProgress[activeParticipant].push({ semana: semanaNum, pagado: monto, fecha: d });
             }
             save(); renderGoals(); updateStats();
         }
 
-        function promptManual(sem) {
-            const sugerido = getWeeklyTarget(userProgress[activeParticipant].length + 1, activeParticipant);
-            const val = prompt("¿Cuánto ingresaste realmente?", sugerido);
+        function promptManual(semNum) {
+            if (!activeParticipant) return alert("Seleccioná un participante");
+            const sugerido = getWeeklyTarget((userProgress[activeParticipant]?.length || 0) + 1, activeParticipant);
+            const val = prompt("Ingresá el monto ahorrado:", sugerido);
             if (val !== null) {
                 const num = parseInt(val.replace(/\D/g,''));
-                if (num > 0) toggle(sem, num);
+                if (num > 0) {
+                    if (!userProgress[activeParticipant]) userProgress[activeParticipant] = [];
+                    const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum);
+                    const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
+                    
+                    if (pIdx > -1) {
+                        userProgress[activeParticipant][pIdx].pagado = num;
+                    } else {
+                        userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d });
+                    }
+                    save(); renderGoals(); updateStats();
+                }
             }
         }
 
         function updateStats() {
             let total = 0;
-            Object.values(userProgress).forEach(pagos => {
-                pagos.forEach(p => total += p.pagado);
-            });
+            Object.values(userProgress).forEach(pagos => pagos.forEach(p => total += p.pagado));
 
             if (statsView === 'COLECTIVO') {
                 document.getElementById('statsTitle').innerText = "Total Colectivo";
@@ -204,8 +203,7 @@
                 document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
                 document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
             } else {
-                const misPagos = userProgress[activeParticipant] || [];
-                const miTotal = misPagos.reduce((acc, p) => acc + p.pagado, 0);
+                const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0);
                 document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant}`;
                 const falta = config.meta - miTotal;
                 document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!";
@@ -220,7 +218,6 @@
         function renderGoals() {
             const container = document.getElementById('goalsList');
             let html = "";
-            
             for (let i = 1; i <= config.semanas; i++) {
                 const globalCompletions = [];
                 participants.forEach(p => {
@@ -229,16 +226,16 @@
                 });
 
                 const hechoPorMi = activeParticipant && (userProgress[activeParticipant] || []).some(up => up.semana === i);
-                const montoEstaSemana = activeParticipant ? getWeeklyTarget(i, activeParticipant) : (config.meta / config.semanas);
+                const miPagoSemana = hechoPorMi ? (userProgress[activeParticipant].find(up => up.semana === i).pagado) : getWeeklyTarget(i, activeParticipant);
 
                 html += `
                 <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
                     <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
                     <div class="flex-grow">
-                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoEstaSemana)}</div>
+                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(miPagoSemana)}</div>
                         <div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
+                    <div class="flex flex-col items-end gap-1 px-1">
                         ${globalCompletions.map(c => `
                             <div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm">
                                 <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.name[0]}</div>
@@ -247,8 +244,12 @@
                         `).join('')}
                     </div>
                     <div class="flex gap-1">
-                        <button onclick="promptManual(${i})" class="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-primary transition-colors">✏️</button>
-                        <button onclick="toggle(${i})" class="px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}">
+                        <button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                        <button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
                             ${hechoPorMi ? 'LISTO' : 'MARCAR'}
                         </button>
                     </div>
@@ -259,8 +260,8 @@
 
         function renderParticipants() {
             const list = document.getElementById('participantList');
-            if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center">Agrega nombres</p>`; return; }
-            list.innerHTML = participants.map(p => `<div class="flex items-center bg-white/50 rounded-lg p-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 text-xs font-semibold rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button></div>`).join('');
+            if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center">Agregá un nombre arriba</p>`; return; }
+            list.innerHTML = participants.map(p => `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-2 text-xs font-bold rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button></div>`).join('');
         }
 
         function scrollToNext() {
@@ -276,7 +277,7 @@
         }
 
         function setStatsView(v) { statsView = v; updateStats(); }
-        function confirmReset() { if (confirm("¿Borrar todo?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
+        function confirmReset() { if (confirm("¿Borrar todo permanentemente?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
 
         load(); renderParticipants(); renderGoals(); updateStats();
     </script>
