@@ -79,13 +79,13 @@
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_dinamico_vSólida';
+        const DB_KEY = 'ahorro_dinamico_vFinal_Sólida';
         let config = { meta: 13780000, semanas: 52 };
         let participants = []; 
         let activeParticipant = ""; 
         let statsView = "COLECTIVO";
         let userProgress = {}; 
-        let userSchedules = {}; // Aquí guardamos la escalera fija por usuario
+        let userSchedules = {}; 
 
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
@@ -115,22 +115,23 @@
                     config.semanas = parseInt(s.replace(/\D/g,''));
                     userProgress = {};
                     userSchedules = {};
+                    // Regenerar schedule para todos los participantes existentes
+                    participants.forEach(p => {
+                        userProgress[p] = [];
+                        generateSchedule(p);
+                    });
                     save();
                     location.reload();
                 }
             }
         }
 
-        // --- GENERACIÓN Y RECALCULADO ---
         function generateSchedule(nombreUser) {
             const metaTotal = config.meta;
             const totalSemanas = config.semanas;
             let schedule = [];
-            
-            // Progresión aritmética básica inicial
             const promedio = metaTotal / totalSemanas;
             const incremento = (promedio * 0.8) / totalSemanas;
-            
             for (let i = 1; i <= totalSemanas; i++) {
                 const factor = i - (totalSemanas + 1) / 2;
                 let monto = promedio + (factor * incremento);
@@ -143,19 +144,13 @@
             const metaTotal = config.meta;
             const totalSemanas = config.semanas;
             const misPagos = userProgress[nombreUser] || [];
-            
             const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0);
             const semanasRestantes = totalSemanas - misPagos.length;
-            
             if (semanasRestantes <= 0) return;
-
             const restoDinero = metaTotal - yaPagado;
             const promedio = restoDinero / semanasRestantes;
             const incremento = (promedio * 0.8) / semanasRestantes;
-            
             let newSchedule = [...userSchedules[nombreUser]];
-            
-            // Solo recalculamos las posiciones que NO han sido pagadas
             let count = 1;
             for (let i = 0; i < totalSemanas; i++) {
                 const yaEstaPaga = misPagos.some(p => p.semana === (i + 1));
@@ -174,7 +169,7 @@
             if (n && !participants.includes(n)) {
                 participants.push(n);
                 userProgress[n] = [];
-                generateSchedule(n); // Generar su escalera fija al crear
+                generateSchedule(n);
                 if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
             }
@@ -209,16 +204,13 @@
         function toggle(semanaNum) {
             if (!activeParticipant) return alert("Seleccioná un participante");
             const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum);
-            
             if (pIdx > -1) {
                 userProgress[activeParticipant].splice(pIdx, 1);
-                recalculateRemaining(activeParticipant); // Re-equilibrar al desmarcar
+                recalculateRemaining(activeParticipant);
             } else {
-                // Usa el monto que ya estaba "congelado" en su schedule
                 const montoOriginal = userSchedules[activeParticipant][semanaNum - 1];
                 const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
                 userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d });
-                // NO recalculamos si el monto es el original
             }
             save(); renderGoals(); updateStats();
         }
@@ -232,11 +224,8 @@
                 if (num > 0) {
                     const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum);
                     const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
-                    
                     if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; }
                     else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); }
-                    
-                    // SI recalculamos porque hubo un cambio manual
                     recalculateRemaining(activeParticipant);
                     save(); renderGoals(); updateStats();
                 }
@@ -275,10 +264,7 @@
                     if (pago) globalCompletions.push({ name: p, ...pago });
                 });
                 const hechoPorMi = activeParticipant && (userProgress[activeParticipant] || []).some(up => up.semana === i);
-                
-                // Leemos el monto congelado del schedule para mostrarlo
-                const montoMostrado = activeParticipant ? userSchedules[activeParticipant][i-1] : (config.meta / config.semanas);
-                
+                const montoMostrado = activeParticipant ? (userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (config.meta / config.semanas)) : (config.meta / config.semanas);
                 html += `
                 <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
                     <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
