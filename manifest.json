@@ -1,12 +1,11 @@
 {
-  "id": "/AhorroChallenge/",
-  "name": "Ahorro Lab",
+  "name": "Ahorro Challenge",
   "short_name": "Ahorro",
-  "start_url": "/AhorroChallenge/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#10b981",
-  "scope": "/AhorroChallenge/",
+  "scope": "./",
   "icons": [
     {
       "src": "icon.png",
