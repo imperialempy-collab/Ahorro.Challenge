@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ahorro Challenge</title>
     
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="theme-color" content="#10b981">
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -26,7 +30,14 @@
         const listaNegra = []; 
 
         window.login = () => {
-            signInWithPopup(auth, provider).catch(error => alert("Error al entrar: " + error.message));
+            signInWithPopup(auth, provider).catch(error => {
+                // Mensaje de bloqueo personalizado
+                if (error.code === 'auth/user-disabled') {
+                    alert("⚠️ Tu acceso se encuentra suspendido. Por favor, comunicate al WhatsApp para reactivar tu cuenta.");
+                } else {
+                    alert("Error al entrar: " + error.message);
+                }
+            });
         };
 
         window.logout = () => {
@@ -73,6 +84,8 @@
 
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+            <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
+            
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
             <p class="text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
             <button onclick="login()" class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
@@ -372,6 +385,19 @@
             renderGoals(); 
             updateStats();
         };
+
+        // ACTIVADOR DEL SERVICE WORKER (Para permitir la instalación PWA)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Fallo en el registro del Service Worker:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
