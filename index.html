@@ -29,12 +29,24 @@
         const db = getFirestore(app); // Activamos la conexión
         const provider = new GoogleAuthProvider();
 
+
+// Función para mostrar la alerta personalizada
+        window.mostrarAlerta = (mensaje) => {
+            document.getElementById('customAlertMessage').innerText = mensaje;
+            document.getElementById('customAlert').classList.remove('hidden');
+        };
+
+        // Función para cerrar la alerta personalizada
+        window.closeCustomAlert = () => {
+            document.getElementById('customAlert').classList.add('hidden');
+        };
+        
         window.login = () => {
             signInWithPopup(auth, provider).catch(error => {
                 if (error.code === 'auth/user-disabled') {
-                    alert("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
+                    mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
                 } else {
-                    alert("Error al entrar: " + error.message);
+                    mostrarAlerta("Error al entrar: " + error.message);
                 }
             });
         };
@@ -82,11 +94,11 @@
 
                         if (diffDays > 7) {
                             // SE ACABÓ EL TIEMPO. Bloqueo automático.
-                            alert("⏳ Tu prueba de 7 días ha terminado. Por favor, comunicate al WhatsApp 0992-049430 para activar tu cuenta por solo 20.000 Gs.");
+                            mostrarAlerta("⏳ Tu prueba de 7 días ha terminado. Por favor, comunicate al WhatsApp 0992-049430 para activar tu cuenta por solo 20.000 Gs.");
                             signOut(auth); // Lo echamos de la app
                         } else {
                             // Aún le quedan días. Le avisamos y lo dejamos entrar.
-                            alert(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
+                            mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
                             loginScreen.classList.add('hidden');
                             appContent.classList.remove('hidden');
                             initApp();
@@ -118,6 +130,17 @@
 </head>
 <body class="font-body text-slate-800">
 
+<div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100 transform transition-all scale-100">
+            <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
+            <button onclick="closeCustomAlert()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
+                Aceptar
+            </button>
+        </div>
+    </div>
+    
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
