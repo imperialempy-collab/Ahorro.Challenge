@@ -341,7 +341,7 @@
         }
 
         window.toggle = (semanaNum) => {
-            if (!activeParticipant) return alert("Seleccioná un participante");
+            if (!activeParticipant) return mostrarAlerta("Seleccioná un participante");
             const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum);
             if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); recalculateRemaining(activeParticipant); } 
             else {
@@ -353,7 +353,7 @@
         };
 
         window.promptManual = (semNum) => {
-            if (!activeParticipant) return alert("Seleccioná un participante");
+            if (!activeParticipant) return mostrarAlerta("Seleccioná un participante");
             const previsto = userSchedules[activeParticipant][semNum - 1];
             const val = prompt("Ingresá el monto real:", previsto);
             if (val !== null) {
