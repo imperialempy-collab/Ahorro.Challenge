@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Ventas - Ahorro Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
+            authDomain: "ahorro-dinamico.firebaseapp.com",
+            projectId: "ahorro-dinamico",
+            storageBucket: "ahorro-dinamico.firebasestorage.app",
+            messagingSenderId: "906931960122",
+            appId: "1:906931960122:web:02b6d090d163c2c135f803"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth).then(() => location.reload());
+
+        // Función para cambiar a PAGADO
+        window.marcarPagado = async (email) => {
+            if(confirm(`¿Estás seguro de marcar a ${email} como PAGADO para siempre?`)) {
+                await updateDoc(doc(db, "usuarios", email), { status: "pagado" });
+                alert("¡Cuenta habilitada de por vida!");
+                cargarUsuarios();
+            }
+        };
+
+        async function cargarUsuarios() {
+            const tbody = document.getElementById('tablaUsuarios');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando clientes...</td></tr>';
+            try {
+                const querySnapshot = await getDocs(collection(db, "usuarios"));
+                let html = '';
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                    
+                    // Calcular días transcurridos
+                    const start = new Date(data.fechaInicio);
+                    const now = new Date();
+                    const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                    
+                    let estadoHtml = data.status === 'pagado' 
+                        ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">PAGADO</span>`
+                        : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">PRUEBA (Día ${diffDays}/7)</span>`;
+
+                    let botonHtml = data.status === 'pagado'
+                        ? `<button disabled class="bg-slate-200 text-slate-400 px-3 py-1 rounded text-xs font-bold">HABILITADO</button>`
+                        : `<button onclick="marcarPagado('${data.email}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold shadow">MARCAR PAGADO</button>`;
+
+                    html += `
+                        <tr class="border-b">
+                            <td class="p-3 font-medium text-slate-700">${data.email}</td>
+                            <td class="p-3 text-slate-500">${fecha}</td>
+                            <td class="p-3">${estadoHtml}</td>
+                            <td class="p-3 text-right">${botonHtml}</td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html || '<tr><td colspan="4" class="text-center p-4">Aún no hay usuarios probando la app</td></tr>';
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 p-4">Error: ${error.message}</td></tr>`;
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // SOLO VOS PODÉS ENTRAR ACÁ
+                if (user.email === "imperial.empy@gmail.com") {
+                    document.getElementById('loginDiv').classList.add('hidden');
+                    document.getElementById('adminDiv').classList.remove('hidden');
+                    document.getElementById('adminEmail').innerText = user.email;
+                    cargarUsuarios();
+                } else {
+                    alert("⚠️ Acceso denegado. Área exclusiva de administración.");
+                    signOut(auth);
+                }
+            } else {
+                document.getElementById('loginDiv').classList.remove('hidden');
+                document.getElementById('adminDiv').classList.add('hidden');
+            }
+        });
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+    <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-sm w-full border border-slate-100">
+            <h1 class="text-2xl font-bold mb-2">Panel de Control</h1>
+            <p class="text-slate-500 text-sm mb-6">Iniciá sesión con tu correo de administrador</p>
+            <button onclick="login()" class="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
+        </div>
+    </div>
+
+    <div id="adminDiv" class="hidden max-w-4xl mx-auto p-4 sm:p-6 mt-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Sistema de Ventas</h1>
+                <p class="text-sm text-slate-500">Administrador: <span id="adminEmail" class="font-semibold text-primary"></span></p>
+            </div>
+            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-colors">Cerrar Sesión</button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                    <tr class="bg-slate-50 text-sm text-slate-500 border-b border-slate-200">
+                        <th class="p-4 font-semibold">Correo del Cliente</th>
+                        <th class="p-4 font-semibold">Inició Prueba</th>
+                        <th class="p-4 font-semibold">Estado de Cuenta</th>
+                        <th class="p-4 font-semibold text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaUsuarios" class="text-sm">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
