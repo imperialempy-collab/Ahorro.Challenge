@@ -30,7 +30,7 @@
         const provider = new GoogleAuthProvider();
 
 
-// Función para mostrar la alerta personalizada
+        // Función para mostrar la alerta personalizada (Aviso simple)
         window.mostrarAlerta = (mensaje) => {
             document.getElementById('customAlertMessage').innerText = mensaje;
             document.getElementById('customAlert').classList.remove('hidden');
@@ -39,6 +39,51 @@
         // Función para cerrar la alerta personalizada
         window.closeCustomAlert = () => {
             document.getElementById('customAlert').classList.add('hidden');
+        };
+
+        // NUEVO: Función para mostrar Confirmación (Aceptar / Cancelar)
+        window.mostrarConfirm = (mensaje) => {
+            return new Promise((resolve) => {
+                document.getElementById('customConfirmMessage').innerText = mensaje;
+                const modal = document.getElementById('customConfirm');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                const cleanUp = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => { cleanUp(); resolve(true); };
+                btnCancel.onclick = () => { cleanUp(); resolve(false); };
+
+                modal.classList.remove('hidden');
+            });
+        };
+
+        // NUEVO: Función para pedir ingreso de datos (Prompt)
+        window.mostrarPrompt = (mensaje, valorPorDefecto = '') => {
+            return new Promise((resolve) => {
+                document.getElementById('customPromptMessage').innerText = mensaje;
+                const input = document.getElementById('customPromptInput');
+                input.value = valorPorDefecto;
+                const modal = document.getElementById('customPrompt');
+                const btnOk = document.getElementById('btnPromptOk');
+                const btnCancel = document.getElementById('btnPromptCancel');
+
+                const cleanUp = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => { cleanUp(); resolve(input.value); };
+                btnCancel.onclick = () => { cleanUp(); resolve(null); };
+
+                modal.classList.remove('hidden');
+                input.focus();
+            });
         };
         
         window.login = () => {
@@ -130,7 +175,7 @@
 </head>
 <body class="font-body text-slate-800">
 
-<div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
         <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100 transform transition-all scale-100">
             <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
             <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
@@ -138,6 +183,29 @@
             <button onclick="closeCustomAlert()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
                 Aceptar
             </button>
+        </div>
+    </div>
+
+    <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p>
+            <input type="number" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            <div class="flex gap-3">
+                <button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+            </div>
         </div>
     </div>
     
@@ -243,25 +311,31 @@
             }
         }
 
-        window.confirmReset = () => {
-            if (confirm("¿Estás 100% seguro? Esto borrará TODO tu progreso en este dispositivo.")) {
+        // ACTUALIZADO CON PROMESA VISUAL
+        window.confirmReset = async () => {
+            const seguro = await mostrarConfirm("¿Estás 100% seguro? Esto borrará TODO tu progreso en este dispositivo.");
+            if (seguro) {
                 localStorage.removeItem(DB_KEY);
                 location.reload();
             }
         };
 
-        window.configReto = () => {
-            const m = prompt("¿Cuál es la meta total?", config.meta);
-            const s = prompt("¿En cuántas semanas?", config.semanas);
-            if (m && s) {
-                if (confirm("Se reiniciará el progreso para el nuevo plan. ¿Continuar?")) {
-                    config.meta = parseInt(m.replace(/\D/g,''));
-                    config.semanas = parseInt(s.replace(/\D/g,''));
-                    userProgress = {};
-                    userSchedules = {};
-                    participants.forEach(p => { userProgress[p] = []; generateSchedule(p); });
-                    save();
-                    location.reload();
+        // ACTUALIZADO CON PROMESAS VISUALES
+        window.configReto = async () => {
+            const m = await mostrarPrompt("¿Cuál es la meta total?", config.meta);
+            if (m !== null && m !== "") {
+                const s = await mostrarPrompt("¿En cuántas semanas?", config.semanas);
+                if (s !== null && s !== "") {
+                    const seguro = await mostrarConfirm("Se reiniciará el progreso para el nuevo plan. ¿Continuar?");
+                    if (seguro) {
+                        config.meta = parseInt(m.toString().replace(/\D/g,''));
+                        config.semanas = parseInt(s.toString().replace(/\D/g,''));
+                        userProgress = {};
+                        userSchedules = {};
+                        participants.forEach(p => { userProgress[p] = []; generateSchedule(p); });
+                        save();
+                        location.reload();
+                    }
                 }
             }
         };
@@ -315,8 +389,10 @@
             }
         };
 
-        window.deleteParticipant = (n) => {
-            if (confirm(`¿Eliminar a ${n}?`)) {
+        // ACTUALIZADO CON PROMESA VISUAL
+        window.deleteParticipant = async (n) => {
+            const seguro = await mostrarConfirm(`¿Eliminar a ${n}?`);
+            if (seguro) {
                 participants = participants.filter(p => p !== n);
                 delete userProgress[n]; delete userSchedules[n];
                 if (activeParticipant === n) activeParticipant = participants[0] || "";
@@ -352,12 +428,13 @@
             save(); renderGoals(); updateStats();
         };
 
-        window.promptManual = (semNum) => {
+        // ACTUALIZADO CON PROMESA VISUAL
+        window.promptManual = async (semNum) => {
             if (!activeParticipant) return mostrarAlerta("Seleccioná un participante");
             const previsto = userSchedules[activeParticipant][semNum - 1];
-            const val = prompt("Ingresá el monto real:", previsto);
-            if (val !== null) {
-                const num = parseInt(val.replace(/\D/g,''));
+            const val = await mostrarPrompt("Ingresá el monto real:", previsto);
+            if (val !== null && val !== "") {
+                const num = parseInt(val.toString().replace(/\D/g,''));
                 if (num > 0) {
                     const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum);
                     const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
