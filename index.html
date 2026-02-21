@@ -12,6 +12,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // Importamos la Base de Datos
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
@@ -24,16 +26,13 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app); // Activamos la conexión
         const provider = new GoogleAuthProvider();
-
-        const ADMIN_EMAIL = "imperial.empy@gmail.com";
-        const listaNegra = []; 
 
         window.login = () => {
             signInWithPopup(auth, provider).catch(error => {
-                // Mensaje de bloqueo personalizado
                 if (error.code === 'auth/user-disabled') {
-                    alert("⚠️ Tu acceso se encuentra suspendido. Por favor, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
+                    alert("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
                 } else {
                     alert("Error al entrar: " + error.message);
                 }
@@ -44,19 +43,56 @@
             signOut(auth).then(() => location.reload());
         };
 
-        onAuthStateChanged(auth, (user) => {
+        // SISTEMA AUTOMÁTICO DE PRUEBA GRATIS
+        onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('loginScreen');
             const appContent = document.getElementById('appContent');
 
             if (user) {
-                if (listaNegra.includes(user.email)) {
-                    alert("Tu acceso ha sido revocado.");
-                    signOut(auth);
-                    return;
+                // Buscamos al usuario en tu base de datos secreta
+                const userRef = doc(db, "usuarios", user.email);
+                const docSnap = await getDoc(userRef);
+
+                if (!docSnap.exists()) {
+                    // Es su PRIMERA vez. Le creamos su ficha de prueba.
+                    await setDoc(userRef, {
+                        email: user.email,
+                        status: 'prueba',
+                        fechaInicio: new Date().toISOString()
+                    });
+                    
+                    loginScreen.classList.add('hidden');
+                    appContent.classList.remove('hidden');
+                    initApp(); 
+                } else {
+                    // Ya existe, revisamos cómo está su cuenta
+                    const userData = docSnap.data();
+                    
+                    if (userData.status === 'pagado') {
+                        // Ya te pagó. Entra directo sin molestias.
+                        loginScreen.classList.add('hidden');
+                        appContent.classList.remove('hidden');
+                        initApp();
+                    } else if (userData.status === 'prueba') {
+                        // Está en periodo de prueba, calculamos qué día es
+                        const start = new Date(userData.fechaInicio);
+                        const now = new Date();
+                        const diffTime = Math.abs(now - start);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays > 7) {
+                            // SE ACABÓ EL TIEMPO. Bloqueo automático.
+                            alert("⏳ Tu prueba de 7 días ha terminado. Por favor, comunicate al WhatsApp 0992-049430 para activar tu cuenta por solo 20.000 Gs.");
+                            signOut(auth); // Lo echamos de la app
+                        } else {
+                            // Aún le quedan días. Le avisamos y lo dejamos entrar.
+                            alert(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
+                            loginScreen.classList.add('hidden');
+                            appContent.classList.remove('hidden');
+                            initApp();
+                        }
+                    }
                 }
-                loginScreen.classList.add('hidden');
-                appContent.classList.remove('hidden');
-                initApp(); 
             } else {
                 loginScreen.classList.remove('hidden');
                 appContent.classList.add('hidden');
@@ -83,12 +119,12 @@
 <body class="font-body text-slate-800">
 
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
-        <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center">
+        <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
             
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
             <p class="text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
-           <button onclick="login()" class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
+            <button onclick="login()" class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
                 <svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
                     <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -184,7 +220,14 @@
             }
         }
 
-        function configReto() {
+        window.confirmReset = () => {
+            if (confirm("¿Estás 100% seguro? Esto borrará TODO tu progreso en este dispositivo.")) {
+                localStorage.removeItem(DB_KEY);
+                location.reload();
+            }
+        };
+
+        window.configReto = () => {
             const m = prompt("¿Cuál es la meta total?", config.meta);
             const s = prompt("¿En cuántas semanas?", config.semanas);
             if (m && s) {
@@ -198,7 +241,7 @@
                     location.reload();
                 }
             }
-        }
+        };
 
         function generateSchedule(nombreUser) {
             const metaTotal = config.meta;
@@ -238,7 +281,7 @@
             userSchedules[nombreUser] = newSchedule;
         }
 
-        function addParticipant() {
+        window.addParticipant = () => {
             const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
             if (n && !participants.includes(n)) {
                 participants.push(n);
@@ -247,20 +290,20 @@
                 if (!activeParticipant) activeParticipant = n;
                 document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
             }
-        }
+        };
 
-        function deleteParticipant(n) {
+        window.deleteParticipant = (n) => {
             if (confirm(`¿Eliminar a ${n}?`)) {
                 participants = participants.filter(p => p !== n);
                 delete userProgress[n]; delete userSchedules[n];
                 if (activeParticipant === n) activeParticipant = participants[0] || "";
                 save(); renderParticipants(); renderGoals(); updateStats();
             }
-        }
+        };
 
-        function setActiveParticipant(n) { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); }
+        window.setActiveParticipant = (n) => { activeParticipant = n; save(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); };
 
-        function setStatsView(v) { statsView = v; updateStats(); updateViewButtons(); renderGoals(); }
+        window.setStatsView = (v) => { statsView = v; updateStats(); updateViewButtons(); renderGoals(); };
 
         function updateViewButtons() {
             const colBtn = document.getElementById('btnViewCol');
@@ -274,7 +317,7 @@
             }
         }
 
-        function toggle(semanaNum) {
+        window.toggle = (semanaNum) => {
             if (!activeParticipant) return alert("Seleccioná un participante");
             const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum);
             if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); recalculateRemaining(activeParticipant); } 
@@ -284,9 +327,9 @@
                 userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d });
             }
             save(); renderGoals(); updateStats();
-        }
+        };
 
-        function promptManual(semNum) {
+        window.promptManual = (semNum) => {
             if (!activeParticipant) return alert("Seleccioná un participante");
             const previsto = userSchedules[activeParticipant][semNum - 1];
             const val = prompt("Ingresá el monto real:", previsto);
@@ -300,7 +343,7 @@
                     recalculateRemaining(activeParticipant); save(); renderGoals(); updateStats();
                 }
             }
-        }
+        };
 
         function updateStats() {
             let total = 0;
@@ -392,16 +435,9 @@
             updateStats();
         };
 
-        // ACTIVADOR DEL SERVICE WORKER (Para permitir la instalación PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => {
-                        console.log('Service Worker registrado con éxito:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Fallo en el registro del Service Worker:', error);
-                    });
+                navigator.serviceWorker.register('sw.js').catch(() => {});
             });
         }
     </script>
