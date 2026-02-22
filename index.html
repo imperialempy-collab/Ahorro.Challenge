@@ -126,18 +126,24 @@
                     const userData = docSnap.data();
                     
                     if (userData.status === 'pagado') {
+                        // YA PAGÓ: Ocultamos el botón Premium para siempre
+                        document.getElementById('btnPremiumApp').classList.add('hidden');
+
                         // Ya te pagó. Entra directo sin molestias.
                         loginScreen.classList.add('hidden');
                         appContent.classList.remove('hidden');
                         initApp();
                     } else if (userData.status === 'prueba') {
+                        // ESTÁ EN PRUEBA: Le mostramos el botón Premium para que pague
+                        document.getElementById('btnPremiumApp').classList.remove('hidden');
+
                         // Está en periodo de prueba, calculamos qué día es
                         const start = new Date(userData.fechaInicio);
                         const now = new Date();
                         const diffTime = Math.abs(now - start);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                       if (diffDays > 7) {
+                        if (diffDays > 7) {
                             // SE ACABÓ EL TIEMPO. Mostramos pantalla de pago.
                             loginScreen.classList.add('hidden');
                             appContent.classList.add('hidden');
