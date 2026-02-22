@@ -30,18 +30,18 @@
         const provider = new GoogleAuthProvider();
 
 
-        // Función para mostrar la alerta personalizada (Aviso simple)
+        // NUEVO CARTEL DE ALERTA/VENTA AMIGABLE
         window.mostrarAlerta = (mensaje) => {
             document.getElementById('customAlertMessage').innerText = mensaje;
             document.getElementById('customAlert').classList.remove('hidden');
         };
 
-        // Función para cerrar la alerta personalizada
+        // Función para cerrar la alerta (Probar Gratis)
         window.closeCustomAlert = () => {
             document.getElementById('customAlert').classList.add('hidden');
         };
 
-        // NUEVO: Función para mostrar Confirmación (Aceptar / Cancelar)
+        // Función para mostrar Confirmación (Aceptar / Cancelar)
         window.mostrarConfirm = (mensaje) => {
             return new Promise((resolve) => {
                 document.getElementById('customConfirmMessage').innerText = mensaje;
@@ -62,7 +62,7 @@
             });
         };
 
-        // NUEVO: Función para pedir ingreso de datos (Prompt)
+        // Función para pedir ingreso de datos (Prompt)
         window.mostrarPrompt = (mensaje, valorPorDefecto = '') => {
             return new Promise((resolve) => {
                 document.getElementById('customPromptMessage').innerText = mensaje;
@@ -89,8 +89,11 @@
         window.login = () => {
             signInWithPopup(auth, provider).catch(error => {
                 if (error.code === 'auth/user-disabled') {
+                    // Ocultamos botones extra para cuenta suspendida
+                    document.getElementById('btnProbarGratis').classList.add('hidden');
                     mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
                 } else {
+                    document.getElementById('btnProbarGratis').classList.remove('hidden');
                     mostrarAlerta("Error al entrar: " + error.message);
                 }
             });
@@ -126,17 +129,11 @@
                     const userData = docSnap.data();
                     
                     if (userData.status === 'pagado') {
-                        // YA PAGÓ: Ocultamos el botón Premium para siempre
-                        document.getElementById('btnPremiumApp').classList.add('hidden');
-
                         // Ya te pagó. Entra directo sin molestias.
                         loginScreen.classList.add('hidden');
                         appContent.classList.remove('hidden');
                         initApp();
                     } else if (userData.status === 'prueba') {
-                        // ESTÁ EN PRUEBA: Le mostramos el botón Premium para que pague
-                        document.getElementById('btnPremiumApp').classList.remove('hidden');
-
                         // Está en periodo de prueba, calculamos qué día es
                         const start = new Date(userData.fechaInicio);
                         const now = new Date();
@@ -149,7 +146,8 @@
                             appContent.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
-                            // Aún le quedan días. Le avisamos y lo dejamos entrar.
+                            // Aún le quedan días. Le avisamos y le damos la opción de comprar.
+                            document.getElementById('btnProbarGratis').classList.remove('hidden'); // Aseguramos que el botón gris esté visible
                             mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
                             loginScreen.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.add('hidden');
@@ -188,8 +186,37 @@
             <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
             <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
             <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
-            <button onclick="closeCustomAlert()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
-                Aceptar
+            
+            <div class="space-y-2">
+                <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
+                    Activar Acceso Ilimitado 👑
+                </a>
+                <button id="btnProbarGratis" onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">
+                    Seguir probando gratis
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100">
+            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⏳</span>
+            </div>
+            <h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
+            </p>
+            
+            <div class="space-y-3">
+                <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Pagar por Transferencia (WhatsApp)
+                </a>
+            </div>
+
+            <button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">
+                Cerrar sesión
             </button>
         </div>
     </div>
@@ -236,33 +263,6 @@
         </div>
     </div>
 
-<div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100">
-            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl">⏳</span>
-            </div>
-            <h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2>
-            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
-            </p>
-            
-            <div class="space-y-3">
-                <a href="LINK_DE_TU_PAGOPAR_AQUI" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" /></svg>
-                    Pagar con Pagopar (Tarjeta / QR)
-                </a>
-                
-                <a href="https://wa.me/595992049430?text=Hola,%20quiero%20activar%20mi%20Ahorro%20Challenge%20por%20transferencia" target="_blank" class="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">
-                    Pagar por Transferencia / WhatsApp
-                </a>
-            </div>
-
-            <button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">
-                Cerrar sesión
-            </button>
-        </div>
-    </div>
-    
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -287,9 +287,7 @@
                         <div class="text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
                         <div class="text-[10px] font-semibold text-primary" id="metaLabel">Meta: 13.780.000 Gs. c/u</div>
                     </div>
-                    <a href="LINK_DE_TU_PAGOPAR_AQUI" target="_blank" id="btnPremiumApp" class="hidden px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-bold hover:bg-emerald-200 transition-colors border border-emerald-200 shadow-sm animate-pulse">
-                    👑 ACTIVAR PRO
-                    </a>
+                    
                     <button onclick="configReto()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
@@ -349,7 +347,6 @@
             }
         }
 
-        // ACTUALIZADO CON PROMESA VISUAL
         window.confirmReset = async () => {
             const seguro = await mostrarConfirm("¿Estás 100% seguro? Esto borrará TODO tu progreso en este dispositivo.");
             if (seguro) {
@@ -358,7 +355,6 @@
             }
         };
 
-        // ACTUALIZADO CON PROMESAS VISUALES
         window.configReto = async () => {
             const m = await mostrarPrompt("¿Cuál es la meta total?", config.meta);
             if (m !== null && m !== "") {
@@ -427,7 +423,6 @@
             }
         };
 
-        // ACTUALIZADO CON PROMESA VISUAL
         window.deleteParticipant = async (n) => {
             const seguro = await mostrarConfirm(`¿Eliminar a ${n}?`);
             if (seguro) {
@@ -466,7 +461,6 @@
             save(); renderGoals(); updateStats();
         };
 
-        // ACTUALIZADO CON PROMESA VISUAL
         window.promptManual = async (semNum) => {
             if (!activeParticipant) return mostrarAlerta("Seleccioná un participante");
             const previsto = userSchedules[activeParticipant][semNum - 1];
