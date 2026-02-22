@@ -137,14 +137,16 @@
                         const diffTime = Math.abs(now - start);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                        if (diffDays > 7) {
-                            // SE ACABÓ EL TIEMPO. Bloqueo automático.
-                            mostrarAlerta("⏳ Tu prueba de 7 días ha terminado. Por favor, comunicate al WhatsApp 0992-049430 para activar tu cuenta por solo 20.000 Gs.");
-                            signOut(auth); // Lo echamos de la app
+                       if (diffDays > 7) {
+                            // SE ACABÓ EL TIEMPO. Mostramos pantalla de pago.
+                            loginScreen.classList.add('hidden');
+                            appContent.classList.add('hidden');
+                            document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
                             // Aún le quedan días. Le avisamos y lo dejamos entrar.
                             mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
                             loginScreen.classList.add('hidden');
+                            document.getElementById('upgradeScreen').classList.add('hidden');
                             appContent.classList.remove('hidden');
                             initApp();
                         }
@@ -228,6 +230,33 @@
         </div>
     </div>
 
+<div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100">
+            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⏳</span>
+            </div>
+            <h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
+            </p>
+            
+            <div class="space-y-3">
+                <a href="LINK_DE_TU_PAGOPAR_AQUI" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" /></svg>
+                    Pagar con Pagopar (Tarjeta / QR)
+                </a>
+                
+                <a href="https://wa.me/595992049430?text=Hola,%20quiero%20activar%20mi%20Ahorro%20Challenge%20por%20transferencia" target="_blank" class="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">
+                    Pagar por Transferencia / WhatsApp
+                </a>
+            </div>
+
+            <button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">
+                Cerrar sesión
+            </button>
+        </div>
+    </div>
+    
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
