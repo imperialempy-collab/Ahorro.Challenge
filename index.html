@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ahorro Challenge</title>
+    <title>Ahorro Challenge - MultiMeta</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
@@ -12,7 +12,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        // Importamos la Base de Datos
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -26,22 +25,18 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app); // Activamos la conexión
+        const db = getFirestore(app); 
         const provider = new GoogleAuthProvider();
 
-
-        // NUEVO CARTEL DE ALERTA/VENTA AMIGABLE
         window.mostrarAlerta = (mensaje) => {
             document.getElementById('customAlertMessage').innerText = mensaje;
             document.getElementById('customAlert').classList.remove('hidden');
         };
 
-        // Función para cerrar la alerta (Probar Gratis)
         window.closeCustomAlert = () => {
             document.getElementById('customAlert').classList.add('hidden');
         };
 
-        // Función para mostrar Confirmación (Aceptar / Cancelar)
         window.mostrarConfirm = (mensaje) => {
             return new Promise((resolve) => {
                 document.getElementById('customConfirmMessage').innerText = mensaje;
@@ -62,7 +57,6 @@
             });
         };
 
-        // Función para pedir ingreso de datos (Prompt)
         window.mostrarPrompt = (mensaje, valorPorDefecto = '') => {
             return new Promise((resolve) => {
                 document.getElementById('customPromptMessage').innerText = mensaje;
@@ -89,7 +83,6 @@
         window.login = () => {
             signInWithPopup(auth, provider).catch(error => {
                 if (error.code === 'auth/user-disabled') {
-                    // Ocultamos botones extra para cuenta suspendida
                     document.getElementById('btnProbarGratis').classList.add('hidden');
                     mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
                 } else {
@@ -103,51 +96,41 @@
             signOut(auth).then(() => location.reload());
         };
 
-        // SISTEMA AUTOMÁTICO DE PRUEBA GRATIS
         onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('loginScreen');
             const appContent = document.getElementById('appContent');
 
             if (user) {
-                // Buscamos al usuario en tu base de datos secreta
                 const userRef = doc(db, "usuarios", user.email);
                 const docSnap = await getDoc(userRef);
 
                 if (!docSnap.exists()) {
-                    // Es su PRIMERA vez. Le creamos su ficha de prueba.
                     await setDoc(userRef, {
                         email: user.email,
                         status: 'prueba',
                         fechaInicio: new Date().toISOString()
                     });
-                    
                     loginScreen.classList.add('hidden');
                     appContent.classList.remove('hidden');
                     initApp(); 
                 } else {
-                    // Ya existe, revisamos cómo está su cuenta
                     const userData = docSnap.data();
-                    
                     if (userData.status === 'pagado') {
-                        // Ya te pagó. Entra directo sin molestias.
                         loginScreen.classList.add('hidden');
                         appContent.classList.remove('hidden');
                         initApp();
                     } else if (userData.status === 'prueba') {
-                        // Está en periodo de prueba, calculamos qué día es
                         const start = new Date(userData.fechaInicio);
                         const now = new Date();
                         const diffTime = Math.abs(now - start);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
                         if (diffDays > 7) {
-                            // SE ACABÓ EL TIEMPO. Mostramos pantalla de pago.
                             loginScreen.classList.add('hidden');
                             appContent.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
-                            // Aún le quedan días. Le avisamos y le damos la opción de comprar.
-                            document.getElementById('btnProbarGratis').classList.remove('hidden'); // Aseguramos que el botón gris esté visible
+                            document.getElementById('btnProbarGratis').classList.remove('hidden');
                             mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
                             loginScreen.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.add('hidden');
@@ -186,7 +169,6 @@
             <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
             <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
             <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
-            
             <div class="space-y-2">
                 <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
                     Activar Acceso Ilimitado 👑
@@ -207,14 +189,12 @@
             <p class="text-slate-600 text-sm mb-6 leading-relaxed">
                 Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
             </p>
-            
             <div class="space-y-3">
                 <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                     Pagar por Transferencia (WhatsApp)
                 </a>
             </div>
-
             <button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">
                 Cerrar sesión
             </button>
@@ -243,11 +223,29 @@
             </div>
         </div>
     </div>
+
+    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3>
+                <button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                Nueva Meta
+            </button>
+
+            <div id="goalsAdminList" class="space-y-3">
+                </div>
+        </div>
+    </div>
     
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
-            
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
             <p class="text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
             <button onclick="login()" class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
@@ -285,10 +283,10 @@
                     <div class="flex-grow">
                         <div class="text-[9px] font-bold uppercase text-slate-400" id="statsTitle">Total Colectivo</div>
                         <div class="text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
-                        <div class="text-[10px] font-semibold text-primary" id="metaLabel">Meta: 13.780.000 Gs. c/u</div>
+                        <div class="text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
                     </div>
                     
-                    <button onclick="configReto()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+                    <button onclick="openGoalsModal()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </button>
                     <button onclick="logout()" class="p-2 bg-rose-50 rounded-full hover:bg-rose-100 text-rose-400">
@@ -303,13 +301,17 @@
                 <aside class="space-y-4">
                     <div class="glass-card rounded-2xl p-4 shadow-sm border border-white">
                         <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
-                            <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600 font-bold">+</button>
+                        <div class="flex flex-col gap-2 mb-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
+                                <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600 font-bold">+</button>
+                            </div>
+                            <select id="goalSelect" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600 outline-none focus:ring-1 focus:ring-primary font-medium">
+                                </select>
                         </div>
                         <div id="participantList" class="space-y-1"></div>
                     </div>
-                    <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500">RESETEAR TODO</button>
+                    <button onclick="confirmReset()" class="w-full py-2 text-[10px] font-bold text-rose-300 hover:text-rose-500">RESETEAR TODO EL SISTEMA</button>
                 </aside>
 
                 <main class="lg:col-span-3">
@@ -320,9 +322,12 @@
     </div>
 
     <script>
-        const DB_KEY = 'ahorro_dinamico_vFinal_Sólida';
-        let config = { meta: 13780000, semanas: 52 };
+        // LA NUEVA LLAVE DEL LABORATORIO (Protege los datos reales)
+        const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
+        
+        let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }];
         let participants = []; 
+        let participantGoals = {}; // { 'JUAN': 'default' }
         let activeParticipant = ""; 
         let statsView = "COLECTIVO";
         let userProgress = {}; 
@@ -331,20 +336,31 @@
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
         function save() { 
-            localStorage.setItem(DB_KEY, JSON.stringify({ config, participants, activeParticipant, statsView, userProgress, userSchedules })); 
+            localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, activeParticipant, statsView, userProgress, userSchedules })); 
         }
 
         function load() {
             const saved = localStorage.getItem(DB_KEY);
             if (saved) {
                 const p = JSON.parse(saved);
-                config = p.config || config;
+                
+                // MIGRACIÓN SILENCIOSA: Si viene de versión vieja (config.meta), lo convertimos a Múltiples Metas
+                if (p.config && (!p.goals || p.goals.length === 0)) {
+                    goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }];
+                    participantGoals = {};
+                    (p.participants || []).forEach(part => { participantGoals[part] = 'default'; });
+                } else {
+                    goals = p.goals || goals;
+                    participantGoals = p.participantGoals || {};
+                }
+                
                 participants = p.participants || [];
                 activeParticipant = p.activeParticipant || "";
                 statsView = p.statsView || "COLECTIVO";
                 userProgress = p.userProgress || {};
                 userSchedules = p.userSchedules || {};
             }
+            updateGoalDropdown();
         }
 
         window.confirmReset = async () => {
@@ -355,33 +371,118 @@
             }
         };
 
-        window.configReto = async () => {
-            const m = await mostrarPrompt("¿Cuál es la meta total?", config.meta);
-            if (m !== null && m !== "") {
-                const s = await mostrarPrompt("¿En cuántas semanas?", config.semanas);
-                if (s !== null && s !== "") {
-                    const seguro = await mostrarConfirm("Se reiniciará el progreso para el nuevo plan. ¿Continuar?");
-                    if (seguro) {
-                        config.meta = parseInt(m.toString().replace(/\D/g,''));
-                        config.semanas = parseInt(s.toString().replace(/\D/g,''));
-                        userProgress = {};
-                        userSchedules = {};
-                        participants.forEach(p => { userProgress[p] = []; generateSchedule(p); });
-                        save();
-                        location.reload();
-                    }
-                }
+        // --- SISTEMA DE GESTIÓN DE METAS ---
+        window.openGoalsModal = () => {
+            renderAdminGoals();
+            document.getElementById('goalsConfigModal').classList.remove('hidden');
+        };
+
+        window.closeGoalsModal = () => {
+            document.getElementById('goalsConfigModal').classList.add('hidden');
+        };
+
+        function updateGoalDropdown() {
+            const select = document.getElementById('goalSelect');
+            select.innerHTML = goals.map(g => `<option value="${g.id}">${g.name} (${formatPYG(g.amount)})</option>`).join('');
+        }
+
+        function renderAdminGoals() {
+            const list = document.getElementById('goalsAdminList');
+            list.innerHTML = goals.map(g => {
+                // Contar cuántos están en esta meta
+                let count = 0;
+                participants.forEach(p => { if(participantGoals[p] === g.id) count++; });
+                
+                return `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">${g.name}</h4>
+                        <p class="text-[10px] text-slate-500 uppercase">${g.weeks} sem • ${formatPYG(g.amount)} • ${count} usuarios</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editGoal('${g.id}')" class="p-1.5 text-slate-400 hover:text-secondary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                        <button onclick="deleteGoal('${g.id}')" class="p-1.5 text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.createNewGoal = async () => {
+            const name = await mostrarPrompt("Nombre de la nueva meta (Ej: Vacaciones):", "Nueva Meta");
+            if (!name) return;
+            const amount = await mostrarPrompt("Monto total a alcanzar (Ej: 5000000):", "5000000");
+            if (!amount) return;
+            const weeks = await mostrarPrompt("Cantidad de semanas (Ej: 24):", "24");
+            if (!weeks) return;
+
+            const nAmount = parseInt(amount.toString().replace(/\D/g,''));
+            const nWeeks = parseInt(weeks.toString().replace(/\D/g,''));
+
+            if (nAmount > 0 && nWeeks > 0) {
+                const newId = 'goal_' + Date.now();
+                goals.push({ id: newId, name: name, amount: nAmount, weeks: nWeeks });
+                save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats();
             }
         };
 
+        window.editGoal = async (id) => {
+            const goal = goals.find(g => g.id === id);
+            if(!goal) return;
+            
+            const name = await mostrarPrompt("Editar Nombre:", goal.name);
+            if (!name) return;
+            const amount = await mostrarPrompt("Editar Monto total:", goal.amount);
+            if (!amount) return;
+            const weeks = await mostrarPrompt("Editar Semanas:", goal.weeks);
+            if (!weeks) return;
+
+            goal.name = name;
+            goal.amount = parseInt(amount.toString().replace(/\D/g,''));
+            goal.weeks = parseInt(weeks.toString().replace(/\D/g,''));
+            
+            // Recalcular schedules para los que están en esta meta (su progreso pagado queda intacto)
+            participants.forEach(p => {
+                if(participantGoals[p] === id) {
+                    generateSchedule(p);
+                    recalculateRemaining(p);
+                }
+            });
+
+            save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats();
+        };
+
+        window.deleteGoal = async (id) => {
+            // Candado de seguridad
+            const inUse = participants.some(p => participantGoals[p] === id);
+            if (inUse) {
+                mostrarAlerta("⚠️ No podés eliminar esta meta porque hay participantes usándola. Primero elimina a los participantes.");
+                return;
+            }
+            if (goals.length === 1) {
+                mostrarAlerta("⚠️ Debe existir al menos una meta en el sistema.");
+                return;
+            }
+
+            const seguro = await mostrarConfirm("¿Eliminar esta meta? No hay usuarios afectados.");
+            if(seguro) {
+                goals = goals.filter(g => g.id !== id);
+                save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats();
+            }
+        };
+
+        // --- SISTEMA CENTRAL MODIFICADO PARA MULTIMETA ---
+        function getGoalForUser(nombreUser) {
+            const goalId = participantGoals[nombreUser] || goals[0].id;
+            return goals.find(g => g.id === goalId) || goals[0];
+        }
+
         function generateSchedule(nombreUser) {
-            const metaTotal = config.meta;
-            const totalSemanas = config.semanas;
+            const userGoal = getGoalForUser(nombreUser);
             let schedule = [];
-            const promedio = metaTotal / totalSemanas;
-            const incremento = (promedio * 0.8) / totalSemanas;
-            for (let i = 1; i <= totalSemanas; i++) {
-                const factor = i - (totalSemanas + 1) / 2;
+            const promedio = userGoal.amount / userGoal.weeks;
+            const incremento = (promedio * 0.8) / userGoal.weeks;
+            for (let i = 1; i <= userGoal.weeks; i++) {
+                const factor = i - (userGoal.weeks + 1) / 2;
                 let monto = promedio + (factor * incremento);
                 schedule.push(Math.ceil(Math.max(monto, 5000) / 1000) * 1000);
             }
@@ -389,18 +490,17 @@
         }
 
         function recalculateRemaining(nombreUser) {
-            const metaTotal = config.meta;
-            const totalSemanas = config.semanas;
+            const userGoal = getGoalForUser(nombreUser);
             const misPagos = userProgress[nombreUser] || [];
             const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0);
-            const semanasRestantes = totalSemanas - misPagos.length;
+            const semanasRestantes = userGoal.weeks - misPagos.length;
             if (semanasRestantes <= 0) return;
-            const restoDinero = metaTotal - yaPagado;
+            const restoDinero = userGoal.amount - yaPagado;
             const promedio = restoDinero / semanasRestantes;
             const incremento = (promedio * 0.8) / semanasRestantes;
             let newSchedule = [...userSchedules[nombreUser]];
             let count = 1;
-            for (let i = 0; i < totalSemanas; i++) {
+            for (let i = 0; i < userGoal.weeks; i++) {
                 const yaEstaPaga = misPagos.some(p => p.semana === (i + 1));
                 if (!yaEstaPaga) {
                     const factor = count - (semanasRestantes + 1) / 2;
@@ -414,20 +514,26 @@
 
         window.addParticipant = () => {
             const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
+            const goalId = document.getElementById('goalSelect').value;
+            
             if (n && !participants.includes(n)) {
                 participants.push(n);
+                participantGoals[n] = goalId;
                 userProgress[n] = [];
                 generateSchedule(n);
                 if (!activeParticipant) activeParticipant = n;
-                document.getElementById('newParticipantInput').value = ''; save(); renderParticipants(); renderGoals(); updateStats();
+                document.getElementById('newParticipantInput').value = ''; 
+                save(); renderParticipants(); renderGoals(); updateStats();
             }
         };
 
         window.deleteParticipant = async (n) => {
-            const seguro = await mostrarConfirm(`¿Eliminar a ${n}?`);
+            const seguro = await mostrarConfirm(`¿Eliminar a ${n}? Se borrarán solo sus pagos.`);
             if (seguro) {
                 participants = participants.filter(p => p !== n);
-                delete userProgress[n]; delete userSchedules[n];
+                delete userProgress[n]; 
+                delete userSchedules[n];
+                delete participantGoals[n];
                 if (activeParticipant === n) activeParticipant = participants[0] || "";
                 save(); renderParticipants(); renderGoals(); updateStats();
             }
@@ -478,80 +584,141 @@
         };
 
         function updateStats() {
-            let total = 0;
-            Object.values(userProgress).forEach(pagos => pagos.forEach(p => total += p.pagado));
+            let totalGeneral = 0;
+            Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado));
+            
             if (statsView === 'COLECTIVO') {
-                document.getElementById('statsTitle').innerText = "Total Colectivo";
-                document.getElementById('metaLabel').innerText = `Meta: ${formatPYG(config.meta)} c/u`;
-                const p = (total / (config.meta * (participants.length || 1))) * 100;
+                document.getElementById('statsTitle').innerText = "Gran Total Colectivo";
+                document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`;
+                
+                // Calculamos el porcentaje general sumando los objetivos de todos los activos
+                let totalObjetivoGlobal = 0;
+                participants.forEach(p => { totalObjetivoGlobal += getGoalForUser(p).amount; });
+                
+                const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0;
                 document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
                 document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
+                document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral);
             } else {
+                if(!activeParticipant) return;
+                const userGoal = getGoalForUser(activeParticipant);
                 const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0);
-                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant}`;
-                const falta = config.meta - miTotal;
+                
+                document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`;
+                const falta = userGoal.amount - miTotal;
                 document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!";
-                const p = (miTotal / config.meta) * 100;
+                const p = (miTotal / userGoal.amount) * 100;
                 document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%';
                 document.getElementById('globalProgressCircle').style.strokeDashoffset = 131.9 - (Math.min(p, 100) / 100 * 131.9);
-                total = miTotal;
+                document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal);
             }
-            document.getElementById('totalSavedCounter').innerText = formatPYG(total);
         }
 
         function renderGoals() {
             const container = document.getElementById('goalsList');
             let html = "";
-            for (let i = 1; i <= config.semanas; i++) {
-                const globalCompletions = [];
-                participants.forEach(p => {
-                    const pago = (userProgress[p] || []).find(up => up.semana === i);
-                    if (pago) globalCompletions.push({ name: p, ...pago });
+
+            if (statsView === 'COLECTIVO') {
+                // VISTA DE RESUMEN DE METAS
+                html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                
+                goals.forEach(g => {
+                    let totalGoalSaved = 0;
+                    let peopleInGoal = 0;
+                    participants.forEach(p => {
+                        if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) {
+                            peopleInGoal++;
+                            const pagos = userProgress[p] || [];
+                            totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0);
+                        }
+                    });
+                    
+                    if(peopleInGoal === 0) return; // Solo muestra metas que tienen gente
+                    
+                    let targetTotal = g.amount * peopleInGoal;
+                    let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0;
+
+                    html += `
+                    <div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div>
+                        <h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participantes • Meta: ${formatPYG(g.amount)} c/u</p>
+                        
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span>
+                            <span class="text-sm font-bold text-primary">${Math.round(progress)}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div>
+                        </div>
+                    </div>`;
                 });
-                const hechoPorMi = activeParticipant && (userProgress[activeParticipant] || []).some(up => up.semana === i);
-                const montoMostrado = activeParticipant ? (userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (config.meta / config.semanas)) : (config.meta / config.semanas);
-                html += `
-                <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
-                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
-                    <div class="flex-grow">
-                        <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div>
-                        <div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div>
-                    </div>
-                    <div class="flex flex-col items-end gap-1 px-1">
-                        ${globalCompletions.map(c => `
-                            <div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm">
-                                <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${c.name[0]}</div>
-                                <span class="text-[7px] font-bold text-slate-600 uppercase">${c.fecha} • ${formatPYG(c.pagado)}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="flex gap-1">
-                        <button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
-                            ${hechoPorMi ? 'LISTO' : 'MARCAR'}
-                        </button>
-                    </div>
-                </div>`;
+                html += `</div>`;
+                container.innerHTML = html;
+            } else {
+                // VISTA INDIVIDUAL (Lista de semanas del usuario activo)
+                if (!activeParticipant) {
+                    container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">Seleccioná un participante a la izquierda para ver sus semanas.</div>`;
+                    return;
+                }
+                const userGoal = getGoalForUser(activeParticipant);
+                
+                for (let i = 1; i <= userGoal.weeks; i++) {
+                    const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i);
+                    const hechoPorMi = !!pago;
+                    const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks);
+                    
+                    html += `
+                    <div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}">
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div>
+                        <div class="flex-grow">
+                            <div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div>
+                            <div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 px-1">
+                            ${hechoPorMi ? `
+                                <div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm">
+                                    <div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div>
+                                    <span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">
+                                ${hechoPorMi ? 'LISTO' : 'MARCAR'}
+                            </button>
+                        </div>
+                    </div>`;
+                }
+                container.innerHTML = html;
             }
-            container.innerHTML = html;
         }
 
         function renderParticipants() {
             const list = document.getElementById('participantList');
-            if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center">Agregá un nombre arriba</p>`; return; }
-            list.innerHTML = participants.map(p => `
+            if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; }
+            list.innerHTML = participants.map(p => {
+                const goal = getGoalForUser(p);
+                return `
                 <div class="flex items-center bg-white/50 rounded-lg p-1 mb-1">
-                    <button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-2 text-xs font-bold rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">${p}</button>
+                    <button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}">
+                        <div class="text-xs font-bold">${p}</div>
+                        <div class="text-[9px] opacity-80 uppercase">${goal.name}</div>
+                    </button>
                     <button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         function scrollToNext() {
             if (!activeParticipant) return;
             const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1;
-            if (nextIndex <= config.semanas) {
+            const userGoal = getGoalForUser(activeParticipant);
+            if (nextIndex <= userGoal.weeks) {
                 setTimeout(() => {
                     const el = document.getElementById(`goal-${nextIndex}`);
                     if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'});
