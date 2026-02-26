@@ -1,6 +1,6 @@
 {
   "name": "Ahorro Challenge (MultiMeta)",
-  "short_name": "Ahorro PRO",
+  "short_name": "Ahorro Challenge",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8fafc",
