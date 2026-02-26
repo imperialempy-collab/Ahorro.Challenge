@@ -102,7 +102,7 @@
             const appContent = document.getElementById('appContent');
 
             if (user) {
-                const userRef = doc(db, "usuarios", user.email);
+                const userRef = doc(db, "usuarios_multimeta", user.email);
                 const docSnap = await getDoc(userRef);
 
                 if (!docSnap.exists()) {
