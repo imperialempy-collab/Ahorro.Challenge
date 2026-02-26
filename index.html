@@ -409,11 +409,13 @@
         }
 
         window.createNewGoal = async () => {
-            const name = await mostrarPrompt("Nombre de la nueva meta (Ej: Vacaciones):", "Nueva Meta");
+            // Le pedimos texto para el nombre
+            const name = await mostrarPrompt("Nombre de la nueva meta (Ej: Vacaciones):", "Nueva Meta", "text");
             if (!name) return;
-            const amount = await mostrarPrompt("Monto total a alcanzar (Ej: 5000000):", "5000000");
+            // Le pedimos números para el resto
+            const amount = await mostrarPrompt("Monto total a alcanzar (Ej: 5000000):", "5000000", "number");
             if (!amount) return;
-            const weeks = await mostrarPrompt("Cantidad de semanas (Ej: 24):", "24");
+            const weeks = await mostrarPrompt("Cantidad de semanas (Ej: 24):", "24", "number");
             if (!weeks) return;
 
             const nAmount = parseInt(amount.toString().replace(/\D/g,''));
@@ -430,18 +432,17 @@
             const goal = goals.find(g => g.id === id);
             if(!goal) return;
             
-            const name = await mostrarPrompt("Editar Nombre:", goal.name);
+            const name = await mostrarPrompt("Editar Nombre:", goal.name, "text");
             if (!name) return;
-            const amount = await mostrarPrompt("Editar Monto total:", goal.amount);
+            const amount = await mostrarPrompt("Editar Monto total:", goal.amount, "number");
             if (!amount) return;
-            const weeks = await mostrarPrompt("Editar Semanas:", goal.weeks);
+            const weeks = await mostrarPrompt("Editar Semanas:", goal.weeks, "number");
             if (!weeks) return;
 
             goal.name = name;
             goal.amount = parseInt(amount.toString().replace(/\D/g,''));
             goal.weeks = parseInt(weeks.toString().replace(/\D/g,''));
             
-            // Recalcular schedules para los que están en esta meta (su progreso pagado queda intacto)
             participants.forEach(p => {
                 if(participantGoals[p] === id) {
                     generateSchedule(p);
@@ -568,10 +569,11 @@
             save(); renderGoals(); updateStats();
         };
 
-        window.promptManual = async (semNum) => {
+       window.promptManual = async (semNum) => {
             if (!activeParticipant) return mostrarAlerta("Seleccioná un participante");
             const previsto = userSchedules[activeParticipant][semNum - 1];
-            const val = await mostrarPrompt("Ingresá el monto real:", previsto);
+            // Acá también nos aseguramos de que abra el teclado numérico
+            const val = await mostrarPrompt("Ingresá el monto real:", previsto, "number");
             if (val !== null && val !== "") {
                 const num = parseInt(val.toString().replace(/\D/g,''));
                 if (num > 0) {
