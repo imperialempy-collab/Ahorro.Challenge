@@ -57,10 +57,11 @@
             });
         };
 
-        window.mostrarPrompt = (mensaje, valorPorDefecto = '') => {
+        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => {
             return new Promise((resolve) => {
                 document.getElementById('customPromptMessage').innerText = mensaje;
                 const input = document.getElementById('customPromptInput');
+                input.type = tipoInput; // <-- ACÁ ESTÁ LA MAGIA: Cambia el teclado dinámicamente
                 input.value = valorPorDefecto;
                 const modal = document.getElementById('customPrompt');
                 const btnOk = document.getElementById('btnPromptOk');
