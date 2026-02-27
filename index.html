@@ -62,7 +62,6 @@
                 document.getElementById('customPromptMessage').innerText = mensaje;
                 const input = document.getElementById('customPromptInput');
                 
-                // --- INICIO MEJORA: SEPARADOR DE MILES EN VIVO ---
                 input.type = tipoInput === 'number' ? 'text' : tipoInput;
                 input.inputMode = tipoInput === 'number' ? 'numeric' : 'text';
                 
@@ -81,7 +80,6 @@
                 } else {
                     input.value = valorPorDefecto;
                 }
-                // --- FIN MEJORA: SEPARADOR DE MILES EN VIVO ---
 
                 const modal = document.getElementById('customPrompt');
                 const btnOk = document.getElementById('btnPromptOk');
@@ -120,6 +118,8 @@
         onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('loginScreen');
             const appContent = document.getElementById('appContent');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
 
             if (user) {
                 const userRef = doc(db, "usuarios_multimeta", user.email);
@@ -161,8 +161,11 @@
                     }
                 }
             } else {
+                // SI EL USUARIO NO TIENE SESIÓN, RECIÉN AQUÍ MOSTRAMOS EL BOTÓN
                 loginScreen.classList.remove('hidden');
                 appContent.classList.add('hidden');
+                if (loadingSpinner) loadingSpinner.classList.add('hidden');
+                if (googleLoginBtn) googleLoginBtn.classList.remove('hidden');
             }
         });
     </script>
@@ -344,7 +347,15 @@
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
             <p class="text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
-            <button onclick="login()" class="w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
+            
+            <div id="loadingSpinner" class="flex justify-center items-center py-4">
+                <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
                 <svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
                     <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -465,7 +476,6 @@
             }
         };
 
-        // --- MANEJO DE LA NUEVA VENTANA DE PARTICIPANTES ---
         window.openAddParticipantModal = () => {
             document.getElementById('newParticipantInput').value = '';
             updateGoalDropdown();
@@ -495,7 +505,7 @@
                 renderParticipants(); 
                 renderGoals(); 
                 updateStats();
-                closeAddParticipantModal(); // Se cierra tras agregar con éxito
+                closeAddParticipantModal(); 
             } else if (participants.includes(n)) {
                 mostrarAlerta("Este participante ya existe.");
             } else {
@@ -503,7 +513,6 @@
             }
         };
 
-        // --- SISTEMA DE GESTIÓN DE METAS ---
         window.openGoalsModal = () => {
             renderAdminGoals();
             document.getElementById('goalsConfigModal').classList.remove('hidden');
@@ -543,13 +552,11 @@
         window.createNewGoal = async () => {
             const name = await mostrarPrompt("Nombre de la nueva meta (Ej: Vacaciones):", "Nueva Meta", "text");
             if (!name) return;
-            // Al usar 'number' ahora saldrá el formateador de miles
             const amount = await mostrarPrompt("Monto total a alcanzar:", "", "number");
             if (!amount) return;
             const weeks = await mostrarPrompt("Cantidad de semanas (Ej: 24):", "24", "number");
             if (!weeks) return;
 
-            // Como los campos ahora devuelven texto con puntitos, eliminamos cualquier caracter que no sea número
             const nAmount = parseInt(amount.toString().replace(/\D/g,''));
             const nWeeks = parseInt(weeks.toString().replace(/\D/g,''));
 
@@ -603,7 +610,6 @@
             }
         };
 
-        // --- SISTEMA DE ALARMA CON CALENDARIO SILENCIOSO ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -791,19 +797,6 @@
             }
             userSchedules[nombreUser] = newSchedule;
         }
-
-        window.deleteParticipant = async (n) => {
-            const seguro = await mostrarConfirm(`¿Eliminar a ${n}? Se borrarán solo sus pagos.`);
-            if (seguro) {
-                participants = participants.filter(p => p !== n);
-                delete userProgress[n]; 
-                delete userSchedules[n];
-                delete participantGoals[n];
-                delete userReminders[n];
-                if (activeParticipant === n) activeParticipant = participants[0] || "";
-                save(); renderParticipants(); renderGoals(); updateStats();
-            }
-        };
 
         window.setActiveParticipant = (n) => { 
             activeParticipant = n; 
