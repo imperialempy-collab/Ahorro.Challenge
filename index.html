@@ -16,9 +16,9 @@
         await OneSignal.init({
           appId: "1356edfe-3d7e-410e-bbed-34d9fe077b5f",
           notifyButton: { enable: false },
-          // ESTAS 2 LÍNEAS ARREGLAN EL PROBLEMA DE GITHUB PAGES:
-          serviceWorkerParam: { scope: "/Ahorro.Challenge/" },
-          serviceWorkerPath: "/Ahorro.Challenge/OneSignalSDKWorker.js"
+          // LA RUTA EXACTA DE TU GITHUB (Sin puntos):
+          serviceWorkerParam: { scope: "/AhorroChallenge/" },
+          serviceWorkerPath: "/AhorroChallenge/OneSignalSDKWorker.js"
         });
       });
     </script>
