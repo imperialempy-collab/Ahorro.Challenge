@@ -521,7 +521,7 @@
             }
         };
 
-        // --- SISTEMA DE ALARMA CON CALENDARIO NATIVO ---
+        // --- SISTEMA DE ALARMA CON CALENDARIO INTELIGENTE ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -554,75 +554,66 @@
             }
         };
 
-        // ESTA ES LA FUNCIÓN MÁGICA QUE GENERA EL CALENDARIO
+        // ESTA ES LA FUNCIÓN INTELIGENTE QUE NO DESCARGA ARCHIVOS
         window.saveReminder = () => {
             const type = document.getElementById('reminderType').value;
             const day = document.getElementById('reminderDay').value;
             const date = document.getElementById('reminderDate').value;
             const time = document.getElementById('reminderTime').value;
 
-            // Conseguir los datos del usuario para el mensaje
             const userGoal = getGoalForUser(activeParticipant);
-            const misPagos = userProgress[activeParticipant] || [];
-            const nextIndex = misPagos.length; // El próximo pago a realizar
-            
-            let montoMostrado = userGoal.amount / userGoal.weeks; // Promedio por defecto
-            if (userSchedules[activeParticipant] && userSchedules[activeParticipant][nextIndex]) {
-                montoMostrado = userSchedules[activeParticipant][nextIndex];
-            }
-            const montoTexto = formatPYG(montoMostrado);
 
-            // TEXTOS DEL CALENDARIO CON EMOJIS
+            // 1. TEXTOS SIN MONTO (Para que sea genérico y siempre real)
             const titulo = `🐷 Depósito de ${activeParticipant} 💰`;
-            const descripcion = `¡Llegó el día! Te toca depositar aprox. ${montoTexto} para tu meta: ${userGoal.name}.\\n\\nEntrá a tu app para marcarlo como listo:\\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`;
+            const descripcion = `¡Llegó el día! Te toca hacer el depósito para tu meta: ${userGoal.name}.\n\nEntrá a tu app para marcarlo como listo:\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`;
 
-            // Configurar la fecha de inicio
+            // 2. CONFIGURAR FECHAS
             let startDate = new Date();
             const [hours, minutes] = time.split(':');
             startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-            let rrule = '';
+            let gcalRecur = '';
+            let icalRecur = '';
+
             if (type === 'semanal') {
-                const dias = {'Lunes':'MO', 'Martes':'TU', 'Miércoles':'WE', 'Jueves':'TH', 'Viernes':'FR', 'Sábado':'SA', 'Domingo':'SU'};
-                const rday = dias[day];
-                rrule = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`;
+                const diasICal = {'Lunes':'MO', 'Martes':'TU', 'Miércoles':'WE', 'Jueves':'TH', 'Viernes':'FR', 'Sábado':'SA', 'Domingo':'SU'};
+                const rday = diasICal[day];
+                icalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`;
+                gcalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`;
                 
-                // Mover al próximo día de la semana elegido
                 const dayMap = {'Domingo':0, 'Lunes':1, 'Martes':2, 'Miércoles':3, 'Jueves':4, 'Viernes':5, 'Sábado':6};
                 let distance = (dayMap[day] + 7 - startDate.getDay()) % 7;
-                if (distance === 0) distance = 7; // Si es hoy, arranca la próxima semana
+                if (distance === 0) distance = 7; 
                 startDate.setDate(startDate.getDate() + distance);
-
             } else {
-                rrule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`;
+                icalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`;
+                gcalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`;
                 let targetDate = parseInt(date);
                 if (startDate.getDate() >= targetDate) {
-                    startDate.setMonth(startDate.getMonth() + 1); // Si ya pasó, arranca el mes que viene
+                    startDate.setMonth(startDate.getMonth() + 1);
                 }
                 startDate.setDate(targetDate);
             }
 
-            const formatDate = (d) => { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; };
-            
-            const startStr = formatDate(startDate);
-            const endDate = new Date(startDate.getTime() + 60*60*1000); // 1 hora de evento
-            const endStr = formatDate(endDate);
+            const formatICS = (d) => { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; };
+            const startStr = formatICS(startDate);
+            const endDate = new Date(startDate.getTime() + 60*60*1000); 
+            const endStr = formatICS(endDate);
 
-            // CREACIÓN DEL ARCHIVO UNIVERSAL
-            const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${rrule}\nDESCRIPTION:${descripcion}\nEND:VEVENT\nEND:VCALENDAR`;
+            // 3. DETECTAR EL DISPOSITIVO DEL CLIENTE
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-            // Disparar la descarga/Apertura del calendario
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Alarma_${activeParticipant}.ics`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            if (isIOS) {
+                // MÉTODO APPLE (iPhone): Levanta el calendario nativo desde la memoria, sin descargar archivo
+                const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${icalRecur}\nDESCRIPTION:${descripcion.replace(/\n/g, '\\n')}\nEND:VEVENT\nEND:VCALENDAR`;
+                window.location.href = 'data:text/calendar;charset=utf8,' + encodeURIComponent(icsContent);
+            } else {
+                // MÉTODO ANDROID / PC: Abre enlace directo de Google Calendar
+                const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(descripcion)}&recur=${encodeURIComponent(gcalRecur)}`;
+                window.open(gcalUrl, '_blank');
+            }
 
-            // Guardar para que quede la campanita pintada en la lista
+            // 4. GUARDAR EN TU BASE DE DATOS Y CERRAR VENTANA
             userReminders[activeParticipant] = { type, day, date, time };
             save();
             closeReminderModal();
