@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
     
-   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
@@ -22,7 +22,7 @@
         });
       });
     </script>
-        <script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -115,7 +115,6 @@
             const appContent = document.getElementById('appContent');
 
             if (user) {
-                // APUNTAMOS A LA LISTA SEPARADA PARA QUE NO CHOQUE CON LA APP ORIGINAL
                 const userRef = doc(db, "usuarios_multimeta", user.email);
                 const docSnap = await getDoc(userRef);
 
@@ -395,7 +394,7 @@
         let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }];
         let participants = []; 
         let participantGoals = {}; 
-        let userReminders = {}; // NUEVO: Guarda a qué hora/día suena la alarma de cada uno
+        let userReminders = {}; 
         let activeParticipant = ""; 
         let statsView = "COLECTIVO";
         let userProgress = {}; 
@@ -535,14 +534,13 @@
             }
         };
 
-        // --- SISTEMA DE RECORDATORIOS (NUEVO CON ONESIGNAL) ---
+        // --- SISTEMA DE RECORDATORIOS ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
                 return;
             }
             
-            // Cargar datos previos si existen
             const savedReminders = userReminders[activeParticipant] || { type: 'semanal', day: 'Lunes', date: '5', time: '10:00' };
             
             document.getElementById('reminderType').value = savedReminders.type;
@@ -550,7 +548,7 @@
             document.getElementById('reminderDate').value = savedReminders.date;
             document.getElementById('reminderTime').value = savedReminders.time;
             
-            toggleReminderType(); // Mostrar ocultar campos
+            toggleReminderType(); 
             document.getElementById('reminderModal').classList.remove('hidden');
         };
 
@@ -579,7 +577,6 @@
             save();
             closeReminderModal();
             
-            // LA MAGIA DE ONESIGNAL: Llama al permiso SOLO cuando el usuario guarda la alarma
             if (window.OneSignalDeferred) {
                 window.OneSignalDeferred.push(async function(OneSignal) {
                     await OneSignal.Notifications.requestPermission();
@@ -663,7 +660,6 @@
             }
         };
 
-        // SALTO AUTOMÁTICO A INDIVIDUAL
         window.setActiveParticipant = (n) => { 
             activeParticipant = n; 
             statsView = 'INDIVIDUAL'; 
@@ -721,7 +717,6 @@
             let totalGeneral = 0;
             Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado));
             
-            // Adaptación del círculo para el tamaño en móviles (radio 18 = 113)
             const strokeVal = 113;
 
             if (statsView === 'COLECTIVO') {
@@ -837,7 +832,6 @@
             if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; }
             list.innerHTML = participants.map(p => {
                 const goal = getGoalForUser(p);
-                // Si tiene un recordatorio guardado, le ponemos un indicativo de alarma pequeñito
                 const hasReminder = userReminders[p] ? '🔔' : '';
                 return `
                 <div class="flex items-center bg-white/50 rounded-lg p-1 mb-1">
@@ -870,11 +864,6 @@
             updateStats();
         };
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
-            });
-        }
     </script>
 </body>
 </html>
