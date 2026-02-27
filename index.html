@@ -9,6 +9,16 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
     
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "1356edfe-3d7e-410e-bbed-34d9fe077b5f",
+          notifyButton: { enable: false } // Mantiene la app limpia, sin botones flotantes
+        });
+      });
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -522,7 +532,7 @@
             }
         };
 
-        // --- SISTEMA DE RECORDATORIOS (NUEVO) ---
+        // --- SISTEMA DE RECORDATORIOS (NUEVO CON ONESIGNAL) ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -556,7 +566,7 @@
             }
         };
 
-        window.saveReminder = () => {
+        window.saveReminder = async () => {
             const type = document.getElementById('reminderType').value;
             const day = document.getElementById('reminderDay').value;
             const date = document.getElementById('reminderDate').value;
@@ -566,7 +576,14 @@
             save();
             closeReminderModal();
             
-            mostrarAlerta(`✅ ¡Preferencia Guardada para ${activeParticipant}! En el próximo paso conectaremos OneSignal para activar el envío real.`);
+            // LA MAGIA DE ONESIGNAL: Llama al permiso SOLO cuando el usuario guarda la alarma
+            if (window.OneSignalDeferred) {
+                window.OneSignalDeferred.push(async function(OneSignal) {
+                    await OneSignal.Notifications.requestPermission();
+                });
+            }
+            
+            mostrarAlerta(`✅ ¡Alarma guardada! Asegurate de darle a "Permitir" si el navegador te pide permiso para notificaciones.`);
         };
 
 
