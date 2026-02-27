@@ -9,20 +9,20 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
     
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
           appId: "1356edfe-3d7e-410e-bbed-34d9fe077b5f",
           notifyButton: { enable: false },
-          // LA RUTA EXACTA DE TU GITHUB (Sin puntos):
-          serviceWorkerParam: { scope: "/AhorroChallenge/" },
-          serviceWorkerPath: "/AhorroChallenge/OneSignalSDKWorker.js"
+          // LA RUTA EXACTA CON EL PUNTO:
+          serviceWorkerParam: { scope: "/Ahorro.Challenge/" },
+          serviceWorkerPath: "/Ahorro.Challenge/OneSignalSDKWorker.js"
         });
       });
     </script>
-    <script type="module">
+        <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
