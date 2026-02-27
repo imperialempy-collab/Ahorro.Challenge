@@ -9,19 +9,6 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
     
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "1356edfe-3d7e-410e-bbed-34d9fe077b5f",
-          notifyButton: { enable: false },
-          // RUTAS ABSOLUTAS PARA GITHUB PAGES:
-          serviceWorkerParam: { scope: "/Ahorro.Challenge/" },
-          serviceWorkerPath: "/Ahorro.Challenge/sw.js"
-        });
-      });
-    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -265,7 +252,7 @@
                 </button>
             </div>
             
-            <p class="text-sm text-slate-500 mb-6">Configurá cuándo querés que te avisemos para tu próximo depósito.</p>
+            <p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p>
 
             <div class="space-y-4">
                 <div>
@@ -299,8 +286,9 @@
                     <input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
                 </div>
 
-                <button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
-                    Guardar Alarma
+                <button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
+                    Abrir Calendario
                 </button>
             </div>
         </div>
@@ -349,7 +337,7 @@
                         <div class="text-[9px] md:text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
                     </div>
                     
-                    <button onclick="openReminderModal()" class="p-2 bg-amber-50 rounded-full hover:bg-amber-100 text-amber-500 transition-colors" title="Configurar Alarma">
+                    <button id="btnCampanita" onclick="openReminderModal()" class="p-2 bg-amber-50 rounded-full hover:bg-amber-100 text-amber-500 transition-colors" title="Configurar Alarma">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                     </button>
                     <button onclick="openGoalsModal()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Gestor de Metas">
@@ -388,7 +376,6 @@
     </div>
 
     <script>
-        // CAJA FUERTE DEL LABORATORIO
         const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
         
         let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }];
@@ -534,7 +521,7 @@
             }
         };
 
-        // --- SISTEMA DE RECORDATORIOS ---
+        // --- SISTEMA DE ALARMA CON CALENDARIO NATIVO ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -567,25 +554,80 @@
             }
         };
 
-        window.saveReminder = async () => {
+        // ESTA ES LA FUNCIÓN MÁGICA QUE GENERA EL CALENDARIO
+        window.saveReminder = () => {
             const type = document.getElementById('reminderType').value;
             const day = document.getElementById('reminderDay').value;
             const date = document.getElementById('reminderDate').value;
             const time = document.getElementById('reminderTime').value;
 
+            // Conseguir los datos del usuario para el mensaje
+            const userGoal = getGoalForUser(activeParticipant);
+            const misPagos = userProgress[activeParticipant] || [];
+            const nextIndex = misPagos.length; // El próximo pago a realizar
+            
+            let montoMostrado = userGoal.amount / userGoal.weeks; // Promedio por defecto
+            if (userSchedules[activeParticipant] && userSchedules[activeParticipant][nextIndex]) {
+                montoMostrado = userSchedules[activeParticipant][nextIndex];
+            }
+            const montoTexto = formatPYG(montoMostrado);
+
+            // TEXTOS DEL CALENDARIO CON EMOJIS
+            const titulo = `🐷 Depósito de ${activeParticipant} 💰`;
+            const descripcion = `¡Llegó el día! Te toca depositar aprox. ${montoTexto} para tu meta: ${userGoal.name}.\\n\\nEntrá a tu app para marcarlo como listo:\\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`;
+
+            // Configurar la fecha de inicio
+            let startDate = new Date();
+            const [hours, minutes] = time.split(':');
+            startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+            let rrule = '';
+            if (type === 'semanal') {
+                const dias = {'Lunes':'MO', 'Martes':'TU', 'Miércoles':'WE', 'Jueves':'TH', 'Viernes':'FR', 'Sábado':'SA', 'Domingo':'SU'};
+                const rday = dias[day];
+                rrule = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`;
+                
+                // Mover al próximo día de la semana elegido
+                const dayMap = {'Domingo':0, 'Lunes':1, 'Martes':2, 'Miércoles':3, 'Jueves':4, 'Viernes':5, 'Sábado':6};
+                let distance = (dayMap[day] + 7 - startDate.getDay()) % 7;
+                if (distance === 0) distance = 7; // Si es hoy, arranca la próxima semana
+                startDate.setDate(startDate.getDate() + distance);
+
+            } else {
+                rrule = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`;
+                let targetDate = parseInt(date);
+                if (startDate.getDate() >= targetDate) {
+                    startDate.setMonth(startDate.getMonth() + 1); // Si ya pasó, arranca el mes que viene
+                }
+                startDate.setDate(targetDate);
+            }
+
+            const formatDate = (d) => { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; };
+            
+            const startStr = formatDate(startDate);
+            const endDate = new Date(startDate.getTime() + 60*60*1000); // 1 hora de evento
+            const endStr = formatDate(endDate);
+
+            // CREACIÓN DEL ARCHIVO UNIVERSAL
+            const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${rrule}\nDESCRIPTION:${descripcion}\nEND:VEVENT\nEND:VCALENDAR`;
+
+            // Disparar la descarga/Apertura del calendario
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Alarma_${activeParticipant}.ics`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Guardar para que quede la campanita pintada en la lista
             userReminders[activeParticipant] = { type, day, date, time };
             save();
             closeReminderModal();
-            
-            if (window.OneSignalDeferred) {
-                window.OneSignalDeferred.push(async function(OneSignal) {
-                    await OneSignal.Notifications.requestPermission();
-                });
-            }
-            
-            mostrarAlerta(`✅ ¡Alarma guardada! Asegurate de darle a "Permitir" si el navegador te pide permiso para notificaciones.`);
+            renderParticipants(); 
         };
-
 
         // --- SISTEMA CENTRAL MODIFICADO PARA MULTIMETA ---
         function getGoalForUser(nombreUser) {
@@ -864,10 +906,9 @@
             updateStats();
         };
 
-        // LA INSTALACIÓN DE LA APPWEB AHORA CONVIVE CON ONESIGNAL EN PAZ
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Ahorro.Challenge/sw.js', { scope: '/Ahorro.Challenge/' }).catch((err) => console.log('Error SW:', err));
+                navigator.serviceWorker.register('sw.js').catch(() => {});
             });
         }
     </script>
