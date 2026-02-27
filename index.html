@@ -425,7 +425,6 @@
             }
         };
 
-        // --- SISTEMA DE GESTIÓN DE METAS ---
         window.openGoalsModal = () => {
             renderAdminGoals();
             document.getElementById('goalsConfigModal').classList.remove('hidden');
@@ -521,7 +520,6 @@
             }
         };
 
-        // --- SISTEMA DE ALARMA CON CALENDARIO SILENCIOSO (SIN DESCARGAS) ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -562,11 +560,9 @@
 
             const userGoal = getGoalForUser(activeParticipant);
 
-            // 1. TEXTOS GENÉRICOS (Sin monto para que no quede desfasado si cambian los cálculos)
             const titulo = `🐷 Depósito de ${activeParticipant} 💰`;
             const descripcion = `¡Llegó el día! Te toca hacer el depósito para tu meta: ${userGoal.name}.\n\nEntrá a tu app para marcarlo como listo:\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`;
 
-            // 2. CONFIGURAR FECHAS
             let startDate = new Date();
             const [hours, minutes] = time.split(':');
             startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
@@ -599,46 +595,37 @@
             const endDate = new Date(startDate.getTime() + 60*60*1000); 
             const endStr = formatICS(endDate);
 
-            // 3. DETECTAR EL DISPOSITIVO DEL CLIENTE PARA EVITAR DESCARGAS MOLESTAS
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
             if (isIOS) {
-                // MÉTODO APPLE (iPhone): Levanta el calendario nativo desde la memoria (Sin archivo visible)
                 const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${icalRecur}\nDESCRIPTION:${descripcion.replace(/\n/g, '\\n')}\nEND:VEVENT\nEND:VCALENDAR`;
                 window.location.href = 'data:text/calendar;charset=utf8,' + encodeURIComponent(icsContent);
             } else {
-                // MÉTODO ANDROID / PC: Abre enlace directo de Google Calendar
                 const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(descripcion)}&recur=${encodeURIComponent(gcalRecur)}`;
                 window.open(gcalUrl, '_blank');
             }
 
-            // 4. GUARDAR EN TU BASE DE DATOS Y CERRAR VENTANA
             userReminders[activeParticipant] = { type, day, date, time };
             save();
             closeReminderModal();
             renderParticipants(); 
         };
 
-        // --- NUEVO ALGORITMO: PROGRESIÓN PONDERADA (ENTRENADOR FINANCIERO) ---
         function getGoalForUser(nombreUser) {
             const goalId = participantGoals[nombreUser] || goals[0].id;
             return goals.find(g => g.id === goalId) || goals[0];
         }
 
-        // Esta función crea el "Traje a medida" generando los pesos de cada semana
         function calculateWeights(totalWeeks) {
             let weights = [];
-            // Fase de Hábito: el primer 25% del tiempo (ej: primeras 13 semanas de 52)
             let habitWeeks = Math.floor(totalWeeks * 0.25);
             if (habitWeeks < 1) habitWeeks = 1; 
             
             for (let i = 1; i <= totalWeeks; i++) {
                 if (i <= habitWeeks) {
-                    weights.push(i); // Sube 1 punto de esfuerzo cada semana
+                    weights.push(i); 
                 } else {
-                    // Fase de Saltos: Agrupamos en bloques de 4 semanas (1 mes)
                     let blockNumber = Math.floor((i - habitWeeks - 1) / 4) + 1;
-                    // Salto de esfuerzo (+3 puntos de golpe por cada mes nuevo)
                     weights.push(habitWeeks + (blockNumber * 3));
                 }
             }
@@ -656,10 +643,18 @@
             let currentSum = 0;
             for (let i = 0; i < userGoal.weeks; i++) {
                 if (i === userGoal.weeks - 1) {
-                    // La última semana cuadra matemáticamente el saldo exacto para no fallar ni por 1 Gs.
+                    // Única semana que será "suelta" para absorber todo y cuadrar la suma perfecta
                     schedule.push(userGoal.amount - currentSum);
                 } else {
-                    let amount = Math.ceil((baseUnit * weights[i]) / 1000) * 1000;
+                    // MAGIA NUEVA: Redondea al billete de 5.000 más cercano (ej: 15k, 20k, 55k)
+                    let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000;
+                    if (amount < 5000) amount = 5000; // Mínimo absoluto para que no dé 0
+                    
+                    // Seguridad: evitar pasarnos del total antes de la recta final
+                    if (currentSum + amount >= userGoal.amount) {
+                        amount = Math.max(0, userGoal.amount - currentSum - 5000); 
+                    }
+                    
                     schedule.push(amount);
                     currentSum += amount;
                 }
@@ -676,7 +671,6 @@
             let newSchedule = [...userSchedules[nombreUser]];
             let weights = calculateWeights(userGoal.weeks);
             
-            // Detectar qué semanas faltan pagar
             let unpaidIndices = [];
             for (let i = 0; i < userGoal.weeks; i++) {
                 const yaEstaPaga = misPagos.some(p => p.semana === (i + 1));
@@ -691,7 +685,6 @@
                  return;
             }
 
-            // Sumar los "pesos" que quedan y repartir el nuevo saldo
             let remainingWeightSum = unpaidIndices.reduce((sum, idx) => sum + weights[idx], 0);
             let newBaseUnit = restoDinero / remainingWeightSum;
             
@@ -699,10 +692,16 @@
             for (let j = 0; j < unpaidIndices.length; j++) {
                 let idx = unpaidIndices[j];
                 if (j === unpaidIndices.length - 1) {
-                    // Ajuste exacto en la última semana
                     newSchedule[idx] = restoDinero - currentSum;
                 } else {
-                    let amount = Math.ceil((newBaseUnit * weights[idx]) / 1000) * 1000;
+                    // MAGIA NUEVA: Redondea al billete de 5.000
+                    let amount = Math.round((newBaseUnit * weights[idx]) / 5000) * 5000;
+                    if (amount < 5000 && restoDinero > 5000) amount = 5000;
+                    
+                    if (currentSum + amount >= restoDinero) {
+                         amount = Math.max(0, restoDinero - currentSum - 5000);
+                    }
+                    
                     newSchedule[idx] = amount;
                     currentSum += amount;
                 }
