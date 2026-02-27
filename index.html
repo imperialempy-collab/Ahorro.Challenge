@@ -16,9 +16,9 @@
         await OneSignal.init({
           appId: "1356edfe-3d7e-410e-bbed-34d9fe077b5f",
           notifyButton: { enable: false },
-          // LA RUTA EXACTA CON EL PUNTO:
+          // RUTAS ABSOLUTAS PARA GITHUB PAGES:
           serviceWorkerParam: { scope: "/Ahorro.Challenge/" },
-          serviceWorkerPath: "/Ahorro.Challenge/OneSignalSDKWorker.js"
+          serviceWorkerPath: "/Ahorro.Challenge/sw.js"
         });
       });
     </script>
@@ -864,6 +864,12 @@
             updateStats();
         };
 
+        // LA INSTALACIÓN DE LA APPWEB AHORA CONVIVE CON ONESIGNAL EN PAZ
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/Ahorro.Challenge/sw.js', { scope: '/Ahorro.Challenge/' }).catch((err) => console.log('Error SW:', err));
+            });
+        }
     </script>
 </body>
 </html>
