@@ -61,8 +61,28 @@
             return new Promise((resolve) => {
                 document.getElementById('customPromptMessage').innerText = mensaje;
                 const input = document.getElementById('customPromptInput');
-                input.type = tipoInput; 
-                input.value = valorPorDefecto;
+                
+                // --- INICIO MEJORA: SEPARADOR DE MILES EN VIVO ---
+                input.type = tipoInput === 'number' ? 'text' : tipoInput;
+                input.inputMode = tipoInput === 'number' ? 'numeric' : 'text';
+                
+                const formatNumber = (e) => {
+                    if (tipoInput === 'number') {
+                        let val = e.target.value.replace(/\D/g, '');
+                        e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
+                    }
+                };
+                
+                input.oninput = formatNumber;
+                
+                if (tipoInput === 'number' && valorPorDefecto !== '') {
+                    let val = valorPorDefecto.toString().replace(/\D/g, '');
+                    input.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
+                } else {
+                    input.value = valorPorDefecto;
+                }
+                // --- FIN MEJORA: SEPARADOR DE MILES EN VIVO ---
+
                 const modal = document.getElementById('customPrompt');
                 const btnOk = document.getElementById('btnPromptOk');
                 const btnCancel = document.getElementById('btnPromptCancel');
@@ -225,21 +245,46 @@
         </div>
     </div>
 
+    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label>
+                    <input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label>
+                    <select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100">
-            <div class="flex justify-between items-center mb-6">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col">
+            <div class="flex justify-between items-center mb-6 shrink-0">
                 <h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3>
                 <button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
             
-            <button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2">
+            <button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                 Nueva Meta
             </button>
 
-            <div id="goalsAdminList" class="space-y-3"></div>
+            <div id="goalsAdminList" class="space-y-3 mb-6"></div>
+
+            <button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">
+                Aceptar
+            </button>
         </div>
     </div>
 
@@ -354,14 +399,9 @@
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 <aside class="space-y-4">
                     <div class="glass-card rounded-2xl p-4 shadow-sm border border-white">
-                        <h2 class="text-[11px] font-bold mb-3 uppercase tracking-wider text-slate-500">Participantes</h2>
-                        <div class="flex flex-col gap-2 mb-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="newParticipantInput" placeholder="Nombre..." class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-primary">
-                                <button onclick="addParticipant()" class="bg-primary text-white px-3 rounded-lg hover:bg-emerald-600 font-bold">+</button>
-                            </div>
-                            <select id="goalSelect" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-600 outline-none focus:ring-1 focus:ring-primary font-medium">
-                            </select>
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Participantes</h2>
+                            <button onclick="openAddParticipantModal()" class="text-primary bg-emerald-50 hover:bg-emerald-100 rounded-lg px-3 py-1 text-lg font-bold transition-colors shadow-sm" title="Nuevo Participante">+</button>
                         </div>
                         <div id="participantList" class="space-y-1"></div>
                     </div>
@@ -425,6 +465,45 @@
             }
         };
 
+        // --- MANEJO DE LA NUEVA VENTANA DE PARTICIPANTES ---
+        window.openAddParticipantModal = () => {
+            document.getElementById('newParticipantInput').value = '';
+            updateGoalDropdown();
+            document.getElementById('addParticipantModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('newParticipantInput').focus(), 100);
+        };
+
+        window.closeAddParticipantModal = () => {
+            document.getElementById('addParticipantModal').classList.add('hidden');
+        };
+
+        window.addParticipant = () => {
+            const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
+            const goalId = document.getElementById('goalSelect').value;
+            
+            if (n && !participants.includes(n)) {
+                participants.push(n);
+                participantGoals[n] = goalId;
+                userProgress[n] = [];
+                generateSchedule(n);
+                if (!activeParticipant) {
+                    activeParticipant = n;
+                    statsView = "INDIVIDUAL";
+                }
+                save(); 
+                updateViewButtons(); 
+                renderParticipants(); 
+                renderGoals(); 
+                updateStats();
+                closeAddParticipantModal(); // Se cierra tras agregar con éxito
+            } else if (participants.includes(n)) {
+                mostrarAlerta("Este participante ya existe.");
+            } else {
+                mostrarAlerta("Ingresá un nombre válido.");
+            }
+        };
+
+        // --- SISTEMA DE GESTIÓN DE METAS ---
         window.openGoalsModal = () => {
             renderAdminGoals();
             document.getElementById('goalsConfigModal').classList.remove('hidden');
@@ -436,7 +515,9 @@
 
         function updateGoalDropdown() {
             const select = document.getElementById('goalSelect');
-            select.innerHTML = goals.map(g => `<option value="${g.id}">${g.name} (${formatPYG(g.amount)})</option>`).join('');
+            if (select) {
+                select.innerHTML = goals.map(g => `<option value="${g.id}">${g.name} (${formatPYG(g.amount)})</option>`).join('');
+            }
         }
 
         function renderAdminGoals() {
@@ -462,11 +543,13 @@
         window.createNewGoal = async () => {
             const name = await mostrarPrompt("Nombre de la nueva meta (Ej: Vacaciones):", "Nueva Meta", "text");
             if (!name) return;
-            const amount = await mostrarPrompt("Monto total a alcanzar (Ej: 5000000):", "5000000", "number");
+            // Al usar 'number' ahora saldrá el formateador de miles
+            const amount = await mostrarPrompt("Monto total a alcanzar:", "", "number");
             if (!amount) return;
             const weeks = await mostrarPrompt("Cantidad de semanas (Ej: 24):", "24", "number");
             if (!weeks) return;
 
+            // Como los campos ahora devuelven texto con puntitos, eliminamos cualquier caracter que no sea número
             const nAmount = parseInt(amount.toString().replace(/\D/g,''));
             const nWeeks = parseInt(weeks.toString().replace(/\D/g,''));
 
@@ -520,6 +603,7 @@
             }
         };
 
+        // --- SISTEMA DE ALARMA CON CALENDARIO SILENCIOSO ---
         window.openReminderModal = () => {
             if (!activeParticipant) {
                 mostrarAlerta("Primero seleccioná un participante de la lista para configurarle su alarma.");
@@ -618,23 +702,18 @@
 
         function calculateWeights(totalWeeks) {
             let weights = [];
-            let currentWeight = 0; // Iniciamos el peso en 0
+            let currentWeight = 0; 
             
             let habitWeeks = Math.floor(totalWeeks * 0.25);
             if (habitWeeks < 1) habitWeeks = 1; 
             
             for (let i = 1; i <= totalWeeks; i++) {
-                // 1. SIEMPRE avanza un escalón, todas las semanas sin excepción
                 currentWeight += 1;
-                
-                // 2. Si pasamos la etapa de hábito, y es el inicio de mes (cada 4 semanas)
                 if (i > habitWeeks && (i - habitWeeks - 1) % 4 === 0) {
-                    // Calculamos un salto extra dinámico (+3 o +4)
                     let jump = Math.floor(totalWeeks / 10); 
                     if (jump < 3) jump = 3; 
                     currentWeight += jump;
                 }
-                
                 weights.push(currentWeight);
             }
             return weights;
@@ -651,7 +730,6 @@
             let currentSum = 0;
             for (let i = 0; i < userGoal.weeks; i++) {
                 if (i === userGoal.weeks - 1) {
-                    // La última semana absorbe la diferencia exacta
                     schedule.push(userGoal.amount - currentSum);
                 } else {
                     let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000;
@@ -713,24 +791,6 @@
             }
             userSchedules[nombreUser] = newSchedule;
         }
-
-        window.addParticipant = () => {
-            const n = document.getElementById('newParticipantInput').value.trim().toUpperCase();
-            const goalId = document.getElementById('goalSelect').value;
-            
-            if (n && !participants.includes(n)) {
-                participants.push(n);
-                participantGoals[n] = goalId;
-                userProgress[n] = [];
-                generateSchedule(n);
-                if (!activeParticipant) {
-                    activeParticipant = n;
-                    statsView = "INDIVIDUAL";
-                }
-                document.getElementById('newParticipantInput').value = ''; 
-                save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats();
-            }
-        };
 
         window.deleteParticipant = async (n) => {
             const seguro = await mostrarConfirm(`¿Eliminar a ${n}? Se borrarán solo sus pagos.`);
