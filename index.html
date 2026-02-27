@@ -618,16 +618,24 @@
 
         function calculateWeights(totalWeeks) {
             let weights = [];
+            let currentWeight = 0; // Iniciamos el peso en 0
+            
             let habitWeeks = Math.floor(totalWeeks * 0.25);
             if (habitWeeks < 1) habitWeeks = 1; 
             
             for (let i = 1; i <= totalWeeks; i++) {
-                if (i <= habitWeeks) {
-                    weights.push(i); 
-                } else {
-                    let blockNumber = Math.floor((i - habitWeeks - 1) / 4) + 1;
-                    weights.push(habitWeeks + (blockNumber * 3));
+                // 1. SIEMPRE avanza un escalón, todas las semanas sin excepción
+                currentWeight += 1;
+                
+                // 2. Si pasamos la etapa de hábito, y es el inicio de mes (cada 4 semanas)
+                if (i > habitWeeks && (i - habitWeeks - 1) % 4 === 0) {
+                    // Calculamos un salto extra dinámico (+3 o +4)
+                    let jump = Math.floor(totalWeeks / 10); 
+                    if (jump < 3) jump = 3; 
+                    currentWeight += jump;
                 }
+                
+                weights.push(currentWeight);
             }
             return weights;
         }
@@ -643,14 +651,12 @@
             let currentSum = 0;
             for (let i = 0; i < userGoal.weeks; i++) {
                 if (i === userGoal.weeks - 1) {
-                    // Única semana que será "suelta" para absorber todo y cuadrar la suma perfecta
+                    // La última semana absorbe la diferencia exacta
                     schedule.push(userGoal.amount - currentSum);
                 } else {
-                    // MAGIA NUEVA: Redondea al billete de 5.000 más cercano (ej: 15k, 20k, 55k)
                     let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000;
-                    if (amount < 5000) amount = 5000; // Mínimo absoluto para que no dé 0
+                    if (amount < 5000) amount = 5000;
                     
-                    // Seguridad: evitar pasarnos del total antes de la recta final
                     if (currentSum + amount >= userGoal.amount) {
                         amount = Math.max(0, userGoal.amount - currentSum - 5000); 
                     }
@@ -694,7 +700,6 @@
                 if (j === unpaidIndices.length - 1) {
                     newSchedule[idx] = restoDinero - currentSum;
                 } else {
-                    // MAGIA NUEVA: Redondea al billete de 5.000
                     let amount = Math.round((newBaseUnit * weights[idx]) / 5000) * 5000;
                     if (amount < 5000 && restoDinero > 5000) amount = 5000;
                     
