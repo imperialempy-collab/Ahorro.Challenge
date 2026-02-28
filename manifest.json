@@ -1,8 +1,11 @@
 {
+  "id": "/Ahorro.Challenge/",
   "name": "Ahorro Challenge (MultiMeta)",
   "short_name": "Ahorro Challenge",
+  "description": "Aplicación para la gestión inteligente y progresiva de metas de ahorro.",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#10b981",
   "scope": "./",
