@@ -3,6 +3,8 @@
   "name": "Ahorro Challenge (MultiMeta)",
   "short_name": "Ahorro Challenge",
   "description": "Aplicación para la gestión inteligente y progresiva de metas de ahorro.",
+  "lang": "es",
+  "dir": "ltr",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
