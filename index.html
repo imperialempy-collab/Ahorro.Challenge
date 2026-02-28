@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="notranslate">
+    
     <title>Ahorro Challenge - MultiMeta</title>
     
     <link rel="manifest" href="manifest.json">
@@ -800,7 +804,6 @@
             userSchedules[nombreUser] = newSchedule;
         }
 
-        // --- SOLUCIÓN DEL BOTÓN X DE ELIMINAR PARTICIPANTE ---
         window.deleteParticipant = async (n) => {
             const seguro = await mostrarConfirm(`¿Seguro querés eliminar a ${n} y todo su progreso?`);
             if (seguro) {
@@ -893,7 +896,6 @@
                 document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal);
                 document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral);
             } else {
-                // AQUÍ ESTÁ LA LIMPIEZA TOTAL EN TIEMPO REAL
                 if(!activeParticipant) {
                     document.getElementById('statsTitle').innerText = "Ahorro de -";
                     document.getElementById('metaLabel').innerText = "Sin meta";
@@ -957,7 +959,6 @@
                 html += `</div>`;
                 container.innerHTML = html;
             } else {
-                // AQUÍ TAMBIÉN LIMPIAMOS EL CUERPO DE LA PANTALLA
                 if (!activeParticipant) {
                     container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`;
                     return;
