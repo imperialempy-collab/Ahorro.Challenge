@@ -120,6 +120,7 @@
             const appContent = document.getElementById('appContent');
             const loadingSpinner = document.getElementById('loadingSpinner');
             const googleLoginBtn = document.getElementById('googleLoginBtn');
+            const loginText = document.getElementById('loginText');
 
             if (user) {
                 const userRef = doc(db, "usuarios_multimeta", user.email);
@@ -161,11 +162,11 @@
                     }
                 }
             } else {
-                // SI EL USUARIO NO TIENE SESIÓN, RECIÉN AQUÍ MOSTRAMOS EL BOTÓN
                 loginScreen.classList.remove('hidden');
                 appContent.classList.add('hidden');
                 if (loadingSpinner) loadingSpinner.classList.add('hidden');
                 if (googleLoginBtn) googleLoginBtn.classList.remove('hidden');
+                if (loginText) loginText.classList.remove('hidden');
             }
         });
     </script>
@@ -346,9 +347,10 @@
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
-            <p class="text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
             
-            <div id="loadingSpinner" class="flex justify-center items-center py-4">
+            <p id="loginText" class="hidden text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
+            
+            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4">
                 <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -798,6 +800,28 @@
             userSchedules[nombreUser] = newSchedule;
         }
 
+        // --- SOLUCIÓN DEL BOTÓN X DE ELIMINAR PARTICIPANTE ---
+        window.deleteParticipant = async (n) => {
+            const seguro = await mostrarConfirm(`¿Seguro querés eliminar a ${n} y todo su progreso?`);
+            if (seguro) {
+                participants = participants.filter(p => p !== n);
+                if (userProgress[n]) delete userProgress[n]; 
+                if (userSchedules[n]) delete userSchedules[n];
+                if (participantGoals[n]) delete participantGoals[n];
+                if (userReminders[n]) delete userReminders[n];
+                
+                if (activeParticipant === n) {
+                    activeParticipant = participants.length > 0 ? participants[0] : "";
+                }
+                
+                save(); 
+                updateViewButtons(); 
+                renderParticipants(); 
+                renderGoals(); 
+                updateStats();
+            }
+        };
+
         window.setActiveParticipant = (n) => { 
             activeParticipant = n; 
             statsView = 'INDIVIDUAL'; 
@@ -869,7 +893,15 @@
                 document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal);
                 document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral);
             } else {
-                if(!activeParticipant) return;
+                // AQUÍ ESTÁ LA LIMPIEZA TOTAL EN TIEMPO REAL
+                if(!activeParticipant) {
+                    document.getElementById('statsTitle').innerText = "Ahorro de -";
+                    document.getElementById('metaLabel').innerText = "Sin meta";
+                    document.getElementById('progressPercentage').innerText = "0%";
+                    document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal;
+                    document.getElementById('totalSavedCounter').innerText = "0 Gs.";
+                    return;
+                }
                 const userGoal = getGoalForUser(activeParticipant);
                 const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0);
                 
@@ -925,8 +957,9 @@
                 html += `</div>`;
                 container.innerHTML = html;
             } else {
+                // AQUÍ TAMBIÉN LIMPIAMOS EL CUERPO DE LA PANTALLA
                 if (!activeParticipant) {
-                    container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">Seleccioná un participante a la izquierda para ver sus semanas.</div>`;
+                    container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`;
                     return;
                 }
                 const userGoal = getGoalForUser(activeParticipant);
