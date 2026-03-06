@@ -24,9 +24,14 @@ const UI = {
     mes: document.getElementById('uiMes'), alerta: document.getElementById('uiAlerta')
 };
 
-document.getElementById('btnEmpezar').addEventListener('click', () => {
-    estado.sueldo = parseInt(document.getElementById('inputSueldo').value);
-    estado.gastosFijos = parseInt(document.getElementById('inputGastos').value);
+function arrancarJuego(e) {
+    if(e) e.preventDefault(); // Evita que se dispare dos veces en celulares
+    if(estado.jugando) return; 
+
+    // Tomamos los valores (si están vacíos, ponemos 0 por defecto)
+    estado.sueldo = parseInt(document.getElementById('inputSueldo').value) || 0;
+    estado.gastosFijos = parseInt(document.getElementById('inputGastos').value) || 0;
+    
     estado.banco = estado.sueldo;
     estado.billetera = estado.sueldo * 0.15; 
     
@@ -39,7 +44,12 @@ document.getElementById('btnEmpezar').addEventListener('click', () => {
     loops.juego = setInterval(actualizarFisicas, 1000 / 60);
     loops.creador = setInterval(crearElemento, 1300);
     loops.meses = setInterval(pasarMes, 1000);
-});
+}
+
+// Le decimos al botón que escuche tanto "Clics" (PC) como "Toques" (Celular)
+const btnEmpezar = document.getElementById('btnEmpezar');
+btnEmpezar.addEventListener('click', arrancarJuego);
+btnEmpezar.addEventListener('touchstart', arrancarJuego, { passive: false });
 
 // Controles
 function mover(dir) {
