@@ -60,13 +60,19 @@
             </div>
         </div>
         
-        <div class="max-w-md mx-auto mt-2 flex justify-between items-center">
-            <div class="bg-white/90 px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-slate-500">
+        <div class="max-w-md mx-auto mt-3 flex justify-between items-center gap-2">
+            <div class="flex-grow bg-white/90 rounded-full h-4 shadow-md overflow-hidden relative border border-slate-200">
+                <div id="uiFelicidad" class="h-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500 transition-all duration-500" style="width: 50%;"></div>
+                <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-slate-800 drop-shadow-md">Felicidad / Salud Mental</span>
+            </div>
+            
+            <div class="bg-white/90 px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-slate-500 shrink-0">
                 Mes: <span id="uiMes">1</span>/12
             </div>
-            <div id="uiAlerta" class="bg-rose-500 text-white px-3 py-1 rounded-full shadow-md text-[10px] font-bold hidden animate-pulse">
-                ¡GASTOS FIJOS DESCONTADOS!
-            </div>
+        </div>
+        
+        <div id="uiAlerta" class="max-w-md mx-auto mt-2 bg-rose-500 text-white px-3 py-2 rounded-xl shadow-lg text-xs font-bold text-center hidden transition-all">
+            ¡ALERTA!
         </div>
     </div>
 
