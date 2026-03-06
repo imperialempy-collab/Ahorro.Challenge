@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <title>Ahorro Run - Simulador Financiero</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', background: '#f8fafc', danger: '#ef4444' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+    </script>
+    
+    <link rel="stylesheet" href="css/estilos-juego.css">
+</head>
+<body class="font-body text-slate-800 bg-slate-900 overflow-hidden touch-none select-none">
+
+    <div id="pantallaInicio" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <div class="text-center mb-6">
+                <span class="text-5xl block mb-2">🏃‍♂️🐷</span>
+                <h2 class="text-2xl font-display font-black text-slate-900">Ahorro <span class="text-primary">Run</span></h2>
+                <p class="text-sm text-slate-500">Configurá tu realidad financiera antes de correr.</p>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">Tu Sueldo Mensual (Gs)</label>
+                    <input type="number" id="inputSueldo" value="3500000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase">Gastos Fijos Mensuales (Gs)</label>
+                    <p class="text-[10px] text-slate-400 mb-1">Alquiler, luz, agua, deudas previas.</p>
+                    <input type="number" id="inputGastos" value="1500000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary">
+                </div>
+            </div>
+
+            <button id="btnEmpezar" class="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-transform active:scale-95 shadow-lg flex justify-center items-center gap-2">
+                Empezar el Año 🚀
+            </button>
+            <a href="index.html" class="block text-center mt-4 text-xs font-bold text-slate-400">Volver al menú</a>
+        </div>
+    </div>
+
+    <div id="hud" class="fixed top-0 inset-x-0 z-40 p-4 pointer-events-none hidden opacity-0 transition-opacity duration-500">
+        <div class="max-w-md mx-auto grid grid-cols-3 gap-2">
+            <div class="bg-white/90 backdrop-blur rounded-xl p-2 text-center shadow-lg border-b-4 border-blue-500">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">🏦 Banco</p>
+                <p id="uiBanco" class="text-xs font-black text-slate-800">0</p>
+            </div>
+            <div class="bg-white/90 backdrop-blur rounded-xl p-2 text-center shadow-lg border-b-4 border-amber-500">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">💵 Billetera</p>
+                <p id="uiBilletera" class="text-xs font-black text-slate-800">0</p>
+            </div>
+            <div class="bg-white/90 backdrop-blur rounded-xl p-2 text-center shadow-lg border-b-4 border-primary relative overflow-hidden">
+                <div class="absolute inset-0 bg-primary/10"></div>
+                <p class="text-[9px] font-bold text-primary uppercase tracking-tighter relative z-10">🐷 Ahorrado</p>
+                <p id="uiChanchito" class="text-xs font-black text-primary relative z-10">0</p>
+            </div>
+        </div>
+        
+        <div class="max-w-md mx-auto mt-2 flex justify-between items-center">
+            <div class="bg-white/90 px-3 py-1 rounded-full shadow-md text-[10px] font-bold text-slate-500">
+                Mes: <span id="uiMes">1</span>/12
+            </div>
+            <div id="uiAlerta" class="bg-rose-500 text-white px-3 py-1 rounded-full shadow-md text-[10px] font-bold hidden animate-pulse">
+                ¡GASTOS FIJOS DESCONTADOS!
+            </div>
+        </div>
+    </div>
+
+    <div id="zonaJuego" class="fixed inset-0 z-10 hidden bg-slate-800 flex justify-center">
+        <div id="calle" class="w-full max-w-md h-full relative overflow-hidden bg-slate-700 border-x-4 border-slate-600">
+            <div class="linea-carril left-1/3"></div>
+            <div class="linea-carril left-2/3"></div>
+
+            <div id="jugador" class="absolute bottom-10 w-16 h-16 flex items-center justify-center text-5xl transition-transform duration-100 transform -translate-x-1/2" style="left: 50%;">
+                🐷
+            </div>
+        </div>
+
+        <div class="absolute inset-0 z-20 flex">
+            <div id="btnIzq" class="w-1/2 h-full"></div>
+            <div id="btnDer" class="w-1/2 h-full"></div>
+        </div>
+    </div>
+
+    <div id="pantallaFinal" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-4 bg-slate-900/95 backdrop-blur-lg overflow-y-auto pt-20 pb-10">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-display font-black text-slate-900">Fin del Año</h2>
+                <p class="text-sm font-bold text-primary uppercase tracking-widest mt-1">Reporte de Auditoría</p>
+            </div>
+
+            <div class="space-y-3 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase">Ahorro Protegido</span>
+                    <span id="resChanchito" class="text-lg font-black text-primary">0 Gs</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase">Efectivo Sobrante</span>
+                    <span id="resEfectivo" class="text-sm font-bold text-slate-700">0 Gs</span>
+                </div>
+                <div class="h-px w-full bg-slate-200 my-2"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold text-slate-500 uppercase">Intereses Pagados</span>
+                    <span id="resIntereses" class="text-sm font-bold text-rose-500">0 Gs</span>
+                </div>
+            </div>
+
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Feedback del Entrenador</h3>
+            <div id="listaConsejos" class="space-y-2 mb-8 max-h-48 overflow-y-auto pr-2 text-sm text-slate-600 font-medium">
+                </div>
+
+            <button onclick="location.reload()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg hover:bg-slate-800">
+                Jugar Otro Año 🔄
+            </button>
+            <a href="index.html" class="block text-center mt-4 text-xs font-bold text-slate-400">Volver al menú</a>
+        </div>
+    </div>
+
+    <script type="module" src="js/motor-juego.js"></script>
+</body>
+</html>
