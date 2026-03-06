@@ -1,375 +1,344 @@
 import { ConfiguracionJuego, ElementosFinancieros } from './elementos.js';
 
-// ==========================================
-// 1. VARIABLES DE ESTADO DEL JUEGO
-// ==========================================
 let estado = {
-    jugando: false,
-    tiempoRestante: ConfiguracionJuego.tiempoPartidaSegundos,
-    mesActual: 1,
-    carrilJugador: 1, // 0: Izq, 1: Centro, 2: Der
+    jugando: false, mesActual: 1, carrilJugador: 1,
+    sueldo: 0, gastosFijos: 0,
+    banco: 0, billetera: 0, chanchito: 0, felicidad: 50,
     
-    // Finanzas
-    sueldo: 0,
-    gastosFijos: 0,
-    banco: 0,
-    billetera: 0,
-    chanchito: 0,
+    // Contadores de Desgaste (La trampa del tacaño)
+    riesgos: { salud: 0, auto: 0, casa: 0, set: 0 },
     
-    // Estadísticas para el reporte final
-    interesesPagados: 0,
-    gastosHormigaTocados: 0,
-    tarjetasTocadas: 0,
-    bingosJugados: 0,
-    
-    // Efectos activos
-    sangradoTarjeta: 0 // Cuánto te descuenta por segundo
+    // Estadísticas
+    interesesPagados: 0, tarjetas: 0, bingos: 0, bombasExplotadas: 0,
+    sangradoTarjeta: 0
 };
 
-let loops = {
-    juego: null,
-    creadorElementos: null,
-    meses: null
-};
+let loops = { juego: null, creador: null, meses: null };
 
-// ==========================================
-// 2. REFERENCIAS AL DOM (Pantalla)
-// ==========================================
 const UI = {
-    pantallaInicio: document.getElementById('pantallaInicio'),
-    hud: document.getElementById('hud'),
-    zonaJuego: document.getElementById('zonaJuego'),
-    calle: document.getElementById('calle'),
-    jugador: document.getElementById('jugador'),
-    pantallaFinal: document.getElementById('pantallaFinal'),
-    
-    // Textos
-    banco: document.getElementById('uiBanco'),
-    billetera: document.getElementById('uiBilletera'),
-    chanchito: document.getElementById('uiChanchito'),
-    mes: document.getElementById('uiMes'),
-    alerta: document.getElementById('uiAlerta')
+    inicio: document.getElementById('pantallaInicio'), hud: document.getElementById('hud'),
+    juego: document.getElementById('zonaJuego'), calle: document.getElementById('calle'),
+    jugador: document.getElementById('jugador'), final: document.getElementById('pantallaFinal'),
+    banco: document.getElementById('uiBanco'), billetera: document.getElementById('uiBilletera'),
+    chanchito: document.getElementById('uiChanchito'), felicidad: document.getElementById('uiFelicidad'),
+    mes: document.getElementById('uiMes'), alerta: document.getElementById('uiAlerta')
 };
 
-// ==========================================
-// 3. INICIO DEL JUEGO
-// ==========================================
 document.getElementById('btnEmpezar').addEventListener('click', () => {
-    // Leer configuración del usuario
     estado.sueldo = parseInt(document.getElementById('inputSueldo').value);
     estado.gastosFijos = parseInt(document.getElementById('inputGastos').value);
-    
-    // El juego arranca dándote tu primer sueldo en el banco
     estado.banco = estado.sueldo;
-    // Te damos un "vuelto" en la billetera para arrancar a jugar
-    estado.billetera = estado.sueldo * 0.10; 
+    estado.billetera = estado.sueldo * 0.15; 
     
     actualizarMarcadores();
-
-    // Cambiar pantallas
-    UI.pantallaInicio.classList.add('hidden');
-    UI.hud.classList.remove('hidden');
-    UI.hud.classList.remove('opacity-0');
-    UI.zonaJuego.classList.remove('hidden');
+    UI.inicio.classList.add('hidden');
+    UI.hud.classList.remove('hidden', 'opacity-0');
+    UI.juego.classList.remove('hidden');
     
-    iniciarMotores();
-});
-
-function iniciarMotores() {
     estado.jugando = true;
-    
-    // Bucle Principal (Mueve los objetos a 60fps)
     loops.juego = setInterval(actualizarFisicas, 1000 / 60);
-    
-    // Bucle Creador (Lanza un objeto cada 1.5 segundos)
-    loops.creadorElementos = setInterval(lanzarElementoAleatorio, 1500);
-    
-    // Bucle de Meses (El Reloj que cobra gastos)
+    loops.creador = setInterval(crearElemento, 1300);
     loops.meses = setInterval(pasarMes, 1000);
-}
-
-// ==========================================
-// 4. CONTROLES DEL JUGADOR
-// ==========================================
-function moverJugador(direccion) {
-    if(!estado.jugando) return;
-    
-    if (direccion === 'izq' && estado.carrilJugador > 0) estado.carrilJugador--;
-    if (direccion === 'der' && estado.carrilJugador < 2) estado.carrilJugador++;
-    
-    // Posiciones: 16.6% (Izq), 50% (Centro), 83.3% (Der)
-    const posiciones = ['16.6%', '50%', '83.3%'];
-    UI.jugador.style.left = posiciones[estado.carrilJugador];
-}
-
-// Botones táctiles invisibles
-document.getElementById('btnIzq').addEventListener('touchstart', (e) => { e.preventDefault(); moverJugador('izq'); });
-document.getElementById('btnDer').addEventListener('touchstart', (e) => { e.preventDefault(); moverJugador('der'); });
-document.getElementById('btnIzq').addEventListener('mousedown', () => moverJugador('izq'));
-document.getElementById('btnDer').addEventListener('mousedown', () => moverJugador('der'));
-
-// Teclado para PC
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') moverJugador('izq');
-    if (e.key === 'ArrowRight') moverJugador('der');
 });
 
-// ==========================================
-// 5. LÓGICA DE TIEMPO Y GASTOS FIJOS
-// ==========================================
-let segundosTranscurridos = 0;
+// Controles
+function mover(dir) {
+    if(!estado.jugando) return;
+    if (dir === 'izq' && estado.carrilJugador > 0) estado.carrilJugador--;
+    if (dir === 'der' && estado.carrilJugador < 2) estado.carrilJugador++;
+    UI.jugador.style.left = ['16.6%', '50%', '83.3%'][estado.carrilJugador];
+}
+document.getElementById('btnIzq').addEventListener('touchstart', (e) => { e.preventDefault(); mover('izq'); });
+document.getElementById('btnDer').addEventListener('touchstart', (e) => { e.preventDefault(); mover('der'); });
+document.getElementById('btnIzq').addEventListener('mousedown', () => mover('izq'));
+document.getElementById('btnDer').addEventListener('mousedown', () => mover('der'));
+window.addEventListener('keydown', (e) => { if(e.key === 'ArrowLeft') mover('izq'); if(e.key === 'ArrowRight') mover('der'); });
+
+let segundos = 0;
 function pasarMes() {
-    segundosTranscurridos++;
+    if(!estado.jugando) return;
+    segundos++;
     
-    // Sangrado de tarjeta (Intereses por segundo)
     if (estado.sangradoTarjeta > 0) {
-        modificarDinero(-estado.sangradoTarjeta, 'billetera');
+        pagarDeuda(estado.sangradoTarjeta);
         estado.interesesPagados += estado.sangradoTarjeta;
     }
 
-    // Cada X segundos = 1 Mes (Cobro de sueldo y pago de gastos fijos)
-    if (segundosTranscurridos % ConfiguracionJuego.cicloMesSegundos === 0) {
+    if (segundos % ConfiguracionJuego.cicloMesSegundos === 0) {
         estado.mesActual++;
-        
         if(estado.mesActual <= 12) {
             UI.mes.innerText = estado.mesActual;
             estado.banco += estado.sueldo;
-            modificarDinero(-estado.gastosFijos, 'banco');
-            
-            // Mostrar alerta visual
-            UI.alerta.classList.remove('hidden');
-            setTimeout(() => UI.alerta.classList.add('hidden'), 2000);
+            pagarDeuda(estado.gastosFijos);
+            mostrarAlerta("¡Cobraste! Y te descontaron gastos fijos.", "bg-blue-500");
         }
     }
 
-    // Fin del Juego (Llegamos a los 60 seg / 12 meses)
-    if (segundosTranscurridos >= ConfiguracionJuego.tiempoPartidaSegundos) {
-        terminarJuego();
+    // BURNOUT (Depresión por ser tacaño)
+    if (estado.felicidad <= 0) {
+        explotarBomba('burnout');
+        estado.felicidad = 30; // Se recupera un poco tras ir al psicólogo
     }
+
+    if (segundos >= ConfiguracionJuego.tiempoPartidaSegundos) terminarJuego();
 }
 
-// ==========================================
-// 6. MOTOR GRÁFICO (Caída y Choques)
-// ==========================================
-function lanzarElementoAleatorio() {
+function crearElemento() {
     if(!estado.jugando) return;
-
-    // Juntar todos los elementos posibles en una bolsa
-    const categorias = [
-        ...ElementosFinancieros.tentaciones,
-        ...ElementosFinancieros.necesarios,
-        ...ElementosFinancieros.imprevistos,
-        ...ElementosFinancieros.ingresos,
-        ...ElementosFinancieros.instrumentos
-    ];
+    const rng = Math.random();
     
-    // Elegir uno al azar
-    const elemento = categorias[Math.floor(Math.random() * categorias.length)];
-    const carrilRandom = Math.floor(Math.random() * 3);
-    const posicionesIzq = ['16.6%', '50%', '83.3%'];
+    // 15% de chances de que salga una Decisión Binaria (Muro de dos opciones)
+    if(rng > 0.85) {
+        const decision = ElementosFinancieros.decisiones[Math.floor(Math.random() * ElementosFinancieros.decisiones.length)];
+        crearDivCaida(decision.opcionA, 0, decision.id); // Izquierda
+        crearDivCaida(decision.opcionB, 2, decision.id); // Derecha
+        return;
+    }
 
-    // Crear el div en HTML
+    // El resto del tiempo, elementos normales (Chanchito tiene más chances)
+    let categorias = [...ElementosFinancieros.tentaciones, ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.ingresos, ...ElementosFinancieros.instrumentos];
+    // Duplicamos el chanchito en el array para que caiga más seguido
+    categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
+    categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
+
+    const item = categorias[Math.floor(Math.random() * categorias.length)];
+    crearDivCaida(item, Math.floor(Math.random() * 3));
+}
+
+function crearDivCaida(item, carril, esDecisionId = null) {
     const div = document.createElement('div');
-    div.className = 'elemento-cae bg-white/80 backdrop-blur shadow-md border border-slate-200';
-    div.innerText = elemento.emoji;
-    div.style.left = posicionesIzq[carrilRandom];
-    div.style.top = '-50px';
+    div.className = 'elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 border-slate-200';
+    div.innerText = item.emoji;
+    div.style.left = ['16.6%', '50%', '83.3%'][carril];
+    div.style.top = '-60px';
     
-    // Guardarle los datos al div para usarlos al chocar
-    div.dataset.id = elemento.id;
-    div.dataset.tipo = elemento.tipo;
-    div.dataset.costo = elemento.costo || 0;
-    div.dataset.carril = carrilRandom;
-    if(elemento.tipo === 'deuda_toxica') div.dataset.interes = elemento.interesPorSegundo;
+    // Guardar datos
+    div.dataset.tipo = item.tipo || "decision";
+    div.dataset.riesgo = item.riesgo || "";
+    div.dataset.costo = item.costo || 0;
+    div.dataset.felicidad = item.felicidad || 0;
+    div.dataset.carril = carril;
+    
+    if (item.id === 'tarjeta') div.dataset.interes = item.interesSeg;
+    if (item.id === 'chanchito') div.dataset.porc = item.porcentaje;
+    if (item.id === 'bingo') { div.dataset.prob = item.prob; div.dataset.premio = item.premio; }
+    if (esDecisionId) div.dataset.groupId = esDecisionId;
 
     UI.calle.appendChild(div);
 }
 
 function actualizarFisicas() {
-    const velocidad = 5; // Píxeles por frame
+    const velocidad = 6; 
     const elementos = document.querySelectorAll('.elemento-cae');
-    const posYJugador = UI.calle.offsetHeight - 90; // Donde está el chanchito
+    const posJugador = UI.calle.offsetHeight - 90;
 
     elementos.forEach(el => {
-        let topActual = parseFloat(el.style.top);
-        el.style.top = (topActual + velocidad) + 'px';
+        let top = parseFloat(el.style.top);
+        el.style.top = (top + velocidad) + 'px';
 
-        // Detectar colisión
-        if (topActual > posYJugador - 40 && topActual < posYJugador + 40) {
+        // Colisión
+        if (top > posJugador - 40 && top < posJugador + 40) {
             if (parseInt(el.dataset.carril) === estado.carrilJugador) {
                 procesarChoque(el);
             }
         }
 
-        // Borrar si sale de la pantalla
-        if (topActual > UI.calle.offsetHeight) {
-            el.remove();
+        // Si se escapa por abajo (Esquivaste)
+        if (top > UI.calle.offsetHeight) {
+            // CASTIGO POR TACAÑO (Si esquivas mantenimiento)
+            if (el.dataset.riesgo !== "") {
+                const tipoRiesgo = el.dataset.riesgo;
+                estado.riesgos[tipoRiesgo]++;
+                if (estado.riesgos[tipoRiesgo] >= 3) {
+                    explotarBomba(tipoRiesgo);
+                }
+            }
+            // Si era una decisión, y no la tocaste, asumimos la peor
+            if (el.dataset.groupId) {
+                const grupo = document.querySelectorAll(`[data-group-id="${el.dataset.groupId}"]`);
+                grupo.forEach(g => g.remove());
+            } else {
+                el.remove();
+            }
         }
     });
 }
 
-// ==========================================
-// 7. LÓGICA DE COLISIONES FINANCIERAS
-// ==========================================
-function procesarChoque(elementoHtml) {
-    const tipo = elementoHtml.dataset.tipo;
-    const costo = parseInt(elementoHtml.dataset.costo);
-    
-    // Efecto visual de choque
-    UI.jugador.classList.remove('anim-dano', 'anim-ahorro');
-    void UI.jugador.offsetWidth; // Truco para reiniciar animación
+function procesarChoque(el) {
+    const tipo = el.dataset.tipo;
+    const costo = parseInt(el.dataset.costo);
+    const fel = parseInt(el.dataset.felicidad);
+    const riesgo = el.dataset.riesgo;
 
-    if (tipo === 'gasto' || tipo === 'necesario' || tipo === 'accidente') {
-        // Nos saca plata
-        modificarDinero(-costo, 'billetera');
-        UI.jugador.classList.add('anim-dano');
-        mostrarTextoFlotante(`-${formatearPYG(costo)}`, 'text-rose-500');
-        if (tipo === 'gasto') estado.gastosHormigaTocados++;
+    UI.jugador.classList.remove('anim-dano', 'anim-ahorro');
+    void UI.jugador.offsetWidth;
+
+    // Afectar Felicidad
+    if (fel) estado.felicidad += fel;
+
+    if (tipo === 'gasto' || tipo === 'mantenimiento' || tipo === 'decision') {
+        pagarDeuda(costo);
+        if(costo > 0) {
+            UI.jugador.classList.add('anim-dano');
+            flotar(`-${formatearPYG(costo)}`, 'text-rose-500');
+        } else {
+             flotar(`¡Decisión!`, 'text-slate-500');
+        }
+        // Resetea el riesgo si hiciste el mantenimiento
+        if (riesgo !== "") estado.riesgos[riesgo] = 0; 
     } 
     else if (tipo === 'ingreso') {
-        // El costo es negativo en la BD, así que restarlo lo suma
-        modificarDinero(Math.abs(costo), 'billetera');
+        estado.billetera += Math.abs(costo);
         UI.jugador.classList.add('anim-ahorro');
-        mostrarTextoFlotante(`+${formatearPYG(Math.abs(costo))}`, 'text-emerald-500');
+        flotar(`+${formatearPYG(Math.abs(costo))}`, 'text-emerald-500');
     }
-    else if (tipo === 'salvavidas') { // El Chanchito
-        const aGuardar = estado.billetera * 0.20;
-        if(aGuardar > 0) {
-            estado.billetera -= aGuardar;
-            estado.chanchito += aGuardar;
+    else if (tipo === 'salvavidas') { 
+        // LÓGICA DEL CHANCHITO: Chupa de billetera. Si no hay, chupa del banco.
+        let plataARobar = 0;
+        const porc = parseFloat(el.dataset.porc);
+        if (estado.billetera > 0) {
+            plataARobar = estado.billetera * porc;
+            estado.billetera -= plataARobar;
+        } else if (estado.banco > 0) {
+            plataARobar = estado.banco * porc;
+            estado.banco -= plataARobar;
+            flotar(`Saco del Banco!`, 'text-blue-500');
+        }
+        
+        if(plataARobar > 0) {
+            estado.chanchito += plataARobar;
             UI.jugador.classList.add('anim-ahorro');
-            mostrarTextoFlotante(`Ahorrado!`, 'text-primary');
+            flotar(`+${formatearPYG(plataARobar)} 🐷`, 'text-primary');
         }
     }
-    else if (tipo === 'deuda_toxica') { // Tarjeta
-        estado.tarjetasTocadas++;
-        modificarDinero(500000, 'billetera'); // Te salva dándote 500mil
-        estado.sangradoTarjeta = parseInt(elementoHtml.dataset.interes); // Pero te empieza a cobrar
-        UI.zonaJuego.classList.add('pantalla-sangrando');
-        mostrarTextoFlotante(`+500.000 (DEUDA!)`, 'text-amber-500');
-        
-        // El sangrado dura 5 segundos
-        setTimeout(() => {
-            estado.sangradoTarjeta = 0;
-            UI.zonaJuego.classList.remove('pantalla-sangrando');
-        }, 5000);
+    else if (tipo === 'deuda') { 
+        estado.tarjetas++;
+        estado.billetera += 500000;
+        estado.sangradoTarjeta += parseInt(el.dataset.interes); 
+        UI.juego.classList.add('pantalla-sangrando');
+        flotar(`DEUDA TÓXICA!`, 'text-amber-500');
+        setTimeout(() => { estado.sangradoTarjeta = 0; UI.juego.classList.remove('pantalla-sangrando'); }, 5000);
     }
-    else if (tipo === 'apuesta') { // Bingo
-        estado.bingosJugados++;
-        modificarDinero(-50000, 'billetera'); // Paga el ticket
-        // Probabilidad Real (10% de ganar)
-        if (Math.random() <= 0.10) {
-            modificarDinero(500000, 'billetera');
-            mostrarTextoFlotante(`¡GANASTE BINGO!`, 'text-emerald-500');
+    else if (tipo === 'apuesta') { 
+        estado.bingos++;
+        pagarDeuda(costo); 
+        if (Math.random() <= parseFloat(el.dataset.prob)) {
+            estado.billetera += parseInt(el.dataset.premio);
+            flotar(`¡GANASTE!`, 'text-emerald-500');
             UI.jugador.classList.add('anim-ahorro');
         } else {
-            mostrarTextoFlotante(`Perdiste 50mil`, 'text-rose-500');
+            flotar(`Perdiste el Bingo`, 'text-rose-500');
             UI.jugador.classList.add('anim-dano');
         }
     }
 
-    elementoHtml.remove();
+    // Limites de felicidad
+    if(estado.felicidad > 100) estado.felicidad = 100;
+    
+    // Si era una decisión, borramos a su hermana
+    if(el.dataset.groupId) {
+        const grupo = document.querySelectorAll(`[data-group-id="${el.dataset.groupId}"]`);
+        grupo.forEach(g => g.remove());
+    } else {
+        el.remove();
+    }
+    
     actualizarMarcadores();
 }
 
-// Función inteligente que saca plata de donde haya
-function modificarDinero(monto, prioridad) {
-    if (monto > 0) {
-        estado[prioridad] += monto;
-    } else {
-        let deuda = Math.abs(monto);
-        
-        // Intenta sacar de Billetera
-        if (estado.billetera >= deuda) {
-            estado.billetera -= deuda;
-        } else {
-            // No alcanzó la billetera, vaciamos billetera y pasamos al Banco
-            deuda -= estado.billetera;
-            estado.billetera = 0;
-            
-            if (estado.banco >= deuda) {
-                estado.banco -= deuda;
-            } else {
-                // No alcanzó el banco, rompe el chanchito de los ahorros!
-                deuda -= estado.banco;
-                estado.banco = 0;
-                estado.chanchito -= deuda;
-                if(estado.chanchito < 0) estado.chanchito = 0; // Quiebra total
-            }
+function explotarBomba(tipoRiesgo) {
+    const bomba = ElementosFinancieros.bombas[tipoRiesgo];
+    estado.bombasExplotadas++;
+    pagarDeuda(bomba.costo);
+    estado.riesgos[tipoRiesgo] = 0; // Resetea
+    
+    mostrarAlerta(`${bomba.emoji} ${bomba.msj} (-${formatearPYG(bomba.costo)})`, "bg-rose-600");
+    UI.jugador.classList.add('anim-dano');
+    UI.juego.classList.add('pantalla-sangrando');
+    setTimeout(() => UI.juego.classList.remove('pantalla-sangrando'), 1000);
+}
+
+function pagarDeuda(monto) {
+    let deuda = monto;
+    if (estado.billetera >= deuda) { estado.billetera -= deuda; } 
+    else {
+        deuda -= estado.billetera; estado.billetera = 0;
+        if (estado.banco >= deuda) { estado.banco -= deuda; } 
+        else {
+            deuda -= estado.banco; estado.banco = 0;
+            estado.chanchito -= deuda;
+            if(estado.chanchito < 0) estado.chanchito = 0; 
         }
     }
-    actualizarMarcadores();
 }
 
-function mostrarTextoFlotante(texto, colorClass) {
+function flotar(texto, color) {
     const txt = document.createElement('div');
-    txt.className = `texto-flotante ${colorClass}`;
+    txt.className = `texto-flotante ${color}`;
     txt.innerText = texto;
-    // Aparece arriba del jugador
     txt.style.left = UI.jugador.style.left;
     txt.style.bottom = '120px';
     UI.calle.appendChild(txt);
-    
     setTimeout(() => txt.remove(), 1000);
 }
 
-// ==========================================
-// 8. AUDITORÍA FINAL (El Entrenador)
-// ==========================================
-function terminarJuego() {
-    estado.jugando = false;
-    clearInterval(loops.juego);
-    clearInterval(loops.creadorElementos);
-    clearInterval(loops.meses);
-    
-    UI.zonaJuego.classList.add('hidden');
-    UI.hud.classList.add('hidden');
-    UI.pantallaFinal.classList.remove('hidden');
-    UI.pantallaFinal.classList.add('flex'); // Se necesita para centrar
-
-    // Llenar resultados puros
-    document.getElementById('resChanchito').innerText = formatearPYG(estado.chanchito);
-    document.getElementById('resEfectivo').innerText = formatearPYG(estado.banco + estado.billetera);
-    document.getElementById('resIntereses').innerText = formatearPYG(estado.interesesPagados);
-
-    // Generar el Feedback Psicológico
-    const lista = document.getElementById('listaConsejos');
-    lista.innerHTML = ''; // Limpiar anteriores
-
-    if (estado.chanchito > estado.sueldo * 0.5) {
-        agregarConsejo("🏆", "¡Impecable! Protegiste tu capital usando el chanchito. Pagarte a vos mismo primero es la regla N°1 de la riqueza.");
-    } else {
-        agregarConsejo("⚠️", "Ahorraste muy poco. En la vida real, si no separás el ahorro apenas cobrás, te lo terminás gastando todo.");
-    }
-
-    if (estado.gastosHormigaTocados > 3) {
-        agregarConsejo("☕", "Atrapaste muchos 'gastos por gusto' (cafés, comidas). Ese es tu dinero escurriéndose en cosas que no recordás al día siguiente.");
-    }
-
-    if (estado.tarjetasTocadas > 0) {
-        agregarConsejo("💳", `Usaste el pago mínimo y perdiste ${formatearPYG(estado.interesesPagados)} en intereses usureros. Los bancos se hacen millonarios con esa trampa. ¡Cortá esa tarjeta!`);
-    }
-
-    if (estado.bingosJugados > 0) {
-        agregarConsejo("🎰", "Apostaste tu dinero. La esperanza matemática siempre beneficia al casino, no a vos. ¡El dinero se gana trabajando e invirtiendo, no apostando!");
-    }
-
-    if (estado.banco === 0 && estado.billetera === 0) {
-        agregarConsejo("🛑", "Te quedaste en la quiebra total. Necesitás revisar urgente tus gastos fijos, están consumiendo todo tu oxígeno financiero.");
-    }
+function mostrarAlerta(msj, bgClass) {
+    UI.alerta.innerText = msj;
+    UI.alerta.className = `max-w-md mx-auto mt-2 text-white px-3 py-2 rounded-xl shadow-lg text-xs font-bold text-center transition-all ${bgClass}`;
+    UI.alerta.classList.remove('hidden');
+    setTimeout(() => UI.alerta.classList.add('hidden'), 3500);
 }
 
-function agregarConsejo(icono, texto) {
-    const div = document.createElement('div');
-    div.className = "flex gap-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm";
-    div.innerHTML = `<span class="text-2xl">${icono}</span><p>${texto}</p>`;
-    document.getElementById('listaConsejos').appendChild(div);
-}
-
-// Utilidad para formatear plata
 const formatearPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs';
 function actualizarMarcadores() {
     UI.banco.innerText = formatearPYG(estado.banco);
     UI.billetera.innerText = formatearPYG(estado.billetera);
     UI.chanchito.innerText = formatearPYG(estado.chanchito);
+    UI.felicidad.style.width = `${Math.max(0, estado.felicidad)}%`;
+}
+
+// ==========================================
+// AUDITORÍA (Los 4 Finales Sarcásticos)
+// ==========================================
+function terminarJuego() {
+    estado.jugando = false;
+    clearInterval(loops.juego); clearInterval(loops.creador); clearInterval(loops.meses);
+    
+    UI.juego.classList.add('hidden'); UI.hud.classList.add('hidden');
+    UI.final.classList.remove('hidden'); UI.final.classList.add('flex');
+
+    const totalPlata = estado.banco + estado.billetera + estado.chanchito;
+    
+    document.getElementById('resChanchito').innerText = formatearPYG(estado.chanchito);
+    document.getElementById('resEfectivo').innerText = formatearPYG(estado.banco + estado.billetera);
+    document.getElementById('resIntereses').innerText = formatearPYG(estado.interesesPagados);
+
+    const lista = document.getElementById('listaConsejos');
+    lista.innerHTML = ''; 
+
+    // EVALUACIÓN DE LOS 4 FINALES VIRALES
+    let veredicto = "";
+    if (totalPlata <= 0 && estado.felicidad < 40) {
+        veredicto = "💔 <b>POBRE Y MISERABLE:</b> Terminaste comiendo hule. Te privaste de todo para 'ahorrar', pero como no hiciste mantenimiento, los imprevistos te comieron vivo. La pobreza te respiró en la nuca.";
+    } else if (totalPlata <= 0 && estado.felicidad >= 40) {
+        veredicto = "🥳 <b>POBRE PERO FELIZ (Modo YOLO):</b> Saliste de joda, tomaste café caro y viviste como rey. Llora tu cuenta bancaria en guaraníes porque terminaste el año quebrado. Así no se construye un imperio, rey.";
+    } else if (totalPlata > estado.sueldo && estado.felicidad < 40) {
+        veredicto = "🧟‍♂️ <b>RICO PERO MISERABLE (Tacaño Nivel Dios):</b> Felicidades, lograste juntar mucha plata, pero sos el más rico del cementerio. Tu salud mental está destruida. El dinero es para darte paz, no para esclavizarte.";
+    } else {
+        veredicto = "👑 <b>EL LOBO DE WALL STREET:</b> ¡Equilibrio perfecto! Ahorraste en tu chanchito, no te dejaste robar por los intereses y encima te diste los gustos necesarios para no volverte loco. Entendiste el juego del dinero.";
+    }
+    
+    agregarConsejo(veredicto);
+
+    // Burlas específicas
+    if (estado.tarjetas > 0) agregarConsejo(`💳 Usaste la tarjeta para zafar y te robaron ${formatearPYG(estado.interesesPagados)} en intereses. El gerente del banco se compró un yate gracias a vos.`);
+    if (estado.bombasExplotadas > 0) agregarConsejo(`💥 Te hiciste el vivo esquivando el mantenimiento ${estado.bombasExplotadas} veces y la vida te cobró el triple con los imprevistos. Lo barato sale carísimo.`);
+    if (estado.bingos > 0) agregarConsejo(`🎰 El casino siempre gana. Jugaste al bingo esperando el milagro en vez de gestionar tu plata.`);
+}
+
+function agregarConsejo(texto) {
+    const div = document.createElement('div');
+    div.className = "bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-slate-700 leading-relaxed";
+    div.innerHTML = texto;
+    document.getElementById('listaConsejos').appendChild(div);
 }
