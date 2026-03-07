@@ -204,8 +204,8 @@ function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     let estiloExtra = item.id === 'viaje' ? 'border-amber-400 shadow-amber-500/50 scale-110' : 'border-slate-200';
     
     div.className = `elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 flex items-center justify-center text-3xl ${estiloExtra}`;
-    // Usamos innerHTML para que los logos HTML (Netflix/BF) se procesen bien
-    div.innerHTML = item.emoji; 
+    
+    div.innerText = item.emoji; 
     
     div.style.left = ['16.6%', '50%', '83.3%'][carril];
     div.style.willChange = 'transform'; 
