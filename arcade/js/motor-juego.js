@@ -4,11 +4,7 @@ let estado = {
     jugando: false, mesActual: 1, carrilJugador: 1,
     sueldo: 0, gastosFijos: 0,
     banco: 0, billetera: 0, chanchito: 0, felicidad: 50,
-    
-    // MECÁNICA 2: Relojes Biológicos (Tenés 15 seg para comer, 25 para arreglar la casa)
     relojes: { salud: 15, auto: 25, casa: 30, set: 35 },
-    
-    // Estadísticas y Contadores
     interesesPagados: 0, tarjetas: 0, bingos: 0, bombasExplotadas: 0,
     sangradoTarjeta: 0, contadorSpawns: 0
 };
@@ -24,7 +20,6 @@ const UI = {
     mes: document.getElementById('uiMes'), alerta: document.getElementById('uiAlerta')
 };
 
-// Formateador en vivo para las casillas (Agrega los puntitos de miles solos)
 const formatoInput = (e) => {
     let val = e.target.value.replace(/\D/g, '');
     e.target.value = val ? new Intl.NumberFormat('es-PY').format(val).replace(/,/g, '.') : '';
@@ -36,12 +31,11 @@ function arrancarJuego(e) {
     if(e) e.preventDefault();
     if(estado.jugando) return;
 
-    // Lee los números quitando los puntos
     estado.sueldo = parseInt(document.getElementById('inputSueldo').value.replace(/\D/g, '')) || 0;
     estado.gastosFijos = parseInt(document.getElementById('inputGastos').value.replace(/\D/g, '')) || 0;
     
     estado.banco = estado.sueldo;
-    estado.billetera = estado.sueldo * 0.10; // Arracás solo con un 10% en mano para emergencias
+    estado.billetera = estado.sueldo * 0.10; 
     
     actualizarMarcadores();
     UI.inicio.classList.add('hidden');
@@ -50,8 +44,13 @@ function arrancarJuego(e) {
     
     estado.jugando = true;
     loops.juego = setInterval(actualizarFisicas, 1000 / 60);
-    loops.creador = setInterval(crearElemento, 1300);
     loops.meses = setInterval(pasarMes, 1000);
+    
+    // Arranca rápido a los 1.5 seg, y luego cae 1 elemento cada 1.1 seg.
+    setTimeout(() => {
+        crearElemento();
+        loops.creador = setInterval(crearElemento, 1100);
+    }, 1500);
 }
 
 const btnEmpezar = document.getElementById('btnEmpezar');
@@ -73,8 +72,10 @@ function pasarMes() {
     if(!estado.jugando) return;
     segundos++;
     
-    // MECÁNICA 1: EL COSTO DE RESPIRAR (Pierdes 10.000 Gs por segundo invisiblemente)
-    pagarDeuda(10000);
+    pagarDeuda(10000); // Costo de vivir
+
+    // DEPLECIÓN DE FELICIDAD: Cae 2 puntos cada segundo. Te obliga a gastar!
+    estado.felicidad -= 2;
 
     if (estado.sangradoTarjeta > 0) {
         pagarDeuda(estado.sangradoTarjeta);
@@ -91,12 +92,7 @@ function pasarMes() {
         }
     }
 
-    // MECÁNICA 2: GESTIÓN DE RELOJES BIOLÓGICOS (Se acaba el tiempo para hacer mantenimiento)
-    estado.relojes.salud--;
-    estado.relojes.auto--;
-    estado.relojes.casa--;
-    estado.relojes.set--;
-
+    estado.relojes.salud--; estado.relojes.auto--; estado.relojes.casa--; estado.relojes.set--;
     if (estado.relojes.salud <= 0) { explotarBomba('salud'); estado.relojes.salud = 15; }
     if (estado.relojes.auto <= 0) { explotarBomba('auto'); estado.relojes.auto = 25; }
     if (estado.relojes.casa <= 0) { explotarBomba('casa'); estado.relojes.casa = 30; }
@@ -104,7 +100,7 @@ function pasarMes() {
 
     if (estado.felicidad <= 0) {
         explotarBomba('burnout');
-        estado.felicidad = 30; // Psicólogo
+        estado.felicidad = 35; // Se cura un poco pero cuesta plata
     }
 
     actualizarMarcadores();
@@ -115,22 +111,35 @@ function crearElemento() {
     if(!estado.jugando) return;
     estado.contadorSpawns++;
 
-    // MECÁNICA 3: ENCERRONAS INEVITABLES (Cada 6 caídas, te bloquea la calle entera)
+    // MECÁNICA ZIG-ZAG: Cada 8 spawns, te tira un combo de esquivar
+    if (estado.contadorSpawns % 8 === 0) {
+        crearZigZag();
+        return;
+    }
+
+    // MECÁNICA ENCERRONA (Muro de 3): Cada 6 spawns
     if (estado.contadorSpawns % 6 === 0) {
         crearEncerrona();
         return;
     }
 
-    // El resto de las veces (85%) cae normal
-    const rng = Math.random();
-    if(rng > 0.85) {
+    // MECÁNICA VIAJE (Avión): Mucha chance de salir en meses 8, 11 y 12
+    if ([8, 11, 12].includes(estado.mesActual) && Math.random() < 0.4) {
+        const viaje = ElementosFinancieros.tentaciones.find(t => t.id === 'viaje');
+        crearDivCaida(viaje, Math.floor(Math.random() * 3));
+        return;
+    }
+
+    // DECISIONES BINARIAS
+    if(Math.random() > 0.85) {
         const decision = ElementosFinancieros.decisiones[Math.floor(Math.random() * ElementosFinancieros.decisiones.length)];
         crearDivCaida(decision.opcionA, 0, decision.id); 
         crearDivCaida(decision.opcionB, 2, decision.id); 
         return;
     }
 
-    let categorias = [...ElementosFinancieros.tentaciones, ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.ingresos, ...ElementosFinancieros.instrumentos];
+    // NORMAL
+    let categorias = [...ElementosFinancieros.tentaciones.filter(t=>t.id!=='viaje'), ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.ingresos, ...ElementosFinancieros.instrumentos];
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
 
@@ -139,25 +148,44 @@ function crearElemento() {
 }
 
 function crearEncerrona() {
-    // Genera un muro de 3 cosas y tenés que chocar alguna. ¡Adrenalina pura!
-    const tentacion = ElementosFinancieros.tentaciones[Math.floor(Math.random() * ElementosFinancieros.tentaciones.length)];
+    const tentacion = ElementosFinancieros.tentaciones[Math.floor(Math.random() * (ElementosFinancieros.tentaciones.length-1))]; // Evita el avión en el muro
     const obligacion = ElementosFinancieros.mantenimiento[Math.floor(Math.random() * ElementosFinancieros.mantenimiento.length)];
-    const trampa = ElementosFinancieros.instrumentos.find(i => i.id === 'tarjeta'); // El salvavidas venenoso
+    const trampa = ElementosFinancieros.instrumentos.find(i => i.id === 'tarjeta'); 
 
     const items = [tentacion, obligacion, trampa];
-    items.sort(() => Math.random() - 0.5); // Mezcla aleatoria en qué carril salen
+    items.sort(() => Math.random() - 0.5); 
 
     crearDivCaida(items[0], 0);
     crearDivCaida(items[1], 1);
     crearDivCaida(items[2], 2);
 }
 
-function crearDivCaida(item, carril, esDecisionId = null) {
+function crearZigZag() {
+    // Tira 3 filas de gastos comunes seguidas, con un solo hueco libre que cambia (Ej: Izq, Der, Centro)
+    const basurita = { emoji: "📦", costo: 50000, felicidad: 0, tipo: "gasto", nombre: "Gasto Tonto" };
+    
+    // Fila 1 (Hueco en carril 0) -> Caída normal (-60px)
+    crearDivCaida(basurita, 1, null, -60);
+    crearDivCaida(basurita, 2, null, -60);
+    
+    // Fila 2 (Hueco en carril 2) -> Cae más arriba (-180px)
+    crearDivCaida(basurita, 0, null, -200);
+    crearDivCaida(basurita, 1, null, -200);
+
+    // Fila 3 (Hueco en carril 0) -> Cae más arriba todavía (-320px)
+    crearDivCaida(basurita, 1, null, -340);
+    crearDivCaida(basurita, 2, null, -340);
+}
+
+function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     const div = document.createElement('div');
-    div.className = 'elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 border-slate-200 flex items-center justify-center text-4xl';
+    // Si es un gasto enorme (Avión), hacerlo brillar distinto
+    let estiloExtra = item.id === 'viaje' ? 'border-amber-400 shadow-amber-500/50 scale-110' : 'border-slate-200';
+    
+    div.className = `elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 flex items-center justify-center text-4xl ${estiloExtra}`;
     div.innerText = item.emoji;
     div.style.left = ['16.6%', '50%', '83.3%'][carril];
-    div.style.top = '-60px';
+    div.style.top = `${topOffset}px`;
     
     div.dataset.tipo = item.tipo || "decision";
     div.dataset.riesgo = item.riesgo || "";
@@ -174,8 +202,10 @@ function crearDivCaida(item, carril, esDecisionId = null) {
 }
 
 function actualizarFisicas() {
-    // MECÁNICA 4: INFLACIÓN DE VELOCIDAD (Arranca en 6, termina en 12 al final del año)
-    const velocidad = 6 + (segundos / 10); 
+    // AUMENTO GRADUAL CADA 3 MESES
+    // Mes 1-3: Vel 6 | Mes 4-6: Vel 7.5 | Mes 7-9: Vel 9 | Mes 10-12: Vel 10.5
+    const escalon = Math.floor((estado.mesActual - 1) / 3);
+    const velocidad = 6 + (escalon * 1.5); 
     
     const elementos = document.querySelectorAll('.elemento-cae');
     const posJugador = UI.calle.offsetHeight - 90;
@@ -221,7 +251,6 @@ function procesarChoque(el) {
              flotar(`¡Decisión!`, 'text-slate-500');
         }
         
-        // MECÁNICA 2 (Reset): Si hiciste el mantenimiento, tu reloj biológico se reinicia
         if (riesgo !== "") {
             if(riesgo === 'salud') estado.relojes.salud = 15;
             if(riesgo === 'auto') estado.relojes.auto = 25;
@@ -352,18 +381,18 @@ function terminarJuego() {
 
     let veredicto = "";
     if (totalPlata <= 0 && estado.felicidad < 40) {
-        veredicto = "💔 <b>POBRE Y MISERABLE:</b> Terminaste comiendo hule. Te privaste de todo para 'ahorrar', pero como no hiciste mantenimiento, los imprevistos te comieron vivo. La pobreza te respiró en la nuca.";
+        veredicto = "💔 <b>POBRE Y MISERABLE:</b> Terminaste comiendo hule. Te privaste de todo para 'ahorrar', pero los imprevistos te comieron vivo y te deprimiste. La pobreza te respiró en la nuca.";
     } else if (totalPlata <= 0 && estado.felicidad >= 40) {
-        veredicto = "🥳 <b>POBRE PERO FELIZ (Modo YOLO):</b> Saliste de joda, tomaste café caro y viviste como rey. Llora tu cuenta bancaria en guaraníes porque terminaste el año quebrado. Así no se construye un imperio, rey.";
+        veredicto = "🥳 <b>POBRE PERO FELIZ (Modo YOLO):</b> Saliste de joda, fuiste de viaje y viviste como rey. Llora tu cuenta bancaria porque terminaste el año quebrado. Así no se construye un imperio, rey.";
     } else if (totalPlata > (estado.sueldo * 2) && estado.felicidad < 40) {
-        veredicto = "🧟‍♂️ <b>RICO PERO MISERABLE (Tacaño Nivel Dios):</b> Felicidades, lograste juntar mucha plata, pero sos el más rico del cementerio. Tu salud mental está destruida. El dinero es para darte paz, no para esclavizarte.";
+        veredicto = "🧟‍♂️ <b>RICO PERO MISERABLE (Tacaño Nivel Dios):</b> Lograste juntar mucha plata, pero sos el más rico del cementerio. Tu salud mental está destruida. El dinero es para darte paz, no para esclavizarte.";
     } else {
-        veredicto = "👑 <b>EL LOBO DE WALL STREET:</b> ¡Equilibrio perfecto! Ahorraste en tu chanchito, no te dejaste robar por los intereses y encima te diste los gustos necesarios para no volverte loco. Entendiste el juego del dinero.";
+        veredicto = "👑 <b>EL LOBO DE WALL STREET:</b> ¡Equilibrio perfecto! Ahorraste en tu chanchito, sobreviviste y encima te diste los gustos para no volverte loco. Entendiste el juego del dinero.";
     }
     agregarConsejo(veredicto);
 
     if (estado.tarjetas > 0) agregarConsejo(`💳 Usaste la tarjeta para zafar y te robaron ${formatearPYG(estado.interesesPagados)} en intereses. El gerente del banco se compró un yate gracias a vos.`);
-    if (estado.bombasExplotadas > 0) agregarConsejo(`💥 Te hiciste el vivo esquivando el mantenimiento básico y la vida te cobró el triple con los imprevistos médicos/hogar. Lo barato sale carísimo.`);
+    if (estado.bombasExplotadas > 0) agregarConsejo(`💥 Te hiciste el vivo esquivando el mantenimiento básico y la vida te cobró el triple con los imprevistos. Lo barato sale carísimo.`);
     if (estado.bingos > 0) agregarConsejo(`🎰 El casino siempre gana. Jugaste al bingo esperando el milagro en vez de gestionar tu plata.`);
 }
 
