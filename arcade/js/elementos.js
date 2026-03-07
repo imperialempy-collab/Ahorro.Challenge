@@ -1,5 +1,5 @@
 // ==========================================
-// ARCHIVO MAESTRO: ELEMENTOS FINANCIEROS (V. FINAL INFLACIÓN)
+// ARCHIVO MAESTRO: ELEMENTOS FINANCIEROS (V. FINAL ESTABLE)
 // ==========================================
 
 export const ConfiguracionJuego = {
@@ -15,17 +15,16 @@ export const ElementosFinancieros = {
         { id: "zapatillas", nombre: "Zapatillas", emoji: "👟", costo: 300000, felicidad: 15, tipo: "gasto" },
         { id: "salida", nombre: "Salida con Amigos", emoji: "🍻", costo: 300000, felicidad: 15, tipo: "gasto" },
         { id: "viaje", nombre: "Viaje de Vacaciones", emoji: "✈️", costo: 5000000, felicidad: 45, tipo: "gasto" },
-        // NUEVO: PRESIÓN SOCIAL
         { id: "pollada", nombre: "Pollada del Socio", emoji: "🍗", costo: 150000, felicidad: 0, tipo: "social", penalizacion: 15 }
     ],
 
-    // NUEVO: EVENTOS ESTACIONALES (Aparecen en meses específicos)
+    // 2. EVENTOS ESTACIONALES
     estacionales: [
         { id: "mama", nombre: "Regalo a Mamá", emoji: "💐", costo: 300000, felicidad: 10, tipo: "gasto" },
-        { id: "blackfriday", nombre: "Black Friday", emoji: "<span class='bg-black text-white text-sm px-1 py-1 rounded font-black'>BF</span>", costo: 600000, felicidad: 20, tipo: "gasto" }
+        { id: "blackfriday", nombre: "Black Friday", emoji: "🛍️", costo: 600000, felicidad: 20, tipo: "gasto" }
     ],
 
-    // 2. MANTENIMIENTO (Sufren inflación en el mes 6)
+    // 3. MANTENIMIENTO
     mantenimiento: [
         { id: "super", nombre: "Supermercado", emoji: "🛒", costo: 500000, felicidad: 5, tipo: "mantenimiento", riesgo: "salud" }, 
         { id: "mercado", nombre: "Mercado Abasto", emoji: "🍎", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "salud" }, 
@@ -34,7 +33,7 @@ export const ElementosFinancieros = {
         { id: "iva", nombre: "Pagar Impuestos", emoji: "📝", costo: 100000, felicidad: -5, tipo: "mantenimiento", riesgo: "set" }
     ],
 
-    // 3. LAS BOMBAS 
+    // 4. LAS BOMBAS 
     bombas: {
         salud: { nombre: "Internación Médica", emoji: "🚑", costo: 1500000, msj: "Te hiciste el vivo no comiendo. Internado." },
         auto: { nombre: "Motor Fundido", emoji: "💥", costo: 1500000, msj: "Por ahorrar aceite, fundiste el motor." },
@@ -43,12 +42,12 @@ export const ElementosFinancieros = {
         burnout: { nombre: "Colapso Mental", emoji: "🧟‍♂️", costo: 1000000, msj: "Cero diversión. Colapso por estrés, pagá el psicólogo." }
     },
 
-    // 4. INGRESOS EXTRAS 
+    // 5. INGRESOS EXTRAS 
     ingresos: [
         { id: "changa", nombre: "Trabajo Extra", emoji: "💼", costo: -150000, felicidad: -10, tipo: "ingreso" } 
     ],
 
-    // 5. HERRAMIENTAS Y DECISIONES
+    // 6. HERRAMIENTAS Y DECISIONES
     instrumentos: [
         { id: "tarjeta", nombre: "Tarjeta de Crédito", emoji: "💳", teDa: 500000, interesSeg: 50000, tipo: "deuda" }, 
         { id: "bingo", nombre: "Bingo", emoji: "🎰", costo: 50000, prob: 0.10, premio: 500000, tipo: "apuesta" },
@@ -56,8 +55,7 @@ export const ElementosFinancieros = {
     ],
     
     decisiones: [
-        // NUEVO: LOGO DE NETFLIX REALISTA
-        { tipo: "decision", id: "netflix", opcionA: { emoji: "<span class='text-red-600 font-black text-4xl tracking-tighter'>N</span>", nombre: "Netflix", costo: 50000, felicidad: 8, msj: "Netflix!" }, opcionB: { emoji: "✂️", nombre: "Cancelar", costo: 0, felicidad: -10, msj: "Aburrido" } },
-        { tipo: "decision", id: "transporte", opcionA: { emoji: "🚖", nombre: "Ir en Bolt", costo: 40000, felicidad: 5, msj: "Viaje VIP" }, opcionB: { emoji: "🚌", nombre: "Ir en Bus", costo: 10000, felicidad: -12, msj: "Calor" } } 
+        { tipo: "decision", id: "netflix", opcionA: { emoji: "🍿", nombre: "Suscripciones", costo: 50000, felicidad: 8, msj: "Netflix!" }, opcionB: { emoji: "✂️", nombre: "Cancelar", costo: 0, felicidad: -10, msj: "Aburrido" } },
+        { tipo: "decision", id: "transporte", opcionA: { emoji: "🚕", nombre: "Ir en Bolt", costo: 40000, felicidad: 5, msj: "Viaje VIP" }, opcionB: { emoji: "🚌", nombre: "Ir en Bus", costo: 10000, felicidad: -12, msj: "Calor" } } 
     ]
 };
