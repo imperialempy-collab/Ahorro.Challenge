@@ -1,28 +1,36 @@
 // ==========================================
-// ARCHIVO MAESTRO: ELEMENTOS FINANCIEROS (V. 36 SEGUNDOS)
+// ARCHIVO MAESTRO: ELEMENTOS FINANCIEROS (V. FINAL INFLACIÓN)
 // ==========================================
 
 export const ConfiguracionJuego = {
-    tiempoPartidaSegundos: 36, // 1 año entero comprimido en pura adrenalina
-    cicloMesSegundos: 3        // Cada 3 seg (1 mes) cobra gastos fijos
+    tiempoPartidaSegundos: 36, 
+    cicloMesSegundos: 3        
 };
 
 export const ElementosFinancieros = {
-    // 1. TENTACIONES (Dan felicidad, restan plata)
+    // 1. TENTACIONES Y PRESIÓN SOCIAL
     tentaciones: [
         { id: "cafe", nombre: "Café de Estación", emoji: "☕", costo: 25000, felicidad: 5, tipo: "gasto" },
         { id: "lomito", nombre: "Lomito de Viernes", emoji: "🍔", costo: 50000, felicidad: 8, tipo: "gasto" },
-        { id: "zapatillas", nombre: "Zapatillas en Oferta", emoji: "👟", costo: 300000, felicidad: 15, tipo: "gasto" },
-        { id: "salida", nombre: "Salida con Amigos", emoji: "🍻", costo: 300000, felicidad: 15, tipo: "gasto" }, // PRECIO ACTUALIZADO
-        { id: "viaje", nombre: "Viaje de Vacaciones", emoji: "✈️", costo: 5000000, felicidad: 45, tipo: "gasto" } 
+        { id: "zapatillas", nombre: "Zapatillas", emoji: "👟", costo: 300000, felicidad: 15, tipo: "gasto" },
+        { id: "salida", nombre: "Salida con Amigos", emoji: "🍻", costo: 300000, felicidad: 15, tipo: "gasto" },
+        { id: "viaje", nombre: "Viaje de Vacaciones", emoji: "✈️", costo: 5000000, felicidad: 45, tipo: "gasto" },
+        // NUEVO: PRESIÓN SOCIAL
+        { id: "pollada", nombre: "Pollada del Socio", emoji: "🍗", costo: 150000, felicidad: 0, tipo: "social", penalizacion: 15 }
     ],
 
-    // 2. MANTENIMIENTO
+    // NUEVO: EVENTOS ESTACIONALES (Aparecen en meses específicos)
+    estacionales: [
+        { id: "mama", nombre: "Regalo a Mamá", emoji: "💐", costo: 300000, felicidad: 10, tipo: "gasto" },
+        { id: "blackfriday", nombre: "Black Friday", emoji: "<span class='bg-black text-white text-sm px-1 py-1 rounded font-black'>BF</span>", costo: 600000, felicidad: 20, tipo: "gasto" }
+    ],
+
+    // 2. MANTENIMIENTO (Sufren inflación en el mes 6)
     mantenimiento: [
-        { id: "super", nombre: "Supermercado", emoji: "🛒", costo: 500000, felicidad: 5, tipo: "mantenimiento", riesgo: "salud" }, // PRECIO ACTUALIZADO
-        { id: "mercado", nombre: "Mercado Abasto", emoji: "🍎", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "salud" }, // PRECIO ACTUALIZADO
-        { id: "taller", nombre: "Mantenimiento Auto", emoji: "🛢️", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "auto" }, // PRECIO ACTUALIZADO
-        { id: "gotera", nombre: "Arreglar Gotera", emoji: "🔧", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "casa" }, // PRECIO ACTUALIZADO
+        { id: "super", nombre: "Supermercado", emoji: "🛒", costo: 500000, felicidad: 5, tipo: "mantenimiento", riesgo: "salud" }, 
+        { id: "mercado", nombre: "Mercado Abasto", emoji: "🍎", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "salud" }, 
+        { id: "taller", nombre: "Mantenimiento Auto", emoji: "🛢️", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "auto" }, 
+        { id: "gotera", nombre: "Arreglar Gotera", emoji: "🔧", costo: 350000, felicidad: 0, tipo: "mantenimiento", riesgo: "casa" }, 
         { id: "iva", nombre: "Pagar Impuestos", emoji: "📝", costo: 100000, felicidad: -5, tipo: "mantenimiento", riesgo: "set" }
     ],
 
@@ -37,19 +45,19 @@ export const ElementosFinancieros = {
 
     // 4. INGRESOS EXTRAS 
     ingresos: [
-        { id: "changa", nombre: "Trabajo Extra", emoji: "💼", costo: -150000, felicidad: -10, tipo: "ingreso" }, 
-        { id: "billete", nombre: "Plata en el pantalón", emoji: "💵", costo: -20000, felicidad: 5, tipo: "ingreso" } // PRECIO ACTUALIZADO
+        { id: "changa", nombre: "Trabajo Extra", emoji: "💼", costo: -150000, felicidad: -10, tipo: "ingreso" } 
     ],
 
     // 5. HERRAMIENTAS Y DECISIONES
     instrumentos: [
-        { id: "tarjeta", nombre: "Tarjeta de Crédito", emoji: "💳", teDa: 500000, interesSeg: 50000, tipo: "deuda" }, // PRECIO ACTUALIZADO
+        { id: "tarjeta", nombre: "Tarjeta de Crédito", emoji: "💳", teDa: 500000, interesSeg: 50000, tipo: "deuda" }, 
         { id: "bingo", nombre: "Bingo", emoji: "🎰", costo: 50000, prob: 0.10, premio: 500000, tipo: "apuesta" },
-        { id: "chanchito", nombre: "Ahorro Blindado", emoji: "🐷", porcentaje: 0.10, tipo: "salvavidas" } // PRECIO ACTUALIZADO (10%)
+        { id: "chanchito", nombre: "Ahorro Blindado", emoji: "🐷", porcentaje: 0.10, tipo: "salvavidas" } 
     ],
     
     decisiones: [
-        { tipo: "decision", id: "netflix", opcionA: { emoji: "📺", nombre: "Netflix", costo: 50000, felicidad: 8, msj: "Netflix!" }, opcionB: { emoji: "✂️", nombre: "Cancelar", costo: 0, felicidad: -10, msj: "Aborrido" } },
-        { tipo: "decision", id: "transporte", opcionA: { emoji: "🚖", nombre: "Ir en Bolt", costo: 40000, felicidad: 5, msj: "Viaje VIP" }, opcionB: { emoji: "🚌", nombre: "Ir en Bus", costo: 10000, felicidad: -12, msj: "Calor" } } // PRECIOS ACTUALIZADOS
+        // NUEVO: LOGO DE NETFLIX REALISTA
+        { tipo: "decision", id: "netflix", opcionA: { emoji: "<span class='text-red-600 font-black text-4xl tracking-tighter'>N</span>", nombre: "Netflix", costo: 50000, felicidad: 8, msj: "Netflix!" }, opcionB: { emoji: "✂️", nombre: "Cancelar", costo: 0, felicidad: -10, msj: "Aburrido" } },
+        { tipo: "decision", id: "transporte", opcionA: { emoji: "🚖", nombre: "Ir en Bolt", costo: 40000, felicidad: 5, msj: "Viaje VIP" }, opcionB: { emoji: "🚌", nombre: "Ir en Bus", costo: 10000, felicidad: -12, msj: "Calor" } } 
     ]
 };
