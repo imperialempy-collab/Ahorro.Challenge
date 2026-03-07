@@ -76,7 +76,7 @@ function pasarMes() {
     if(!estado.jugando) return;
     segundos++;
     
-    pagarDeuda(10000); 
+    pagarDeuda(16600); 
     estado.felicidad -= 2; 
 
     if (estado.sangradoTarjeta > 0) {
