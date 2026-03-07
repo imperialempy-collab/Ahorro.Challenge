@@ -53,7 +53,7 @@
     font-size: 1.8rem;
     z-index: 10;
     transform: translateX(-50%);
-    border-radius: 10px;
+    border-radius: 6px;
     /* La animación de caída la maneja JavaScript para saber exactamente dónde está */
 }
 
