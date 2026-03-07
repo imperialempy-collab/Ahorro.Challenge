@@ -19,20 +19,20 @@
     <div id="pantallaInicio" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-md">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
             <div class="text-center mb-6">
-                <span class="text-5xl block mb-2">🏃‍♂️🐷</span>
+                <span class="text-5xl block mb-2">🏃‍♂️💸</span>
                 <h2 class="text-2xl font-display font-black text-slate-900">Ahorro <span class="text-primary">Run</span></h2>
-                <p class="text-sm text-slate-500">Configurá tu realidad financiera antes de correr.</p>
+                <p class="text-sm text-slate-500">Sobreviví 60 segundos a la vida real.</p>
             </div>
 
             <div class="space-y-4 mb-6">
                 <div>
                     <label class="text-xs font-bold text-slate-400 uppercase">Tu Sueldo Mensual (Gs)</label>
-                    <input type="number" id="inputSueldo" value="3500000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary">
+                    <input type="text" inputmode="numeric" id="inputSueldo" value="3.500.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary text-lg">
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase">Gastos Fijos Mensuales (Gs)</label>
-                    <p class="text-[10px] text-slate-400 mb-1">Alquiler, luz, agua, deudas previas.</p>
-                    <input type="number" id="inputGastos" value="1500000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-primary">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Gastos Fijos + Deudas (Gs)</label>
+                    <p class="text-[10px] text-slate-400 mb-1">Alquiler, cuotas, luz, agua.</p>
+                    <input type="text" inputmode="numeric" id="inputGastos" value="2.500.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-rose-500 text-lg">
                 </div>
             </div>
 
@@ -80,12 +80,8 @@
         <div id="calle" class="w-full max-w-md h-full relative overflow-hidden bg-slate-700 border-x-4 border-slate-600">
             <div class="linea-carril left-1/3"></div>
             <div class="linea-carril left-2/3"></div>
-
-            <div id="jugador" class="absolute bottom-10 w-16 h-16 flex items-center justify-center text-5xl transition-transform duration-100 transform -translate-x-1/2" style="left: 50%;">
-                🐷
-            </div>
+            <div id="jugador" class="absolute bottom-10 w-16 h-16 flex items-center justify-center text-5xl transition-transform duration-100 transform -translate-x-1/2" style="left: 50%;">🐷</div>
         </div>
-
         <div class="absolute inset-0 z-20 flex">
             <div id="btnIzq" class="w-1/2 h-full"></div>
             <div id="btnDer" class="w-1/2 h-full"></div>
@@ -116,8 +112,7 @@
             </div>
 
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Feedback del Entrenador</h3>
-            <div id="listaConsejos" class="space-y-2 mb-8 max-h-48 overflow-y-auto pr-2 text-sm text-slate-600 font-medium">
-                </div>
+            <div id="listaConsejos" class="space-y-2 mb-8 max-h-48 overflow-y-auto pr-2 text-sm text-slate-600 font-medium"></div>
 
             <button onclick="location.reload()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg hover:bg-slate-800">
                 Jugar Otro Año 🔄
