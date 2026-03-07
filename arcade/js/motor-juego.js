@@ -4,13 +4,13 @@ let estado = {
     jugando: false, mesActual: 1, carrilJugador: 1,
     sueldo: 0, gastosFijos: 0,
     banco: 0, billetera: 0, chanchito: 0, felicidad: 50,
-    // Relojes ajustados a 36 segundos (Salud: 9s, Auto: 15s, Casa: 18s, Set: 21s)
     relojes: { salud: 9, auto: 15, casa: 18, set: 21 },
     interesesPagados: 0, tarjetas: 0, bingos: 0, bombasExplotadas: 0,
     sangradoTarjeta: 0, contadorSpawns: 0, viajesMostrados: 0
 };
 
-let loops = { juego: null, creador: null, meses: null };
+let loops = { creador: null, meses: null };
+let lastTime = 0; // Para el nuevo motor gráfico fluido
 
 const UI = {
     inicio: document.getElementById('pantallaInicio'), hud: document.getElementById('hud'),
@@ -44,10 +44,13 @@ function arrancarJuego(e) {
     UI.juego.classList.remove('hidden');
     
     estado.jugando = true;
-    loops.juego = setInterval(actualizarFisicas, 1000 / 60);
+    
+    // Inicia el nuevo Motor Gráfico Fluido (GPU)
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+
     loops.meses = setInterval(pasarMes, 1000);
     
-    // Arranque rápido, y spawn furioso cada 0.8s
     setTimeout(() => {
         crearElemento();
         loops.creador = setInterval(crearElemento, 800);
@@ -74,7 +77,7 @@ function pasarMes() {
     segundos++;
     
     pagarDeuda(10000); 
-    estado.felicidad -= 2; // Baja la felicidad, te obliga a gastar
+    estado.felicidad -= 2; 
 
     if (estado.sangradoTarjeta > 0) {
         pagarDeuda(estado.sangradoTarjeta);
@@ -85,6 +88,8 @@ function pasarMes() {
         estado.mesActual++;
         if(estado.mesActual <= 12) {
             UI.mes.innerText = estado.mesActual;
+            
+            // Si el banco está en negativo, el sueldo primero cubre el agujero
             estado.banco += estado.sueldo;
             pagarDeuda(estado.gastosFijos);
             mostrarAlerta("¡Mes nuevo! Sueldo y deudas descontadas.", "bg-blue-600");
@@ -110,7 +115,6 @@ function crearElemento() {
     if(!estado.jugando) return;
     estado.contadorSpawns++;
 
-    // EL AVIÓN: Aparece exactamente 3 veces en momentos críticos
     if (estado.mesActual >= 8 && estado.viajesMostrados === 0) {
         estado.viajesMostrados++;
         crearDivCaida(ElementosFinancieros.tentaciones.find(t=>t.id==='viaje'), Math.floor(Math.random() * 3));
@@ -137,7 +141,6 @@ function crearElemento() {
         return;
     }
 
-    // CAÍDA DOBLE (Nunca un objeto solo)
     let categorias = [...ElementosFinancieros.tentaciones.filter(t=>t.id!=='viaje'), ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.ingresos, ...ElementosFinancieros.instrumentos];
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
@@ -149,7 +152,7 @@ function crearElemento() {
     carriles.sort(() => Math.random() - 0.5);
 
     crearDivCaida(item1, carriles[0]);
-    crearDivCaida(item2, carriles[1]); // Cae un segundo objeto al lado
+    crearDivCaida(item2, carriles[1]); 
 }
 
 function crearEncerrona() {
@@ -166,7 +169,6 @@ function crearEncerrona() {
 }
 
 function crearZigZag() {
-    // Saca objetos al azar reales, no solo cajitas
     const randomItem = () => {
         let cats = [...ElementosFinancieros.tentaciones.filter(t=>t.id!=='viaje'), ...ElementosFinancieros.mantenimiento];
         return cats[Math.floor(Math.random() * cats.length)];
@@ -186,10 +188,16 @@ function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     const div = document.createElement('div');
     let estiloExtra = item.id === 'viaje' ? 'border-amber-400 shadow-amber-500/50 scale-110' : 'border-slate-200';
     
-    div.className = `elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 flex items-center justify-center text-4xl ${estiloExtra}`;
+    // Se redujo el tamaño de text-4xl a text-3xl para mayor legibilidad
+    div.className = `elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 flex items-center justify-center text-3xl ${estiloExtra}`;
     div.innerText = item.emoji;
+    
+    // Posicionamiento horizontal y preparación para GPU
     div.style.left = ['16.6%', '50%', '83.3%'][carril];
-    div.style.top = `${topOffset}px`;
+    div.style.willChange = 'transform'; // Activa aceleración gráfica
+    
+    div.dataset.posY = topOffset; // Guardamos la posición Y real
+    div.style.transform = `translate(-50%, ${topOffset}px)`;
     
     div.dataset.tipo = item.tipo || "decision";
     div.dataset.riesgo = item.riesgo || "";
@@ -205,25 +213,42 @@ function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     UI.calle.appendChild(div);
 }
 
-function actualizarFisicas() {
-    // AUMENTO GRADUAL CADA 1 MES (3 Segundos)
+// NUEVO MOTOR DE FÍSICAS FLUIDO (Acelerado por GPU)
+function gameLoop(timestamp) {
+    if (!estado.jugando) return;
+    
+    // Calculamos el tiempo transcurrido entre cuadros (Delta Time)
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+    
+    actualizarFisicas(dt);
+    requestAnimationFrame(gameLoop);
+}
+
+function actualizarFisicas(dt) {
+    // Velocidad base en pixeles por segundo + Aceleración progresiva
     const escalon = Math.floor(segundos / 3);
-    const velocidad = 7 + (escalon * 0.5); 
+    const pixelesPorSegundo = 420 + (escalon * 30); 
+    const avanceFisico = pixelesPorSegundo * dt;
     
     const elementos = document.querySelectorAll('.elemento-cae');
     const posJugador = UI.calle.offsetHeight - 90;
 
     elementos.forEach(el => {
-        let top = parseFloat(el.style.top);
-        el.style.top = (top + velocidad) + 'px';
+        let posY = parseFloat(el.dataset.posY) + avanceFisico;
+        el.dataset.posY = posY;
+        
+        // Mueve usando la tarjeta gráfica
+        el.style.transform = `translate(-50%, ${posY}px)`;
 
-        if (top > posJugador - 40 && top < posJugador + 40) {
+        // Colisión precisa
+        if (posY > posJugador - 40 && posY < posJugador + 40) {
             if (parseInt(el.dataset.carril) === estado.carrilJugador) {
                 procesarChoque(el);
             }
         }
 
-        if (top > UI.calle.offsetHeight) {
+        if (posY > UI.calle.offsetHeight + 100) {
             if (el.dataset.groupId) {
                 const grupo = document.querySelectorAll(`[data-group-id="${el.dataset.groupId}"]`);
                 grupo.forEach(g => g.remove());
@@ -262,7 +287,16 @@ function procesarChoque(el) {
         }
     } 
     else if (tipo === 'ingreso') {
-        estado.billetera += Math.abs(costo);
+        // Los ingresos entran limpios a la billetera, o cubren deudas bancarias
+        if (estado.banco < 0) {
+            estado.banco += Math.abs(costo);
+            if (estado.banco > 0) {
+                estado.billetera += estado.banco;
+                estado.banco = 0;
+            }
+        } else {
+            estado.billetera += Math.abs(costo);
+        }
         UI.jugador.classList.add('anim-ahorro');
         flotar(`+${formatearPYG(Math.abs(costo))}`, 'text-emerald-500');
     }
@@ -286,7 +320,7 @@ function procesarChoque(el) {
     }
     else if (tipo === 'deuda') { 
         estado.tarjetas++;
-        estado.billetera += 500000;
+        estado.billetera += 500000; // Efectivo falso rápido
         estado.sangradoTarjeta += parseInt(el.dataset.interes); 
         UI.juego.classList.add('pantalla-sangrando');
         flotar(`DEUDA TÓXICA!`, 'text-amber-500');
@@ -296,7 +330,9 @@ function procesarChoque(el) {
         estado.bingos++;
         pagarDeuda(costo); 
         if (Math.random() <= parseFloat(el.dataset.prob)) {
-            estado.billetera += parseInt(el.dataset.premio);
+            if (estado.banco < 0) estado.banco += parseInt(el.dataset.premio);
+            else estado.billetera += parseInt(el.dataset.premio);
+            
             flotar(`¡GANASTE!`, 'text-emerald-500');
             UI.jugador.classList.add('anim-ahorro');
         } else {
@@ -327,16 +363,44 @@ function explotarBomba(tipoRiesgo) {
     setTimeout(() => UI.juego.classList.remove('pantalla-sangrando'), 1000);
 }
 
-// LÓGICA DE SOBREGIRO BANCARIO (Números Rojos)
+// CASCADA FINANCIERA REALISTA
 function pagarDeuda(monto) {
     let deuda = monto;
-    if (estado.billetera >= deuda) { 
-        estado.billetera -= deuda; 
+
+    // 1. Efectivo Paga primero
+    if (estado.billetera >= deuda) {
+        estado.billetera -= deuda;
+        deuda = 0;
     } else {
-        deuda -= estado.billetera; 
+        deuda -= estado.billetera;
         estado.billetera = 0;
-        // Si no te alcanza, el banco entra en negativo directo. No te salva nadie.
-        estado.banco -= deuda; 
+    }
+
+    // 2. Banco absorbe hasta quedar en cero
+    if (deuda > 0) {
+        if (estado.banco >= deuda) {
+            estado.banco -= deuda;
+            deuda = 0;
+        } else {
+            deuda -= Math.max(0, estado.banco); 
+            estado.banco = Math.min(0, estado.banco); 
+        }
+    }
+
+    // 3. Destruye tus Ahorros si el banco se quedó sin liquidez
+    if (deuda > 0) {
+        if (estado.chanchito >= deuda) {
+            estado.chanchito -= deuda;
+            deuda = 0;
+        } else {
+            deuda -= estado.chanchito;
+            estado.chanchito = 0;
+        }
+    }
+
+    // 4. Lo que no podés pagar, se convierte en saldo deudor
+    if (deuda > 0) {
+        estado.banco -= deuda; // Entra en números rojos
     }
 }
 
@@ -360,7 +424,6 @@ function mostrarAlerta(msj, bgClass) {
 const formatearPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs';
 function actualizarMarcadores() {
     UI.banco.innerText = formatearPYG(estado.banco);
-    // Cambia el color a rojo si debés plata (Sobregiro)
     UI.banco.className = estado.banco < 0 ? "text-xs font-black text-rose-600" : "text-xs font-black text-slate-800";
     
     UI.billetera.innerText = formatearPYG(estado.billetera);
@@ -370,7 +433,8 @@ function actualizarMarcadores() {
 
 function terminarJuego() {
     estado.jugando = false;
-    clearInterval(loops.juego); clearInterval(loops.creador); clearInterval(loops.meses);
+    cancelAnimationFrame(gameLoop);
+    clearInterval(loops.creador); clearInterval(loops.meses);
     
     UI.juego.classList.add('hidden'); UI.hud.classList.add('hidden');
     UI.final.classList.remove('hidden'); UI.final.classList.add('flex');
@@ -379,7 +443,6 @@ function terminarJuego() {
     
     document.getElementById('resChanchito').innerText = formatearPYG(estado.chanchito);
     
-    // Muestra el efectivo final, ¡Y EN ROJO SI ESTÁ EN DEUDA!
     const resEfectivoUI = document.getElementById('resEfectivo');
     resEfectivoUI.innerText = formatearPYG(estado.banco + estado.billetera);
     resEfectivoUI.className = (estado.banco + estado.billetera) < 0 ? "text-sm font-black text-rose-600" : "text-sm font-bold text-slate-700";
@@ -391,7 +454,7 @@ function terminarJuego() {
 
     let veredicto = "";
     if (totalPlata < 0) {
-        veredicto = `💔 <b>QUEBRADO Y ENDEUDADO:</b> Cerraste el año con deudas por <span class="text-rose-600 font-bold">${formatearPYG(totalPlata)}</span>. Las tarjetas y los imprevistos te comieron. Ahora le perteneces al banco.`;
+        veredicto = `💔 <b>QUEBRADO Y ENDEUDADO:</b> Cerraste el año con deudas por <span class="text-rose-600 font-bold">${formatearPYG(totalPlata)}</span>. Las tarjetas y los imprevistos te fundieron. Ahora le pertenecés al banco.`;
     } else if (totalPlata === 0 && estado.felicidad < 40) {
         veredicto = "💔 <b>POBRE Y MISERABLE:</b> Terminaste comiendo hule. Te privaste de todo para 'ahorrar', pero los imprevistos te comieron vivo y te deprimiste.";
     } else if (totalPlata <= 0 && estado.felicidad >= 40) {
