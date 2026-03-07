@@ -6,11 +6,13 @@ let estado = {
     banco: 0, billetera: 0, chanchito: 0, felicidad: 50,
     relojes: { salud: 9, auto: 15, casa: 18, set: 21 },
     interesesPagados: 0, tarjetas: 0, bingos: 0, bombasExplotadas: 0,
-    sangradoTarjeta: 0, contadorSpawns: 0, viajesMostrados: 0
+    sangradoTarjeta: 0, contadorSpawns: 0, 
+    // Contadores de eventos limitados
+    eventos: { viajes: 0, mama: 0, bf: 0, changas: 0 } 
 };
 
 let loops = { creador: null, meses: null };
-let lastTime = 0; // Para el nuevo motor gráfico fluido
+let lastTime = 0; 
 
 const UI = {
     inicio: document.getElementById('pantallaInicio'), hud: document.getElementById('hud'),
@@ -44,11 +46,8 @@ function arrancarJuego(e) {
     UI.juego.classList.remove('hidden');
     
     estado.jugando = true;
-    
-    // Inicia el nuevo Motor Gráfico Fluido (GPU)
     lastTime = performance.now();
     requestAnimationFrame(gameLoop);
-
     loops.meses = setInterval(pasarMes, 1000);
     
     setTimeout(() => {
@@ -76,7 +75,8 @@ function pasarMes() {
     if(!estado.jugando) return;
     segundos++;
     
-    pagarDeuda(16600); 
+    // NUEVO GASTO DE VIDA AUMENTADO
+    pagarDeuda(18000); 
     estado.felicidad -= 2; 
 
     if (estado.sangradoTarjeta > 0) {
@@ -89,10 +89,16 @@ function pasarMes() {
         if(estado.mesActual <= 12) {
             UI.mes.innerText = estado.mesActual;
             
-            // Si el banco está en negativo, el sueldo primero cubre el agujero
-            estado.banco += estado.sueldo;
+            // AGUINALDO: En diciembre cobrás doble
+            if (estado.mesActual === 12) {
+                estado.banco += (estado.sueldo * 2);
+                mostrarAlerta("¡AGUINALDO! Cobraste doble 🎄", "bg-emerald-600");
+            } else {
+                estado.banco += estado.sueldo;
+                mostrarAlerta("¡Mes nuevo! Sueldo y deudas descontadas.", "bg-blue-600");
+            }
+            
             pagarDeuda(estado.gastosFijos);
-            mostrarAlerta("¡Mes nuevo! Sueldo y deudas descontadas.", "bg-blue-600");
         }
     }
 
@@ -115,22 +121,26 @@ function crearElemento() {
     if(!estado.jugando) return;
     estado.contadorSpawns++;
 
-    if (estado.mesActual >= 8 && estado.viajesMostrados === 0) {
-        estado.viajesMostrados++;
+    // 1. EVENTOS ESTACIONALES Y LIMITADOS
+    if ([8, 11, 12].includes(estado.mesActual) && estado.eventos.viajes < 3 && Math.random() < 0.4) {
+        estado.eventos.viajes++;
         crearDivCaida(ElementosFinancieros.tentaciones.find(t=>t.id==='viaje'), Math.floor(Math.random() * 3));
         return;
     }
-    if (estado.mesActual >= 11 && estado.viajesMostrados === 1) {
-        estado.viajesMostrados++;
-        crearDivCaida(ElementosFinancieros.tentaciones.find(t=>t.id==='viaje'), Math.floor(Math.random() * 3));
+    // Día de la Madre (Mes 5, max 3 veces)
+    if (estado.mesActual === 5 && estado.eventos.mama < 3 && Math.random() < 0.5) {
+        estado.eventos.mama++;
+        crearDivCaida(ElementosFinancieros.estacionales.find(e=>e.id==='mama'), Math.floor(Math.random() * 3));
         return;
     }
-    if (estado.mesActual === 12 && estado.viajesMostrados === 2) {
-        estado.viajesMostrados++;
-        crearDivCaida(ElementosFinancieros.tentaciones.find(t=>t.id==='viaje'), Math.floor(Math.random() * 3));
+    // Black Friday (Mes 11, max 3 veces)
+    if (estado.mesActual === 11 && estado.eventos.bf < 3 && Math.random() < 0.5) {
+        estado.eventos.bf++;
+        crearDivCaida(ElementosFinancieros.estacionales.find(e=>e.id==='blackfriday'), Math.floor(Math.random() * 3));
         return;
     }
 
+    // 2. PATRONES ESPECIALES
     if (estado.contadorSpawns % 7 === 0) { crearZigZag(); return; }
     if (estado.contadorSpawns % 5 === 0) { crearEncerrona(); return; }
 
@@ -141,12 +151,19 @@ function crearElemento() {
         return;
     }
 
-    let categorias = [...ElementosFinancieros.tentaciones.filter(t=>t.id!=='viaje'), ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.ingresos, ...ElementosFinancieros.instrumentos];
+    // CAÍDA DOBLE NORMAL
+    let categorias = [...ElementosFinancieros.tentaciones.filter(t=>t.id!=='viaje'), ...ElementosFinancieros.mantenimiento, ...ElementosFinancieros.instrumentos];
+    
+    // Changa (Limitada a 6 veces por año)
+    if (estado.eventos.changas < 6) categorias.push(ElementosFinancieros.ingresos[0]);
+    
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
     categorias.push(ElementosFinancieros.instrumentos.find(i => i.id === 'chanchito'));
 
     const item1 = categorias[Math.floor(Math.random() * categorias.length)];
     const item2 = categorias[Math.floor(Math.random() * categorias.length)];
+
+    if (item1.id === 'changa' || item2.id === 'changa') estado.eventos.changas++;
 
     let carriles = [0, 1, 2];
     carriles.sort(() => Math.random() - 0.5);
@@ -176,10 +193,8 @@ function crearZigZag() {
     
     crearDivCaida(randomItem(), 1, null, -60);
     crearDivCaida(randomItem(), 2, null, -60);
-    
     crearDivCaida(randomItem(), 0, null, -200);
     crearDivCaida(randomItem(), 1, null, -200);
-
     crearDivCaida(randomItem(), 1, null, -340);
     crearDivCaida(randomItem(), 2, null, -340);
 }
@@ -188,15 +203,14 @@ function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     const div = document.createElement('div');
     let estiloExtra = item.id === 'viaje' ? 'border-amber-400 shadow-amber-500/50 scale-110' : 'border-slate-200';
     
-    // Se redujo el tamaño de text-4xl a text-3xl para mayor legibilidad
     div.className = `elemento-cae bg-white/90 backdrop-blur shadow-xl border-2 flex items-center justify-center text-3xl ${estiloExtra}`;
-    div.innerText = item.emoji;
+    // Usamos innerHTML para que los logos HTML (Netflix/BF) se procesen bien
+    div.innerHTML = item.emoji; 
     
-    // Posicionamiento horizontal y preparación para GPU
     div.style.left = ['16.6%', '50%', '83.3%'][carril];
-    div.style.willChange = 'transform'; // Activa aceleración gráfica
+    div.style.willChange = 'transform'; 
     
-    div.dataset.posY = topOffset; // Guardamos la posición Y real
+    div.dataset.posY = topOffset; 
     div.style.transform = `translate(-50%, ${topOffset}px)`;
     
     div.dataset.tipo = item.tipo || "decision";
@@ -208,25 +222,21 @@ function crearDivCaida(item, carril, esDecisionId = null, topOffset = -60) {
     if (item.id === 'tarjeta') div.dataset.interes = item.interesSeg;
     if (item.id === 'chanchito') div.dataset.porc = item.porcentaje;
     if (item.id === 'bingo') { div.dataset.prob = item.prob; div.dataset.premio = item.premio; }
+    if (item.tipo === 'social') div.dataset.penalizacion = item.penalizacion;
     if (esDecisionId) div.dataset.groupId = esDecisionId;
 
     UI.calle.appendChild(div);
 }
 
-// NUEVO MOTOR DE FÍSICAS FLUIDO (Acelerado por GPU)
 function gameLoop(timestamp) {
     if (!estado.jugando) return;
-    
-    // Calculamos el tiempo transcurrido entre cuadros (Delta Time)
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
-    
     actualizarFisicas(dt);
     requestAnimationFrame(gameLoop);
 }
 
 function actualizarFisicas(dt) {
-    // Velocidad base en pixeles por segundo + Aceleración progresiva
     const escalon = Math.floor(segundos / 3);
     const pixelesPorSegundo = 420 + (escalon * 30); 
     const avanceFisico = pixelesPorSegundo * dt;
@@ -237,11 +247,8 @@ function actualizarFisicas(dt) {
     elementos.forEach(el => {
         let posY = parseFloat(el.dataset.posY) + avanceFisico;
         el.dataset.posY = posY;
-        
-        // Mueve usando la tarjeta gráfica
         el.style.transform = `translate(-50%, ${posY}px)`;
 
-        // Colisión precisa
         if (posY > posJugador - 40 && posY < posJugador + 40) {
             if (parseInt(el.dataset.carril) === estado.carrilJugador) {
                 procesarChoque(el);
@@ -249,6 +256,13 @@ function actualizarFisicas(dt) {
         }
 
         if (posY > UI.calle.offsetHeight + 100) {
+            // CASTIGO SOCIAL: Si esquivás la pollada, perdés amigos
+            if (el.dataset.tipo === 'social') {
+                estado.felicidad -= parseInt(el.dataset.penalizacion);
+                flotar("¡Tacaño! -15 Felicidad", "text-rose-500");
+                UI.jugador.classList.add('anim-dano');
+            }
+
             if (el.dataset.groupId) {
                 const grupo = document.querySelectorAll(`[data-group-id="${el.dataset.groupId}"]`);
                 grupo.forEach(g => g.remove());
@@ -261,7 +275,7 @@ function actualizarFisicas(dt) {
 
 function procesarChoque(el) {
     const tipo = el.dataset.tipo;
-    const costo = parseInt(el.dataset.costo);
+    let costo = parseInt(el.dataset.costo);
     const fel = parseInt(el.dataset.felicidad);
     const riesgo = el.dataset.riesgo;
 
@@ -270,7 +284,12 @@ function procesarChoque(el) {
 
     if (fel) estado.felicidad += fel;
 
-    if (tipo === 'gasto' || tipo === 'mantenimiento' || tipo === 'decision') {
+    // INFLACIÓN INVISIBLE: A partir del mes 6, el mantenimiento cuesta 10% más
+    if (estado.mesActual >= 6 && tipo === 'mantenimiento') {
+        costo = Math.floor(costo * 1.10);
+    }
+
+    if (tipo === 'gasto' || tipo === 'mantenimiento' || tipo === 'decision' || tipo === 'social') {
         pagarDeuda(costo);
         if(costo > 0) {
             UI.jugador.classList.add('anim-dano');
@@ -287,7 +306,6 @@ function procesarChoque(el) {
         }
     } 
     else if (tipo === 'ingreso') {
-        // Los ingresos entran limpios a la billetera, o cubren deudas bancarias
         if (estado.banco < 0) {
             estado.banco += Math.abs(costo);
             if (estado.banco > 0) {
@@ -320,7 +338,7 @@ function procesarChoque(el) {
     }
     else if (tipo === 'deuda') { 
         estado.tarjetas++;
-        estado.billetera += 500000; // Efectivo falso rápido
+        estado.billetera += 500000; 
         estado.sangradoTarjeta += parseInt(el.dataset.interes); 
         UI.juego.classList.add('pantalla-sangrando');
         flotar(`DEUDA TÓXICA!`, 'text-amber-500');
@@ -363,11 +381,9 @@ function explotarBomba(tipoRiesgo) {
     setTimeout(() => UI.juego.classList.remove('pantalla-sangrando'), 1000);
 }
 
-// CASCADA FINANCIERA REALISTA
 function pagarDeuda(monto) {
     let deuda = monto;
 
-    // 1. Efectivo Paga primero
     if (estado.billetera >= deuda) {
         estado.billetera -= deuda;
         deuda = 0;
@@ -376,7 +392,6 @@ function pagarDeuda(monto) {
         estado.billetera = 0;
     }
 
-    // 2. Banco absorbe hasta quedar en cero
     if (deuda > 0) {
         if (estado.banco >= deuda) {
             estado.banco -= deuda;
@@ -387,7 +402,6 @@ function pagarDeuda(monto) {
         }
     }
 
-    // 3. Destruye tus Ahorros si el banco se quedó sin liquidez
     if (deuda > 0) {
         if (estado.chanchito >= deuda) {
             estado.chanchito -= deuda;
@@ -398,9 +412,8 @@ function pagarDeuda(monto) {
         }
     }
 
-    // 4. Lo que no podés pagar, se convierte en saldo deudor
     if (deuda > 0) {
-        estado.banco -= deuda; // Entra en números rojos
+        estado.banco -= deuda; 
     }
 }
 
