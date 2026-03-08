@@ -237,8 +237,8 @@ function gameLoop(timestamp) {
 }
 
 function actualizarFisicas(dt) {
-    const escalon = Math.floor(segundos / 3);
-    const pixelesPorSegundo = 360 + (escalon * 20); 
+    ///const escalon = Math.floor(segundos / 3);
+    const pixelesPorSegundo = 360 + (segundos * 6); 
     const avanceFisico = pixelesPorSegundo * dt;
     
     const elementos = document.querySelectorAll('.elemento-cae');
