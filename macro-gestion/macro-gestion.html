@@ -47,9 +47,7 @@
                     + Agregar Cuenta
                 </button>
             </div>
-            
-            <div id="contenedorCuentas" class="space-y-3">
-                </div>
+            <div id="contenedorCuentas" class="space-y-3"></div>
         </section>
 
         <hr class="border-slate-200 my-8">
@@ -78,9 +76,7 @@
                     <span>Lista de Gastos</span>
                     <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </summary>
-                
-                <div id="contenedorGastos" class="space-y-0">
-                    </div>
+                <div id="contenedorGastos" class="space-y-0"></div>
             </details>
         </section>
 
@@ -96,7 +92,7 @@
                 <div class="flex gap-2">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center">
                         <p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p>
-                        <p class="text-xs font-bold text-slate-800 mt-1">Compras de la casa</p>
+                        <p class="text-xs font-bold text-slate-800 mt-1">Compras de casa</p>
                     </div>
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center">
                         <p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p>
@@ -117,8 +113,106 @@
         </div>
     </div>
 
+    <div id="modalAccion" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+        <div id="modalAccionCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
+            <h3 id="modalAccionTitulo" class="font-black font-display text-slate-900 text-xl mb-2">Título</h3>
+            <p id="modalAccionMensaje" class="text-sm text-slate-500 mb-5 leading-relaxed">Mensaje descriptivo aquí.</p>
+            
+            <div id="modalAccionInputContenedor" class="hidden mb-6">
+                <input type="text" id="modalAccionInput" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-400 transition-all">
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btnModalCancelar" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors hidden">Cancelar</button>
+                <button id="btnModalConfirmar" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 1. BASE DE DATOS LOCAL
+        // --- SISTEMA DE MODALES PERSONALIZADOS ---
+        let modalResolve = null;
+
+        // Formateador de miles en tiempo real (Pone puntos: 1.500.000)
+        const formatoInputEnVivo = (e) => {
+            let val = e.target.value.replace(/\D/g, ''); // Borra lo que no sea número
+            e.target.value = val ? new Intl.NumberFormat('es-PY').format(val).replace(/,/g, '.') : '';
+        };
+
+        function interactuarApp(tipo, titulo, mensaje, valorInicial = "", esNumero = false) {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                
+                document.getElementById('modalAccionTitulo').innerText = titulo;
+                document.getElementById('modalAccionMensaje').innerText = mensaje;
+                
+                const inputContenedor = document.getElementById('modalAccionInputContenedor');
+                const input = document.getElementById('modalAccionInput');
+                const btnCancelar = document.getElementById('btnModalCancelar');
+                const modal = document.getElementById('modalAccion');
+                const cuerpo = document.getElementById('modalAccionCuerpo');
+
+                // Limpiar configuración anterior
+                input.removeEventListener('input', formatoInputEnVivo);
+                input.value = "";
+
+                if (tipo === 'prompt') {
+                    inputContenedor.classList.remove('hidden');
+                    btnCancelar.classList.remove('hidden');
+                    if (esNumero) {
+                        input.setAttribute('inputmode', 'numeric'); // Abre teclado numérico
+                        input.classList.add('text-center', 'text-2xl', 'font-black', 'text-primary');
+                        input.classList.remove('text-sm', 'font-semibold');
+                        input.addEventListener('input', formatoInputEnVivo);
+                        if (valorInicial) input.value = new Intl.NumberFormat('es-PY').format(valorInicial).replace(/,/g, '.');
+                    } else {
+                        input.removeAttribute('inputmode'); // Teclado normal
+                        input.classList.remove('text-center', 'text-2xl', 'font-black', 'text-primary');
+                        input.classList.add('text-sm', 'font-semibold');
+                        input.value = valorInicial;
+                    }
+                } else if (tipo === 'confirm') {
+                    inputContenedor.classList.add('hidden');
+                    btnCancelar.classList.remove('hidden');
+                } else { // alert
+                    inputContenedor.classList.add('hidden');
+                    btnCancelar.classList.add('hidden');
+                }
+
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    cuerpo.classList.remove('scale-95', 'opacity-0');
+                    if (tipo === 'prompt') input.focus();
+                }, 10);
+            });
+        }
+
+        function cerrarModalAccion(valorDevuelto) {
+            const modal = document.getElementById('modalAccion');
+            const cuerpo = document.getElementById('modalAccionCuerpo');
+            cuerpo.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                if (modalResolve) {
+                    modalResolve(valorDevuelto);
+                    modalResolve = null;
+                }
+            }, 200);
+        }
+
+        document.getElementById('btnModalCancelar').addEventListener('click', () => cerrarModalAccion(null));
+        document.getElementById('btnModalConfirmar').addEventListener('click', () => {
+            const inputContenedor = document.getElementById('modalAccionInputContenedor');
+            if (!inputContenedor.classList.contains('hidden')) {
+                const input = document.getElementById('modalAccionInput');
+                cerrarModalAccion(input.value);
+            } else {
+                cerrarModalAccion(true);
+            }
+        });
+
+
+        // --- LÓGICA DE LA APP ---
         let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [
             { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" },
             { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" }
@@ -129,23 +223,18 @@
             { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" }
         ];
 
-        // Guardar en el navegador
         const guardarDatos = () => {
             localStorage.setItem('mg_cuentas', JSON.stringify(cuentas));
             localStorage.setItem('mg_gastos', JSON.stringify(gastos));
             renderizarApp();
         };
 
-        // Utilidad: Formatear moneda Paraguay
         const formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
-        
-        // Utilidad: Obtener fecha actual
         const obtenerFechaHoy = () => {
             const hoy = new Date();
             return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
         };
 
-        // 2. RENDERIZAR CUENTAS
         const renderizarCuentas = () => {
             const cont = document.getElementById('contenedorCuentas');
             cont.innerHTML = '';
@@ -157,24 +246,19 @@
                         <div>
                             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
                                 ${c.nombre}
-                                <button onclick="editarCuenta(${c.id})" class="text-slate-400 hover:text-primary transition-colors">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                </button>
+                                <button onclick="editarCuenta(${c.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                             </h3>
                             <p class="text-[10px] text-slate-500">Última act: ${c.ultimaAct}</p>
                         </div>
                     </div>
                     <div class="text-right">
                         <p class="font-bold text-base text-slate-900">${formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[9px] text-slate-500">Gs</span></p>
-                        <button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">
-                            ACTUALIZAR
-                        </button>
+                        <button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">ACTUALIZAR</button>
                     </div>
                 </div>`;
             });
         };
 
-        // 3. RENDERIZAR GASTOS FIJOS
         const renderizarGastos = () => {
             const cont = document.getElementById('contenedorGastos');
             cont.innerHTML = '';
@@ -182,21 +266,17 @@
 
             gastos.forEach(g => {
                 if(g.pagado) totalSuma += g.monto;
-                
                 const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800";
-                const checkStatus = g.pagado ? "checked" : "";
                 
                 cont.innerHTML += `
                 <div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors">
-                    <input type="checkbox" ${checkStatus} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
+                    <input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
                     <div class="flex-grow">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">
                                     ${g.nombre}
-                                    <button onclick="editarGasto(${g.id})" class="text-slate-400 hover:text-primary transition-colors">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                    </button>
+                                    <button onclick="editarGasto(${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                                 </h3>
                                 <p class="text-[10px] text-slate-500">${g.cuenta}</p>
                             </div>
@@ -211,18 +291,18 @@
                     </div>
                 </div>`;
             });
-
             document.getElementById('totalPagado').innerText = formatoGs(totalSuma);
         };
 
         const renderizarApp = () => { renderizarCuentas(); renderizarGastos(); };
 
-        // 4. FUNCIONES INTERACTIVAS (Usando prompt nativo para asegurar funcionamiento perfecto 1.0)
-        const actualizarSaldo = (id) => {
+        // --- LAS FUNCIONES AHORA USAN NUESTROS MODALES LINDOS (async/await) ---
+        
+        const actualizarSaldo = async (id) => {
             const cuenta = cuentas.find(c => c.id === id);
-            const nuevoSaldo = prompt(`Actualizar saldo de ${cuenta.nombre}\nSaldo actual: ${formatoGs(cuenta.saldo)}\n\nIngresá el nuevo monto (solo números):`, cuenta.saldo);
-            if(nuevoSaldo && !isNaN(nuevoSaldo)) {
-                cuenta.saldo = parseInt(nuevoSaldo);
+            const r = await interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true);
+            if (r) {
+                cuenta.saldo = parseInt(r.replace(/\./g, '')); // Le quitamos los puntos para guardar
                 const hoy = new Date();
                 cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
                 guardarDatos();
@@ -236,53 +316,56 @@
             guardarDatos();
         };
 
-        const cambiarMontoGasto = (id) => {
+        const cambiarMontoGasto = async (id) => {
             const gasto = gastos.find(g => g.id === id);
-            const nuevoMonto = prompt(`Cambiar monto para: ${gasto.nombre}\n\nIngresá el nuevo monto (solo números):`, gasto.monto);
-            if(nuevoMonto && !isNaN(nuevoMonto)) {
-                gasto.monto = parseInt(nuevoMonto);
+            const r = await interactuarApp('prompt', 'Cambiar Monto', `Ingresá el nuevo monto para ${gasto.nombre}.`, gasto.monto, true);
+            if (r) {
+                gasto.monto = parseInt(r.replace(/\./g, ''));
                 guardarDatos();
             }
         };
 
-        const cerrarMes = () => {
-            if(confirm("¿Estás seguro de cerrar el mes? Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).")) {
+        const cerrarMes = async () => {
+            const r = await interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).');
+            if (r) {
                 gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; });
                 guardarDatos();
-                alert("¡Mes cerrado con éxito! Todo listo para empezar de nuevo.");
+                interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.');
             }
         };
 
-        const agregarCuenta = () => {
-            const nombre = prompt("Nombre de la nueva cuenta (Ej: Visión Banco):");
-            if(!nombre) return;
-            const saldo = prompt("Saldo actual (solo números):", "0");
-            if(saldo && !isNaN(saldo)) {
-                cuentas.push({ id: Date.now(), nombre: nombre, descripcion: "Nueva cuenta", saldo: parseInt(saldo), ultimaAct: "Recién creada", icono: "💳" });
-                guardarDatos();
+        const agregarCuenta = async () => {
+            const nombre = await interactuarApp('prompt', 'Nueva Cuenta', 'Nombre de la nueva cuenta (Ej: Ueno Bank):', '', false);
+            if (nombre) {
+                const saldo = await interactuarApp('prompt', 'Saldo Inicial', `¿Cuánta plata hay en ${nombre}?`, '0', true);
+                if (saldo) {
+                    cuentas.push({ id: Date.now(), nombre: nombre, descripcion: "Nueva cuenta", saldo: parseInt(saldo.replace(/\./g, '')), ultimaAct: "Recién creada", icono: "💳" });
+                    guardarDatos();
+                }
             }
         };
 
-        const agregarGasto = () => {
-            const nombre = prompt("Nombre del nuevo gasto (Ej: Internet):");
-            if(!nombre) return;
-            const monto = prompt("Monto mensual estimado (solo números):", "0");
-            if(monto && !isNaN(monto)) {
-                gastos.push({ id: Date.now(), nombre: nombre, cuenta: "General", monto: parseInt(monto), pagado: false, fechaPago: "" });
-                guardarDatos();
+        const agregarGasto = async () => {
+            const nombre = await interactuarApp('prompt', 'Nuevo Gasto', 'Nombre del gasto (Ej: Internet):', '', false);
+            if (nombre) {
+                const monto = await interactuarApp('prompt', 'Monto Estimado', `¿Cuánto se paga por ${nombre}?`, '0', true);
+                if (monto) {
+                    gastos.push({ id: Date.now(), nombre: nombre, cuenta: "General", monto: parseInt(monto.replace(/\./g, '')), pagado: false, fechaPago: "" });
+                    guardarDatos();
+                }
             }
         };
 
-        const editarCuenta = (id) => {
+        const editarCuenta = async (id) => {
             const c = cuentas.find(x => x.id === id);
-            const nuevoNombre = prompt("Editar nombre de la cuenta:", c.nombre);
-            if(nuevoNombre) { c.nombre = nuevoNombre; guardarDatos(); }
+            const r = await interactuarApp('prompt', 'Editar Cuenta', 'Modificá el nombre de la cuenta:', c.nombre, false);
+            if (r) { c.nombre = r; guardarDatos(); }
         };
 
-        const editarGasto = (id) => {
+        const editarGasto = async (id) => {
             const g = gastos.find(x => x.id === id);
-            const nuevoNombre = prompt("Editar nombre del gasto:", g.nombre);
-            if(nuevoNombre) { g.nombre = nuevoNombre; guardarDatos(); }
+            const r = await interactuarApp('prompt', 'Editar Gasto', 'Modificá el nombre del gasto:', g.nombre, false);
+            if (r) { g.nombre = r; guardarDatos(); }
         };
 
         const descargarDatos = () => {
@@ -297,7 +380,6 @@
 
         function toggleModal(modalID) { document.getElementById(modalID).classList.toggle('hidden'); }
 
-        // Inicializar la app al cargar
         window.onload = renderizarApp;
     </script>
 </body>
