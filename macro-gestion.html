@@ -12,13 +12,16 @@
         tailwind.config = { 
             theme: { 
                 extend: { 
-                    /* Ajustado a los tonos verdes/oscuros de Ahorro Challenge */
                     colors: { primary: '#10b981', dark: '#0f172a', surface: '#1e293b' }, 
                     fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } 
                 } 
             } 
         }
     </script>
+    <style>
+        /* Oculta la flecha por defecto del acordeón nativo en Safari/Chrome */
+        summary::-webkit-details-marker { display: none; }
+    </style>
 </head>
 <body class="font-body text-slate-200 bg-dark overflow-x-hidden pb-20">
 
@@ -31,7 +34,7 @@
                 <span class="font-bold font-display">i</span>
             </button>
             <a href="index.html" class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors border border-slate-700">
-                ✕
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </a>
         </div>
     </header>
@@ -98,23 +101,34 @@
         <hr class="border-slate-800 my-8">
 
         <section>
-            <div class="flex justify-between items-center mb-3">
-                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Gastos Fijos</h2>
-                <button class="text-[11px] text-slate-500 font-bold hover:text-white flex items-center gap-1">
-                    Cerrar Mes 🔄
+            <div class="flex justify-between items-center mb-1">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Gastos Fijos</h2>
+                    <button class="w-5 h-5 rounded bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors" title="Agregar gasto fijo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
+                </div>
+                
+                <button class="text-[11px] text-slate-500 font-bold hover:text-white flex items-center gap-1 transition-colors">
+                    Cerrar Mes 
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </button>
             </div>
 
-            <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 mb-4 flex justify-between items-center">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pagado</span>
-                <span class="text-lg font-black text-primary">1.500.000 Gs</span>
-            </div>
+            <p class="text-[11px] text-slate-400 mb-4">
+                Total pagado a la fecha: <span class="font-black text-primary text-sm ml-1">1.500.000 Gs</span>
+            </p>
 
-            <div class="space-y-2">
+            <details class="group" open>
+                <summary class="flex items-center justify-between text-xs font-bold text-slate-500 cursor-pointer list-none border-b border-slate-800 pb-2 mb-2 hover:text-white transition-colors">
+                    <span>Lista de Gastos</span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
                 
-                <div class="bg-surface border border-slate-700/50 rounded-xl p-3 hover:bg-slate-800/50 transition-colors">
-                    <div class="flex items-start gap-3">
-                        <input type="checkbox" checked class="mt-1 w-5 h-5 rounded border-slate-600 text-primary focus:ring-primary accent-primary bg-dark cursor-pointer">
+                <div class="space-y-0">
+                    
+                    <div class="py-3 border-b border-slate-800/50 flex items-start gap-3 hover:bg-slate-800/20 transition-colors">
+                        <input type="checkbox" checked class="mt-0.5 w-4 h-4 rounded border-slate-600 text-primary focus:ring-primary accent-primary bg-dark cursor-pointer">
                         <div class="flex-grow">
                             <div class="flex justify-between items-start">
                                 <div>
@@ -131,14 +145,15 @@
                                     <button class="text-[9px] text-primary hover:text-white underline mt-0.5">Ingresar otro monto</button>
                                 </div>
                             </div>
-                            <p class="text-[10px] text-primary font-bold mt-2">✅ Pagado el 10/03/2026</p>
+                            <p class="text-[10px] text-primary font-bold mt-1.5 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                Pagado el 10/03/2026
+                            </p>
                         </div>
                     </div>
-                </div>
 
-                <div class="bg-surface border border-slate-700/50 rounded-xl p-3 hover:bg-slate-800/50 transition-colors">
-                    <div class="flex items-start gap-3">
-                        <input type="checkbox" class="mt-1 w-5 h-5 rounded border-slate-600 text-primary focus:ring-primary accent-primary bg-dark cursor-pointer">
+                    <div class="py-3 border-b border-slate-800/50 flex items-start gap-3 hover:bg-slate-800/20 transition-colors">
+                        <input type="checkbox" class="mt-0.5 w-4 h-4 rounded border-slate-600 text-primary focus:ring-primary accent-primary bg-dark cursor-pointer">
                         <div class="flex-grow">
                             <div class="flex justify-between items-start">
                                 <div>
@@ -157,13 +172,10 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-            </div>
-            
-            <button class="w-full mt-4 py-3 border border-dashed border-slate-700 rounded-xl text-[11px] font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                + Nuevo Gasto Fijo
-            </button>
+                </div>
+            </details>
+
         </section>
 
     </main>
