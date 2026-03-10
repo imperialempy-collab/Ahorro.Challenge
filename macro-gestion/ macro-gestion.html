@@ -12,7 +12,6 @@
         tailwind.config = { 
             theme: { 
                 extend: { 
-                    /* Colores exactos de Ahorro Challenge (Fondo claro, Verde Esmeralda) */
                     colors: { primary: '#10b981', background: '#f8fafc', surface: '#ffffff' }, 
                     fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } 
                 } 
@@ -20,7 +19,6 @@
         }
     </script>
     <style>
-        /* Oculta la flecha por defecto del acordeón nativo en Safari/Chrome */
         summary::-webkit-details-marker { display: none; }
     </style>
 </head>
@@ -34,7 +32,7 @@
             <button onclick="toggleModal('modalInfo')" class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-emerald-50 transition-colors border border-slate-200">
                 <span class="font-bold font-display">i</span>
             </button>
-            <a href="index.html" class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors border border-slate-200">
+            <a href="../index.html" class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors border border-slate-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </a>
         </div>
@@ -45,58 +43,13 @@
         <section>
             <div class="flex justify-between items-center mb-3">
                 <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Tus Cuentas</h2>
-                <button class="text-[11px] bg-emerald-100 text-primary font-bold px-2 py-1 rounded hover:bg-emerald-200 transition-colors">
+                <button onclick="agregarCuenta()" class="text-[11px] bg-emerald-100 text-primary font-bold px-2 py-1 rounded hover:bg-emerald-200 transition-colors">
                     + Agregar Cuenta
                 </button>
             </div>
             
-            <div class="space-y-3">
-                <div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center text-lg">
-                            🏦
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                                Itaú 1845 
-                                <button class="text-slate-400 hover:text-primary transition-colors" title="Editar cuenta">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                </button>
-                            </h3>
-                            <p class="text-[10px] text-slate-500">Última act: Hoy, 10:30 hs</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-base text-slate-900">1.250.000 <span class="text-[9px] text-slate-500">Gs</span></p>
-                        <button class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">
-                            ACTUALIZAR
-                        </button>
-                    </div>
+            <div id="contenedorCuentas" class="space-y-3">
                 </div>
-
-                <div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center text-lg">
-                            💵
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                                Efectivo 
-                                <button class="text-slate-400 hover:text-primary transition-colors" title="Editar cuenta">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                </button>
-                            </h3>
-                            <p class="text-[10px] text-slate-500">Última act: Ayer, 18:45 hs</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-base text-slate-900">350.000 <span class="text-[9px] text-slate-500">Gs</span></p>
-                        <button class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">
-                            ACTUALIZAR
-                        </button>
-                    </div>
-                </div>
-            </div>
         </section>
 
         <hr class="border-slate-200 my-8">
@@ -105,19 +58,19 @@
             <div class="flex justify-between items-center mb-1">
                 <div class="flex items-center gap-2">
                     <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Gastos Fijos</h2>
-                    <button class="w-5 h-5 rounded bg-emerald-100 text-primary flex items-center justify-center hover:bg-emerald-200 transition-colors" title="Agregar gasto fijo">
+                    <button onclick="agregarGasto()" class="w-5 h-5 rounded bg-emerald-100 text-primary flex items-center justify-center hover:bg-emerald-200 transition-colors" title="Agregar gasto fijo">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
                     </button>
                 </div>
                 
-                <button class="text-[11px] text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 transition-colors">
+                <button onclick="cerrarMes()" class="text-[11px] text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 transition-colors">
                     Cerrar Mes 
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 </button>
             </div>
 
             <p class="text-[11px] text-slate-500 mb-4">
-                Total pagado a la fecha: <span class="font-black text-primary text-sm ml-1">1.500.000 Gs</span>
+                Total pagado a la fecha: <span id="totalPagado" class="font-black text-primary text-sm ml-1">0 Gs</span>
             </p>
 
             <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 p-4" open>
@@ -126,77 +79,20 @@
                     <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </summary>
                 
-                <div class="space-y-0">
-                    
-                    <div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" checked class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-sm text-slate-400 line-through flex items-center gap-1.5">
-                                        Alquiler
-                                        <button class="text-slate-400 hover:text-primary transition-colors" title="Editar gasto">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </button>
-                                    </h3>
-                                    <p class="text-[10px] text-slate-400">Itaú 1845</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-slate-400 line-through">1.500.000 Gs</p>
-                                </div>
-                            </div>
-                            <div class="flex justify-between items-center mt-0.5">
-                                <p class="text-[9px] text-primary font-bold flex items-center gap-1">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                    Pagado el 10/03/2026
-                                </p>
-                                <button class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button>
-                            </div>
-                        </div>
+                <div id="contenedorGastos" class="space-y-0">
                     </div>
-
-                    <div class="py-2.5 flex items-start gap-3 hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
-                        <div class="flex-grow">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
-                                        Luz (ANDE)
-                                        <button class="text-slate-400 hover:text-primary transition-colors" title="Editar gasto">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                        </button>
-                                    </h3>
-                                    <p class="text-[10px] text-slate-500">Efectivo</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-bold text-sm text-slate-900">250.000 Gs</p>
-                                </div>
-                            </div>
-                            <div class="flex justify-end items-center mt-0.5">
-                                <button class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
             </details>
-
         </section>
 
     </main>
 
     <div id="modalInfo" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100">
-            
-            <button onclick="toggleModal('modalInfo')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">
-                ✕
-            </button>
-            
+            <button onclick="toggleModal('modalInfo')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
             <div class="space-y-4 text-sm text-slate-600 pr-2 mt-2">
                 <p>¿Pierdes el ritmo de anotar todos y cada uno de tus gastos?</p>
                 <p class="font-bold text-slate-900 text-base">Prueba la Macro gestión.</p>
                 <p>Aquí no anotas cada cafe, aquí separa tu dinero en cuentas. ej</p>
-                
                 <div class="flex gap-2">
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center">
                         <p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p>
@@ -207,17 +103,14 @@
                         <p class="text-xs font-bold text-slate-800 mt-1">Mantenimientos</p>
                     </div>
                 </div>
-
                 <p>Solo actualizando los saldos de esas cuentas, vas a tener un panorama de como se mueve tu dinero.</p>
-                
                 <div class="bg-rose-50 p-3 rounded-xl border border-rose-100">
                     <p class="text-xs font-bold text-rose-600 mb-1">⚠️ ADVERTENCIA SOBRE EL CACHE</p>
                     <p class="text-[11px] text-slate-700 leading-relaxed">No borres el caché del navegador para no perder los datos.</p>
                 </div>
             </div>
-
             <div class="mt-6">
-                <button class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors">
+                <button onclick="descargarDatos()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors">
                     ⬇️ Descargar datos
                 </button>
             </div>
@@ -225,9 +118,187 @@
     </div>
 
     <script>
-        function toggleModal(modalID) {
-            document.getElementById(modalID).classList.toggle('hidden');
-        }
+        // 1. BASE DE DATOS LOCAL
+        let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [
+            { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" },
+            { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" }
+        ];
+
+        let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [
+            { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" },
+            { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" }
+        ];
+
+        // Guardar en el navegador
+        const guardarDatos = () => {
+            localStorage.setItem('mg_cuentas', JSON.stringify(cuentas));
+            localStorage.setItem('mg_gastos', JSON.stringify(gastos));
+            renderizarApp();
+        };
+
+        // Utilidad: Formatear moneda Paraguay
+        const formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
+        
+        // Utilidad: Obtener fecha actual
+        const obtenerFechaHoy = () => {
+            const hoy = new Date();
+            return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
+        };
+
+        // 2. RENDERIZAR CUENTAS
+        const renderizarCuentas = () => {
+            const cont = document.getElementById('contenedorCuentas');
+            cont.innerHTML = '';
+            cuentas.forEach(c => {
+                cont.innerHTML += `
+                <div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center text-lg">${c.icono}</div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                ${c.nombre}
+                                <button onclick="editarCuenta(${c.id})" class="text-slate-400 hover:text-primary transition-colors">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                            </h3>
+                            <p class="text-[10px] text-slate-500">Última act: ${c.ultimaAct}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-base text-slate-900">${formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[9px] text-slate-500">Gs</span></p>
+                        <button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">
+                            ACTUALIZAR
+                        </button>
+                    </div>
+                </div>`;
+            });
+        };
+
+        // 3. RENDERIZAR GASTOS FIJOS
+        const renderizarGastos = () => {
+            const cont = document.getElementById('contenedorGastos');
+            cont.innerHTML = '';
+            let totalSuma = 0;
+
+            gastos.forEach(g => {
+                if(g.pagado) totalSuma += g.monto;
+                
+                const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800";
+                const checkStatus = g.pagado ? "checked" : "";
+                
+                cont.innerHTML += `
+                <div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors">
+                    <input type="checkbox" ${checkStatus} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
+                    <div class="flex-grow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">
+                                    ${g.nombre}
+                                    <button onclick="editarGasto(${g.id})" class="text-slate-400 hover:text-primary transition-colors">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </button>
+                                </h3>
+                                <p class="text-[10px] text-slate-500">${g.cuenta}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-bold text-sm ${clasePagado}">${formatoGs(g.monto)}</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">
+                            ${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}
+                            <button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('totalPagado').innerText = formatoGs(totalSuma);
+        };
+
+        const renderizarApp = () => { renderizarCuentas(); renderizarGastos(); };
+
+        // 4. FUNCIONES INTERACTIVAS (Usando prompt nativo para asegurar funcionamiento perfecto 1.0)
+        const actualizarSaldo = (id) => {
+            const cuenta = cuentas.find(c => c.id === id);
+            const nuevoSaldo = prompt(`Actualizar saldo de ${cuenta.nombre}\nSaldo actual: ${formatoGs(cuenta.saldo)}\n\nIngresá el nuevo monto (solo números):`, cuenta.saldo);
+            if(nuevoSaldo && !isNaN(nuevoSaldo)) {
+                cuenta.saldo = parseInt(nuevoSaldo);
+                const hoy = new Date();
+                cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
+                guardarDatos();
+            }
+        };
+
+        const tildarGasto = (id) => {
+            const gasto = gastos.find(g => g.id === id);
+            gasto.pagado = !gasto.pagado;
+            gasto.fechaPago = gasto.pagado ? obtenerFechaHoy() : "";
+            guardarDatos();
+        };
+
+        const cambiarMontoGasto = (id) => {
+            const gasto = gastos.find(g => g.id === id);
+            const nuevoMonto = prompt(`Cambiar monto para: ${gasto.nombre}\n\nIngresá el nuevo monto (solo números):`, gasto.monto);
+            if(nuevoMonto && !isNaN(nuevoMonto)) {
+                gasto.monto = parseInt(nuevoMonto);
+                guardarDatos();
+            }
+        };
+
+        const cerrarMes = () => {
+            if(confirm("¿Estás seguro de cerrar el mes? Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).")) {
+                gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; });
+                guardarDatos();
+                alert("¡Mes cerrado con éxito! Todo listo para empezar de nuevo.");
+            }
+        };
+
+        const agregarCuenta = () => {
+            const nombre = prompt("Nombre de la nueva cuenta (Ej: Visión Banco):");
+            if(!nombre) return;
+            const saldo = prompt("Saldo actual (solo números):", "0");
+            if(saldo && !isNaN(saldo)) {
+                cuentas.push({ id: Date.now(), nombre: nombre, descripcion: "Nueva cuenta", saldo: parseInt(saldo), ultimaAct: "Recién creada", icono: "💳" });
+                guardarDatos();
+            }
+        };
+
+        const agregarGasto = () => {
+            const nombre = prompt("Nombre del nuevo gasto (Ej: Internet):");
+            if(!nombre) return;
+            const monto = prompt("Monto mensual estimado (solo números):", "0");
+            if(monto && !isNaN(monto)) {
+                gastos.push({ id: Date.now(), nombre: nombre, cuenta: "General", monto: parseInt(monto), pagado: false, fechaPago: "" });
+                guardarDatos();
+            }
+        };
+
+        const editarCuenta = (id) => {
+            const c = cuentas.find(x => x.id === id);
+            const nuevoNombre = prompt("Editar nombre de la cuenta:", c.nombre);
+            if(nuevoNombre) { c.nombre = nuevoNombre; guardarDatos(); }
+        };
+
+        const editarGasto = (id) => {
+            const g = gastos.find(x => x.id === id);
+            const nuevoNombre = prompt("Editar nombre del gasto:", g.nombre);
+            if(nuevoNombre) { g.nombre = nuevoNombre; guardarDatos(); }
+        };
+
+        const descargarDatos = () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({cuentas, gastos}, null, 2));
+            const btn = document.createElement("a");
+            btn.setAttribute("href", dataStr);
+            btn.setAttribute("download", `MacroGestion_Respaldo_${obtenerFechaHoy().replace(/\//g, '-')}.json`);
+            document.body.appendChild(btn);
+            btn.click();
+            btn.remove();
+        };
+
+        function toggleModal(modalID) { document.getElementById(modalID).classList.toggle('hidden'); }
+
+        // Inicializar la app al cargar
+        window.onload = renderizarApp;
     </script>
 </body>
 </html>
