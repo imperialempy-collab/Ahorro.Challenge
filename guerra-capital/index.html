@@ -17,6 +17,7 @@
         }
     </script>
     <style>
+        /* Fondo de mapa táctico */
         .map-bg { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
         .node-path { position: relative; z-index: 10; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
@@ -30,8 +31,8 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </a>
         <div class="flex gap-4 font-black font-display text-lg">
-            <div class="flex items-center gap-1 text-danger"><span class="text-xl">❤️</span> <span id="vidasUI">5</span></div>
-            <div class="flex items-center gap-1 text-warning"><span class="text-xl">🪙</span> <span id="monedasUI">0</span></div>
+            <div class="flex items-center gap-1 text-blue-500" title="Escudos (Vidas)"><span class="text-xl">🛡️</span> <span id="vidasUI">5</span></div>
+            <div class="flex items-center gap-1 text-warning" title="Botín de Guerra (Monedas)"><span class="text-xl">💰</span> <span id="monedasUI">0</span></div>
         </div>
     </header>
 
@@ -102,7 +103,7 @@
 
         function cerrarModalInfo() { document.getElementById('customModal').classList.add('hidden'); }
 
-        // 2. DIBUJAR MAPA
+        // 2. DIBUJAR MAPA TÁCTICO
         function renderizarMapa() {
             const mapa = document.getElementById('mapaContenedor');
             mapa.innerHTML = '';
@@ -117,7 +118,9 @@
                 
                 let bgClass = isDesbloqueado ? 'bg-primary text-white shadow-[0_8px_0_#047857]' : 'bg-slate-200 text-slate-400 shadow-[0_8px_0_#94a3b8]';
                 if(isActual) bgClass = 'bg-primary text-white shadow-[0_8px_0_#047857] ring-4 ring-emerald-200 ring-offset-4';
-                const emoji = isDesbloqueado ? '🎖️' : '🔒';
+                
+                // Nuevos Emojis Militares
+                const emoji = isDesbloqueado ? '🚩' : '🚧';
 
                 let lineaSVG = '';
                 if (drawnIndex < totalNiveles - 1) {
@@ -132,9 +135,11 @@
 
                 mapa.innerHTML += `
                 <div class="node-path flex flex-col items-center justify-center transform ${margen}">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 bg-white px-2 py-1 rounded-full shadow-sm z-10">Nivel ${batalla.id}</p>
-                    <button onclick="${isDesbloqueado ? `iniciarBatalla(${batalla.id})` : ''}" class="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-transform active:scale-95 z-10 ${bgClass} ${isDesbloqueado ? 'cursor-pointer hover:-translate-y-1' : 'cursor-not-allowed grayscale'}">${emoji}</button>
-                    ${isActual ? `<div class="absolute -top-4 animate-bounce text-2xl drop-shadow-md z-20">👇</div>` : ''}
+                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-0.5 bg-white px-3 py-1 rounded-full shadow-sm z-10 border border-slate-200">Batalla ${batalla.id}</p>
+                    <p class="text-[11px] font-black text-slate-700 text-center mb-2 z-10 px-2 leading-tight max-w-[140px] drop-shadow-sm">${batalla.title}</p>
+                    
+                    <button onclick="${isDesbloqueado ? `iniciarBatalla(${batalla.id})` : ''}" class="w-20 h-20 rounded-full flex items-center justify-center text-4xl transition-transform active:scale-95 z-10 ${bgClass} ${isDesbloqueado ? 'cursor-pointer hover:-translate-y-1' : 'cursor-not-allowed grayscale'}">${emoji}</button>
+                    ${isActual ? `<div class="absolute -top-3 animate-bounce text-3xl drop-shadow-md z-20">🪖</div>` : ''}
                     ${lineaSVG}
                 </div>`;
             });
@@ -144,20 +149,20 @@
             if (costo > 0) {
                 if (monedas >= costo) {
                     monedas -= costo; vidas = 5; guardarProgreso(); cerrarModalInfo();
-                    mostrarModalInfo('💚', '¡Vidas al máximo!', 'Tus energías han sido restauradas.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">Excelente</button>`);
+                    mostrarModalInfo('🛡️', '¡Blindaje Restaurado!', 'Tus escudos están al máximo. Vuelve al combate.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">Entendido, Capitán</button>`);
                 }
             } else {
                 vidas = 5; guardarProgreso(); cerrarModalInfo();
-                mostrarModalInfo('🎁', '¡Vidas Recuperadas!', 'Te hemos dado 5 vidas de regalo.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">¡Gracias!</button>`);
+                mostrarModalInfo('🚁', '¡Suministros Recibidos!', 'Te han enviado 5 escudos desde la base central.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">Regresar al frente</button>`);
             }
         }
 
         function iniciarBatalla(id) {
             if(vidas <= 0) {
                 let btnHtml = monedas >= 25 
-                    ? `<button onclick="recargarVidas(25)" class="w-full py-3 bg-warning text-white rounded-xl font-bold shadow-md">Comprar 5 vidas (25🪙)</button><button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Esperar</button>` 
-                    : `<button onclick="recargarVidas(0)" class="w-full py-3 bg-primary text-white rounded-xl font-bold shadow-md">Recargar gratis</button><button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Cancelar</button>`;
-                mostrarModalInfo('💔', 'Te quedaste sin vidas', 'Necesitas energías para entrar en combate.', btnHtml);
+                    ? `<button onclick="recargarVidas(25)" class="w-full py-3 bg-warning text-white rounded-xl font-bold shadow-md">Comprar 5 Escudos (25 💰)</button><button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Retirarse</button>` 
+                    : `<button onclick="recargarVidas(0)" class="w-full py-3 bg-primary text-white rounded-xl font-bold shadow-md">Pedir Suministros Gratis</button><button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Retirarse</button>`;
+                mostrarModalInfo('💥', 'Blindaje Destruido', 'No te quedan escudos para entrar en combate. Compra armadura con tu botín o pide apoyo.', btnHtml);
                 return;
             }
             batallaActiva = BATTLES.find(b => b.id === id);
@@ -200,9 +205,9 @@
                 content.innerHTML = `
                 <div class="w-full max-w-sm text-center animate-fade-in">
                     <div class="text-6xl mb-6 drop-shadow-md">${pantalla.emoji || '💡'}</div>
-                    <h2 class="text-2xl font-display font-black text-slate-800 mb-4">${pantalla.title || 'Atención'}</h2>
+                    <h2 class="text-2xl font-display font-black text-slate-800 mb-4">${pantalla.title || 'Reporte de Inteligencia'}</h2>
                     <p class="text-base text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-sm whitespace-pre-line">${pantalla.text}</p>
-                    <button onclick="verificarRespuesta('leido')" class="w-full mt-8 py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#047857]">ENTENDIDO</button>
+                    <button onclick="verificarRespuesta('leido')" class="w-full mt-8 py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#047857]">Copiado, Capitán</button>
                 </div>`;
             } else if (pantalla.type === 'order') {
                 userOrderSelection = []; currentOrderOptions = [...pantalla.options];
@@ -211,7 +216,7 @@
                     <h2 class="text-lg font-display font-bold text-slate-800 leading-snug mb-2">${pantalla.question}</h2>
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-6 flex gap-3 items-center">
                         <span class="text-2xl">👆</span>
-                        <p class="text-xs text-blue-800 font-medium">Toca TODAS las opciones una por una en el orden que creas correcto.</p>
+                        <p class="text-xs text-blue-800 font-medium">Instrucción: Toca TODAS las opciones para armar la secuencia correcta.</p>
                     </div>
                     <div class="space-y-3" id="orderBox">`;
                 
@@ -220,7 +225,7 @@
                         <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xs shrink-0 transition-colors" id="badge-${idx}"></div>
                         <span>${op}</span></button>`;
                 });
-                html += `</div><button onclick="comprobarOrden()" class="w-full mt-8 py-4 bg-secondary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#0284c7]">COMPROBAR ORDEN</button></div>`;
+                html += `</div><button onclick="comprobarOrden()" class="w-full mt-8 py-4 bg-secondary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#0284c7]">EJECUTAR ORDEN</button></div>`;
                 content.innerHTML = html;
             }
         }
@@ -238,7 +243,6 @@
             });
         }
 
-        // BLOQUEO DE SEGURIDAD PARA "ORDENAR"
         window.comprobarOrden = () => {
             if (userOrderSelection.length < currentOrderOptions.length) {
                 document.getElementById('battleContent').classList.add('shake');
@@ -249,9 +253,9 @@
                 document.getElementById('feedbackIcon').className = "w-10 h-10 rounded-full bg-white text-amber-500 flex items-center justify-center text-xl shadow-sm shrink-0";
                 document.getElementById('feedbackIcon').innerHTML = "⚠️";
                 document.getElementById('feedbackTitle').className = "text-xl font-display font-black text-amber-800";
-                document.getElementById('feedbackTitle').innerText = "Faltan opciones";
+                document.getElementById('feedbackTitle').innerText = "Secuencia Incompleta";
                 document.getElementById('feedbackText').className = "text-sm font-medium text-amber-700";
-                document.getElementById('feedbackText').innerText = "Asegúrate de tocar todas las opciones para armar el orden completo antes de comprobar.";
+                document.getElementById('feedbackText').innerText = "Capitán, debe asignar un número a cada opción antes de ejecutar la orden.";
                 
                 const btnCont = document.getElementById('btnContinuar');
                 btnCont.className = "w-full py-4 bg-amber-500 rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#d97706] mt-2";
@@ -275,21 +279,21 @@
             const btnCont = document.getElementById('btnContinuar');
             fbContainer.classList.remove('hidden');
 
-            // Limpiar palabras conflictivas del feedback por si acaso
-            let textoLimpio = pantalla.feedback || "Cuidado con esa trampa.";
+            let textoLimpio = pantalla.feedback || "Revisa tus tácticas de combate.";
             textoLimpio = textoLimpio.replace('¡Excelente! ', '').replace('¡Correcto! ', '').replace('¡Exacto! ', '');
 
             if (esCorrecta) {
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-emerald-100 border-t-2 border-emerald-200 z-20";
                 fbIcon.className = "w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center text-xl shadow-sm shrink-0";
-                fbIcon.innerHTML = "✔️";
+                fbIcon.innerHTML = "🎯";
+                // Título de Guerra Positivo
                 fbTitle.className = "text-xl font-display font-black text-emerald-800";
-                fbTitle.innerText = "¡Excelente!";
+                fbTitle.innerText = "¡Ataque Exitoso!";
                 fbText.className = "text-sm font-medium text-emerald-700";
                 fbText.innerText = "¡Bien hecho! " + textoLimpio;
                 
                 btnCont.className = "w-full py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#047857] mt-2";
-                btnCont.innerText = "Continuar";
+                btnCont.innerText = "Avanzar";
                 
                 monedas += 5; guardarProgreso();
                 btnCont.onclick = () => { pantallasPendientes.shift(); contestadasCorrectamente++; renderizarPantallaBatalla(); };
@@ -301,14 +305,15 @@
 
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-rose-100 border-t-2 border-rose-200 z-20";
                 fbIcon.className = "w-10 h-10 rounded-full bg-white text-danger flex items-center justify-center text-xl shadow-sm shrink-0";
-                fbIcon.innerHTML = "✖️";
+                fbIcon.innerHTML = "💥";
+                // Título de Guerra Negativo
                 fbTitle.className = "text-xl font-display font-black text-rose-800";
-                fbTitle.innerText = "Respuesta incorrecta";
+                fbTitle.innerText = "¡Fuego Enemigo!";
                 fbText.className = "text-sm font-medium text-rose-700";
                 fbText.innerText = "Recuerda: " + textoLimpio;
                 
                 btnCont.className = "w-full py-4 bg-danger rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#be123c] mt-2";
-                btnCont.innerText = "Entendido";
+                btnCont.innerText = "Reagruparse";
                 
                 btnCont.onclick = () => {
                     if (vidas <= 0) { cerrarBatalla(); setTimeout(() => iniciarBatalla(batallaActiva.id), 300); } 
@@ -328,10 +333,10 @@
             
             content.innerHTML = `
             <div class="text-center animate-bounce">
-                <div class="text-7xl mb-4 drop-shadow-lg">🏆</div>
-                <h2 class="text-3xl font-display font-black text-yellow-500 mb-2">¡TRINCHERA SUPERADA!</h2>
-                <p class="text-slate-500 font-bold mb-8">+25 Monedas de Oro</p>
-                <button onclick="completarNivel()" class="w-full max-w-xs mx-auto py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase shadow-[0_4px_0_#047857] active:scale-95 transition-transform">Volver al Mapa</button>
+                <div class="text-7xl mb-4 drop-shadow-lg">🚩</div>
+                <h2 class="text-3xl font-display font-black text-yellow-500 mb-2">¡TERRITORIO CONQUISTADO!</h2>
+                <p class="text-slate-500 font-bold mb-8">+25 Botín de Guerra 💰</p>
+                <button onclick="completarNivel()" class="w-full max-w-xs mx-auto py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase shadow-[0_4px_0_#047857] active:scale-95 transition-transform">Volver a la Base</button>
             </div>`;
         }
 
@@ -342,9 +347,9 @@
         }
 
         window.intentarCerrarBatalla = () => {
-            mostrarModalInfo('🏃', '¿Abandonar combate?', 'Si sales ahora, perderás el progreso de esta trinchera, pero conservarás tus monedas y vidas.', `
-                <button onclick="confirmarCerrarBatalla()" class="w-full py-3 bg-danger text-white rounded-xl font-bold shadow-md">Sí, salir del nivel</button>
-                <button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">No, seguir jugando</button>
+            mostrarModalInfo('🏃', '¿Retirada Táctica?', 'Si sales ahora, perderás el avance en esta trinchera, pero conservarás tu botín y escudos.', `
+                <button onclick="confirmarCerrarBatalla()" class="w-full py-3 bg-danger text-white rounded-xl font-bold shadow-md">Sí, abortar misión</button>
+                <button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">No, seguir peleando</button>
             `);
         }
 
