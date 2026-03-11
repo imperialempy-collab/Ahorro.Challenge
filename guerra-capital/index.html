@@ -18,9 +18,7 @@
     </script>
     <style>
         .map-bg { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
-        .node-path { position: relative; }
-        .node-path::after { content: ''; position: absolute; width: 4px; background-color: #cbd5e1; z-index: -1; top: 100%; left: 50%; transform: translateX(-50%); height: 60px; }
-        .node-path:last-child::after { display: none; }
+        .node-path { position: relative; z-index: 10; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
     </style>
@@ -40,10 +38,20 @@
     <main class="max-w-md mx-auto py-10 px-4 flex flex-col items-center gap-[60px]" id="mapaContenedor">
     </main>
 
+    <div id="customModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
+            <div id="customModalIcon" class="text-5xl mb-4">⚠️</div>
+            <h3 id="customModalTitle" class="text-xl font-display font-bold text-slate-900 mb-2">Atención</h3>
+            <p id="customModalText" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
+            <div id="customModalButtons" class="flex flex-col gap-3">
+                </div>
+        </div>
+    </div>
+
     <div id="battleModal" class="hidden fixed inset-0 bg-surface z-50 flex flex-col">
         <div class="h-2 bg-slate-100 w-full"><div id="battleProgress" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div></div>
         
-        <button onclick="cerrarBatallaAviso()" class="absolute top-6 left-4 text-slate-400 hover:text-slate-600 z-10">
+        <button onclick="intentarCerrarBatalla()" class="absolute top-6 left-4 text-slate-400 hover:text-slate-600 z-10">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
 
@@ -53,7 +61,7 @@
         <div id="feedbackContainer" class="hidden fixed bottom-0 left-0 right-0 p-6 bg-white border-t-2 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20">
             <div class="max-w-lg mx-auto flex flex-col gap-3">
                 <div class="flex items-center gap-3">
-                    <div id="feedbackIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-2xl font-black"></div>
+                    <div id="feedbackIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-2xl font-black shrink-0"></div>
                     <h3 id="feedbackTitle" class="text-xl font-display font-black"></h3>
                 </div>
                 <p id="feedbackText" class="text-sm font-medium"></p>
@@ -79,56 +87,113 @@
             document.getElementById('monedasUI').innerText = monedas;
         }
 
-        // Inicializar UI al cargar
         document.getElementById('vidasUI').innerText = vidas;
         document.getElementById('monedasUI').innerText = monedas;
 
-
         // ESTADO DE LA BATALLA ACTUAL
         let batallaActiva = null;
-        let pantallasPendientes = []; // La cola de preguntas estilo Duolingo
+        let pantallasPendientes = []; 
         let totalPantallas = 0;
         let contestadasCorrectamente = 0;
 
-        // 2. DIBUJAR EL MAPA (ZIGZAG)
+        // SISTEMA DE MODALES ESTÉTICOS
+        function mostrarModalInfo(icono, titulo, texto, botonesHTML) {
+            document.getElementById('customModalIcon').innerText = icono;
+            document.getElementById('customModalTitle').innerText = titulo;
+            document.getElementById('customModalText').innerText = texto;
+            document.getElementById('customModalButtons').innerHTML = botonesHTML;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function cerrarModalInfo() {
+            document.getElementById('customModal').classList.add('hidden');
+        }
+
+        // 2. DIBUJAR EL MAPA (ZIGZAG PERFECTO)
         function renderizarMapa() {
             const mapa = document.getElementById('mapaContenedor');
             mapa.innerHTML = '';
             
-            [...BATTLES].reverse().forEach((batalla, index) => {
+            const totalNiveles = BATTLES.length;
+
+            [...BATTLES].reverse().forEach((batalla, drawnIndex) => {
+                const realIndex = batalla.id - 1; 
                 const isDesbloqueado = batalla.id <= nivelActual;
                 const isActual = batalla.id === nivelActual;
-                const margen = index % 2 === 0 ? '-translate-x-12' : 'translate-x-12';
+                const isLeft = realIndex % 2 === 0;
+                const margen = isLeft ? '-translate-x-12' : 'translate-x-12';
                 
                 let bgClass = isDesbloqueado ? 'bg-primary text-white shadow-[0_8px_0_#047857]' : 'bg-slate-200 text-slate-400 shadow-[0_8px_0_#94a3b8]';
                 if(isActual) bgClass = 'bg-primary text-white shadow-[0_8px_0_#047857] ring-4 ring-emerald-200 ring-offset-4';
-                
                 const emoji = isDesbloqueado ? '🎖️' : '🔒';
+
+                // Lógica Matemática de la Línea ZigZag
+                let lineaSVG = '';
+                if (drawnIndex < totalNiveles - 1) {
+                    const nextNode = BATTLES.find(b => b.id === batalla.id - 1);
+                    if (nextNode) {
+                        const nextIsDesbloqueado = nextNode.id <= nivelActual;
+                        const lineColor = nextIsDesbloqueado ? 'bg-emerald-300' : 'bg-slate-300';
+                        // Angulo perfecto basado en el gap y margen
+                        const angulo = isLeft ? '-34.4deg' : '34.4deg';
+                        
+                        lineaSVG = `<div class="absolute w-[6px] h-[170px] ${lineColor} z-0 rounded-full top-[40px]" style="transform: rotate(${angulo}); transform-origin: top center;"></div>`;
+                    }
+                }
 
                 mapa.innerHTML += `
                 <div class="node-path flex flex-col items-center justify-center transform ${margen}">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 bg-white px-2 py-1 rounded-full shadow-sm">Nivel ${batalla.id}</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 bg-white px-2 py-1 rounded-full shadow-sm z-10">Nivel ${batalla.id}</p>
                     <button 
                         onclick="${isDesbloqueado ? `iniciarBatalla(${batalla.id})` : ''}" 
-                        class="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-transform active:scale-95 ${bgClass} ${isDesbloqueado ? 'cursor-pointer hover:-translate-y-1' : 'cursor-not-allowed grayscale'}"
+                        class="w-20 h-20 rounded-full flex items-center justify-center text-3xl transition-transform active:scale-95 z-10 ${bgClass} ${isDesbloqueado ? 'cursor-pointer hover:-translate-y-1' : 'cursor-not-allowed grayscale'}"
                     >
                         ${emoji}
                     </button>
-                    ${isActual ? `<div class="absolute -top-4 animate-bounce text-2xl drop-shadow-md">👇</div>` : ''}
+                    ${isActual ? `<div class="absolute -top-4 animate-bounce text-2xl drop-shadow-md z-20">👇</div>` : ''}
+                    ${lineaSVG}
                 </div>`;
             });
         }
 
 
-        // 3. INICIAR BATALLA
+        // 3. GESTIÓN DE VIDAS E INICIAR BATALLA
+        function recargarVidas(costo) {
+            if (costo > 0) {
+                if (monedas >= costo) {
+                    monedas -= costo;
+                    vidas = 5;
+                    guardarProgreso();
+                    cerrarModalInfo();
+                    mostrarModalInfo('💚', '¡Vidas al máximo!', 'Tus energías han sido restauradas con éxito. Ve por la victoria.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">Excelente</button>`);
+                }
+            } else {
+                // Modo Gratis
+                vidas = 5;
+                guardarProgreso();
+                cerrarModalInfo();
+                mostrarModalInfo('🎁', '¡Vidas Recuperadas!', 'Te hemos dado 5 vidas de regalo para que no pares de aprender.', `<button onclick="cerrarModalInfo()" class="w-full py-3 bg-primary text-white rounded-xl font-bold">¡Gracias!</button>`);
+            }
+        }
+
         function iniciarBatalla(id) {
             if(vidas <= 0) {
-                alert("¡Te quedaste sin vidas! Vuelve a recargar energías.");
+                let btnHtml = '';
+                if(monedas >= 25) {
+                    btnHtml = `
+                    <button onclick="recargarVidas(25)" class="w-full py-3 bg-warning text-white rounded-xl font-bold shadow-md">Comprar 5 vidas (25🪙)</button>
+                    <button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Esperar</button>`;
+                } else {
+                    btnHtml = `
+                    <button onclick="recargarVidas(0)" class="w-full py-3 bg-primary text-white rounded-xl font-bold shadow-md">Recargar gratis (Regalo)</button>
+                    <button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">Cancelar</button>`;
+                }
+                
+                mostrarModalInfo('💔', 'Te quedaste sin vidas', 'Necesitas energías para entrar en combate. Puedes comprarlas con tu oro o esperar.', btnHtml);
                 return;
             }
             
             batallaActiva = BATTLES.find(b => b.id === id);
-            // Copiamos las pantallas a la "cola de tareas"
             pantallasPendientes = [...batallaActiva.screens];
             totalPantallas = pantallasPendientes.length;
             contestadasCorrectamente = 0;
@@ -138,18 +203,17 @@
             renderizarPantallaBatalla();
         }
 
-        // Variables para el modo "Order"
         let userOrderSelection = [];
         let currentOrderOptions = [];
 
-        // 4. RENDERIZAR LA PANTALLA SEGÚN SU TIPO
+        // 4. RENDERIZAR LA PANTALLA
         function renderizarPantallaBatalla() {
             if (pantallasPendientes.length === 0) {
                 victoriaBatalla();
                 return;
             }
 
-            const pantalla = pantallasPendientes[0]; // Siempre mostramos la primera en la fila
+            const pantalla = pantallasPendientes[0];
             const content = document.getElementById('battleContent');
             
             const progress = (contestadasCorrectamente / totalPantallas) * 100;
@@ -158,7 +222,6 @@
             
             content.innerHTML = '';
 
-            // TIPO 1: VERDADERO O FALSO
             if(pantalla.type === 'boolean') {
                 content.innerHTML = `
                 <div class="w-full max-w-sm">
@@ -171,7 +234,6 @@
                 </div>`;
             }
             
-            // TIPO 2: TRIVIA MULTIPLE
             else if (pantalla.type === 'trivia') {
                 let opcionesHTML = pantalla.options.map((op, idx) => `
                     <button onclick="verificarRespuesta(${idx})" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-bold text-sm text-slate-600 text-left hover:border-blue-400 hover:bg-blue-50 transition-all active:scale-95">
@@ -185,7 +247,6 @@
                 </div>`;
             }
             
-            // TIPO 3: HISTORIA O CONCEPTO (Solo leer)
             else if (pantalla.type === 'story' || pantalla.type === 'quote') {
                 content.innerHTML = `
                 <div class="w-full max-w-sm text-center animate-fade-in">
@@ -196,7 +257,6 @@
                 </div>`;
             }
 
-            // TIPO 4: ORDENAR (Tap to order)
             else if (pantalla.type === 'order') {
                 userOrderSelection = [];
                 currentOrderOptions = [...pantalla.options];
@@ -222,18 +282,14 @@
             }
         }
 
-        // Función auxiliar para el modo Ordenar
         window.handleOrderSelection = (idx) => {
             const indexInSelection = userOrderSelection.indexOf(idx);
             if (indexInSelection > -1) {
-                // Deseleccionar
                 userOrderSelection.splice(indexInSelection, 1);
             } else {
-                // Seleccionar
                 userOrderSelection.push(idx);
             }
             
-            // Actualizar UI
             currentOrderOptions.forEach((_, i) => {
                 const badge = document.getElementById(`badge-${i}`);
                 const btn = document.getElementById(`opt-${i}`);
@@ -253,20 +309,16 @@
             });
         }
 
-
-        // 5. VERIFICAR RESPUESTA Y LÓGICA DUOLINGO
+        // 5. VERIFICAR RESPUESTA
         window.verificarRespuesta = (respuestaUsuario) => {
             const pantalla = pantallasPendientes[0];
             let esCorrecta = false;
 
             if (pantalla.type === 'story' || pantalla.type === 'quote') {
-                esCorrecta = true; // Las de leer siempre son correctas
-            } 
-            else if (pantalla.type === 'order') {
-                // Comparar arrays
+                esCorrecta = true; 
+            } else if (pantalla.type === 'order') {
                 esCorrecta = JSON.stringify(respuestaUsuario) === JSON.stringify(pantalla.correctOrder);
-            } 
-            else {
+            } else {
                 esCorrecta = respuestaUsuario === pantalla.correct;
             }
 
@@ -279,14 +331,15 @@
             fbContainer.classList.remove('hidden');
 
             if (esCorrecta) {
-                // DISEÑO ACIERTO
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-emerald-100 border-t-2 border-emerald-200 z-20";
-                fbIcon.className = "w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center text-xl shadow-sm";
+                fbIcon.className = "w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center text-xl shadow-sm shrink-0";
                 fbIcon.innerHTML = "✔️";
                 fbTitle.className = "text-xl font-display font-black text-emerald-800";
                 fbTitle.innerText = "¡Excelente!";
                 fbText.className = "text-sm font-medium text-emerald-700";
-                fbText.innerText = pantalla.feedback || "¡Bien hecho!";
+                
+                // Texto de felicitación inteligente
+                fbText.innerText = pantalla.feedback ? "¡Bien hecho! " + pantalla.feedback : "¡Sigue así!";
                 
                 btnCont.className = "w-full py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#047857] mt-2";
                 btnCont.innerText = "Continuar";
@@ -295,12 +348,11 @@
                 guardarProgreso();
 
                 btnCont.onclick = () => {
-                    pantallasPendientes.shift(); // Quitar la pregunta resuelta
+                    pantallasPendientes.shift(); 
                     contestadasCorrectamente++;
                     renderizarPantallaBatalla();
                 };
             } else {
-                // DISEÑO ERROR + LÓGICA DUOLINGO
                 document.getElementById('battleContent').classList.add('shake');
                 setTimeout(() => document.getElementById('battleContent').classList.remove('shake'), 500);
 
@@ -308,22 +360,24 @@
                 guardarProgreso();
 
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-rose-100 border-t-2 border-rose-200 z-20";
-                fbIcon.className = "w-10 h-10 rounded-full bg-white text-danger flex items-center justify-center text-xl shadow-sm";
+                fbIcon.className = "w-10 h-10 rounded-full bg-white text-danger flex items-center justify-center text-xl shadow-sm shrink-0";
                 fbIcon.innerHTML = "✖️";
                 fbTitle.className = "text-xl font-display font-black text-rose-800";
                 fbTitle.innerText = "Respuesta incorrecta";
                 fbText.className = "text-sm font-medium text-rose-700";
-                fbText.innerText = pantalla.feedback || "Cuidado con esa trampa.";
+                
+                // Texto de error educativo
+                fbText.innerText = pantalla.feedback ? "Recuerda: " + pantalla.feedback : "Cuidado con esa trampa.";
                 
                 btnCont.className = "w-full py-4 bg-danger rounded-2xl font-black text-white text-lg tracking-wide uppercase transition-transform active:scale-95 shadow-[0_4px_0_#be123c] mt-2";
                 btnCont.innerText = "Entendido";
                 
                 btnCont.onclick = () => {
                     if (vidas <= 0) {
-                        alert("¡Te quedaste sin vidas! Regresa cuando hayas descansado.");
                         cerrarBatalla();
+                        setTimeout(() => iniciarBatalla(batallaActiva.id), 300); // Para que salte el modal de recargar
                     } else {
-                        // LÓGICA DUOLINGO: Mandar la pregunta fallida al final de la fila
+                        // REGLA DUOLINGO: Mandar al final
                         const pantallaFallida = pantallasPendientes.shift();
                         pantallasPendientes.push(pantallaFallida);
                         renderizarPantallaBatalla();
@@ -355,10 +409,17 @@
             cerrarBatalla();
         }
 
-        window.cerrarBatallaAviso = () => {
-            if(confirm("¿Seguro que quieres salir? Perderás el progreso de esta trinchera.")) {
-                cerrarBatalla();
-            }
+        // CONFIRMACIÓN AL SALIR (Reemplaza al navegador)
+        window.intentarCerrarBatalla = () => {
+            mostrarModalInfo('🏃', '¿Abandonar combate?', 'Si sales ahora, perderás el progreso de esta trinchera, pero conservarás tus monedas y vidas.', `
+                <button onclick="confirmarCerrarBatalla()" class="w-full py-3 bg-danger text-white rounded-xl font-bold shadow-md">Sí, salir del nivel</button>
+                <button onclick="cerrarModalInfo()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold">No, seguir jugando</button>
+            `);
+        }
+
+        window.confirmarCerrarBatalla = () => {
+            cerrarModalInfo();
+            cerrarBatalla();
         }
 
         function cerrarBatalla() {
@@ -367,7 +428,6 @@
             renderizarMapa();
         }
 
-        // Inicializar
         window.onload = renderizarMapa;
 
     </script>
