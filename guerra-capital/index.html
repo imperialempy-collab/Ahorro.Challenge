@@ -17,7 +17,6 @@
         }
     </script>
     <style>
-        /* Fondo de mapa táctico */
         .map-bg { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; }
         .node-path { position: relative; z-index: 10; }
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
@@ -103,7 +102,7 @@
 
         function cerrarModalInfo() { document.getElementById('customModal').classList.add('hidden'); }
 
-        // 2. DIBUJAR MAPA TÁCTICO
+        // 2. DIBUJAR MAPA TÁCTICO (NUEVO DISEÑO VARIADO)
         function renderizarMapa() {
             const mapa = document.getElementById('mapaContenedor');
             mapa.innerHTML = '';
@@ -119,8 +118,8 @@
                 let bgClass = isDesbloqueado ? 'bg-primary text-white shadow-[0_8px_0_#047857]' : 'bg-slate-200 text-slate-400 shadow-[0_8px_0_#94a3b8]';
                 if(isActual) bgClass = 'bg-primary text-white shadow-[0_8px_0_#047857] ring-4 ring-emerald-200 ring-offset-4';
                 
-                // Nuevos Emojis Militares
-                const emoji = isDesbloqueado ? '🚩' : '🚧';
+                // AQUÍ OCURRE LA MAGIA DEL DISEÑO: Si está desbloqueado lee el emoji específico de la batalla.
+                const emoji = isDesbloqueado ? (batalla.mapEmoji || '🚩') : '🚧';
 
                 let lineaSVG = '';
                 if (drawnIndex < totalNiveles - 1) {
@@ -286,7 +285,6 @@
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-emerald-100 border-t-2 border-emerald-200 z-20";
                 fbIcon.className = "w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center text-xl shadow-sm shrink-0";
                 fbIcon.innerHTML = "🎯";
-                // Título de Guerra Positivo
                 fbTitle.className = "text-xl font-display font-black text-emerald-800";
                 fbTitle.innerText = "¡Ataque Exitoso!";
                 fbText.className = "text-sm font-medium text-emerald-700";
@@ -306,7 +304,6 @@
                 fbContainer.className = "fixed bottom-0 left-0 right-0 p-6 bg-rose-100 border-t-2 border-rose-200 z-20";
                 fbIcon.className = "w-10 h-10 rounded-full bg-white text-danger flex items-center justify-center text-xl shadow-sm shrink-0";
                 fbIcon.innerHTML = "💥";
-                // Título de Guerra Negativo
                 fbTitle.className = "text-xl font-display font-black text-rose-800";
                 fbTitle.innerText = "¡Fuego Enemigo!";
                 fbText.className = "text-sm font-medium text-rose-700";
@@ -331,9 +328,12 @@
             document.getElementById('feedbackContainer').classList.add('hidden');
             document.getElementById('battleProgress').style.width = '100%';
             
+            // Emoji gigante dinámico de victoria
+            const emojiVictoria = batallaActiva.mapEmoji || '🚩';
+
             content.innerHTML = `
             <div class="text-center animate-bounce">
-                <div class="text-7xl mb-4 drop-shadow-lg">🚩</div>
+                <div class="text-7xl mb-4 drop-shadow-lg">${emojiVictoria}</div>
                 <h2 class="text-3xl font-display font-black text-yellow-500 mb-2">¡TERRITORIO CONQUISTADO!</h2>
                 <p class="text-slate-500 font-bold mb-8">+25 Botín de Guerra 💰</p>
                 <button onclick="completarNivel()" class="w-full max-w-xs mx-auto py-4 bg-primary rounded-2xl font-black text-white text-lg tracking-wide uppercase shadow-[0_4px_0_#047857] active:scale-95 transition-transform">Volver a la Base</button>
