@@ -108,8 +108,9 @@
                 </div>
             </div>
             <div class="mt-6">
-                <button onclick="descargarDatos()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors">
-                    ⬇️ Descargar datos
+                <button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Descargar Historial (Excel)
                 </button>
             </div>
         </div>
@@ -165,19 +166,18 @@
     </div>
 
     <script>
-        // --- 1. Utilidades y variables globales ---
+        // --- 1. Utilidades ---
         const formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
         const obtenerFechaHoy = () => {
             const hoy = new Date();
             return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
         };
-
         const formatoInputEnVivo = (e) => {
             let val = e.target.value.replace(/\D/g, ''); 
             e.target.value = val ? new Intl.NumberFormat('es-PY').format(val).replace(/,/g, '.') : '';
         };
 
-        // --- 2. Base de Datos ---
+        // --- 2. Base de Datos y Memoria Histórica ---
         let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [
             { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" },
             { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" }
@@ -188,10 +188,20 @@
             { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" }
         ];
 
+        // NUEVO: El Libro Mayor que anota todo lo que pasa
+        let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
+
         const guardarDatos = () => {
             localStorage.setItem('mg_cuentas', JSON.stringify(cuentas));
             localStorage.setItem('mg_gastos', JSON.stringify(gastos));
+            localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos));
             renderizarApp();
+        };
+
+        const registrarMovimiento = (accion, detalle, monto = 0) => {
+            const f = new Date();
+            const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`;
+            historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto });
         };
 
         // --- 3. Renderizado en Pantalla ---
@@ -320,7 +330,7 @@
         });
 
 
-        // --- 5. Nuevo Sistema Modal Formulario (El Todo en Uno) ---
+        // --- 5. Nuevo Sistema Modal Formulario ---
         let formActualTipo = '';
         let formActualId = null;
 
@@ -396,12 +406,14 @@
                     const c = cuentas.find(x => x.id === formActualId);
                     c.nombre = v1; c.descripcion = v2 || "Sin descripción"; 
                     if(c.saldo !== parseInt(v3)) {
+                        registrarMovimiento("Actualización Manual", `Se ajustó el saldo de ${c.nombre}`, parseInt(v3) - c.saldo);
                         c.saldo = parseInt(v3);
                         const hoy = new Date();
                         c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
                     }
                 } else {
                     cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: "💳" });
+                    registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3));
                 }
             } else if (formActualTipo === 'gasto') {
                 if (formActualId) {
@@ -409,20 +421,34 @@
                     g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3);
                 } else {
                     gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" });
+                    registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3));
                 }
             }
             guardarDatos();
             cerrarModalForm();
         };
 
-        const eliminarItemActual = async () => {
-            const confirmacion = await interactuarApp('confirm', '¿Eliminar?', 'Esta acción no se puede deshacer. ¿Estás seguro de que querés borrar esto para siempre?');
-            if (confirmacion) {
-                if (formActualTipo === 'cuenta') { cuentas = cuentas.filter(x => x.id !== formActualId); } 
-                else { gastos = gastos.filter(x => x.id !== formActualId); }
-                guardarDatos();
-                cerrarModalForm();
-            }
+        // --- SOLUCIÓN AL PROBLEMA DE ELIMINAR (Evita ventanas encimadas) ---
+        const eliminarItemActual = () => {
+            cerrarModalForm(); // Ocultamos el formulario primero
+            
+            setTimeout(async () => {
+                const confirmacion = await interactuarApp('confirm', '⚠️ ¿Eliminar Definitivamente?', 'Esta acción no se puede deshacer. ¿Aceptás borrarlo?');
+                if (confirmacion) {
+                    let nombreBorrado = "";
+                    if (formActualTipo === 'cuenta') { 
+                        nombreBorrado = cuentas.find(x => x.id === formActualId).nombre;
+                        cuentas = cuentas.filter(x => x.id !== formActualId); 
+                    } else { 
+                        nombreBorrado = gastos.find(x => x.id === formActualId).nombre;
+                        gastos = gastos.filter(x => x.id !== formActualId); 
+                    }
+                    registrarMovimiento(`Eliminación de ${formActualTipo}`, nombreBorrado, 0);
+                    guardarDatos();
+                } else {
+                    abrirModalForm(formActualTipo, formActualId); // Si canceló, le devolvemos el form
+                }
+            }, 250); // Esperamos a que la animación de cierre termine
         };
 
 
@@ -431,7 +457,9 @@
             const cuenta = cuentas.find(c => c.id === id);
             const r = await interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true);
             if (r) {
-                cuenta.saldo = parseInt(r.replace(/\./g, ''));
+                const nuevoMonto = parseInt(r.replace(/\./g, ''));
+                registrarMovimiento("Actualización de Saldo", cuenta.nombre, nuevoMonto - cuenta.saldo);
+                cuenta.saldo = nuevoMonto;
                 const hoy = new Date();
                 cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
                 guardarDatos();
@@ -451,6 +479,12 @@
             const gasto = gastos.find(g => g.id === id);
             gasto.pagado = !gasto.pagado;
             gasto.fechaPago = gasto.pagado ? obtenerFechaHoy() : "";
+            
+            if(gasto.pagado) {
+                registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto);
+            } else {
+                registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto);
+            }
             guardarDatos();
         };
 
@@ -458,15 +492,31 @@
             const r = await interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).');
             if (r) {
                 gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; });
+                registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0);
                 guardarDatos();
+                interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.');
             }
         };
 
-        const descargarDatos = () => {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({cuentas, gastos}, null, 2));
+        // --- SOLUCIÓN DE DESCARGA: EXCEL (CSV) EN LUGAR DE CÓDIGO ---
+        const descargarDatosCSV = () => {
+            if (historialMovimientos.length === 0) {
+                interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.');
+                return;
+            }
+
+            let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n";
+            historialMovimientos.forEach(h => {
+                csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`;
+            });
+
+            // Agregamos código BOM para que Excel lea los acentos (UTF-8)
+            const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
             const btn = document.createElement("a");
-            btn.setAttribute("href", dataStr);
-            btn.setAttribute("download", `MacroGestion_Respaldo_${obtenerFechaHoy().replace(/\//g, '-')}.json`);
+            btn.setAttribute("href", url);
+            btn.setAttribute("download", `MacroGestion_Historial_${obtenerFechaHoy().replace(/\//g, '-')}.csv`);
             document.body.appendChild(btn);
             btn.click();
             btn.remove();
