@@ -20,7 +20,6 @@
     </script>
     <style>
         summary::-webkit-details-marker { display: none; }
-        /* Animación suave para las barras de progreso */
         .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
@@ -86,14 +85,15 @@
 
 
         <div class="my-10 relative flex items-center justify-center">
-            <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t-2 border-primary/30 border-dashed"></div>
-            </div>
-            <div class="relative bg-background px-4">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t-2 border-primary/30 border-dashed"></div></div>
+            <div class="relative bg-background px-4 flex items-center gap-2">
                 <span class="bg-emerald-50 text-primary font-black px-5 py-2 rounded-full text-[10px] tracking-widest uppercase border border-primary/20 shadow-sm flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     Tu Salud Financiera
                 </span>
+                <button onclick="configurarIngreso()" class="w-8 h-8 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Configurar Ingreso Mensual">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
             </div>
         </div>
 
@@ -101,37 +101,30 @@
             
             <div class="bg-gradient-to-br from-rose-50 to-surface border border-rose-100 rounded-3xl p-5 shadow-lg relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                
                 <div class="flex justify-between items-start relative z-10">
                     <div>
-                        <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1.5">
-                            🕳️ El Agujero Negro
-                        </h3>
+                        <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1.5">🕳️ El Agujero Negro</h3>
                         <p class="text-[10px] text-slate-500 mt-1">Dinero fugado sin registrar este mes</p>
                     </div>
-                    <button onclick="infoReporte('agujero')" class="w-6 h-6 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors shadow-sm">
-                        <span class="font-bold font-display text-xs">i</span>
-                    </button>
+                    <button onclick="infoReporte('agujero')" class="w-6 h-6 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors shadow-sm"><span class="font-bold font-display text-xs">i</span></button>
                 </div>
-                
                 <div class="mt-4 relative z-10">
-                    <p class="text-4xl font-black text-rose-600 tracking-tighter">850.000 <span class="text-sm text-rose-400 font-bold">Gs</span></p>
+                    <p class="text-4xl font-black text-rose-600 tracking-tighter"><span id="repAgujeroTotal">0</span> <span class="text-sm text-rose-400 font-bold">Gs</span></p>
                     <div class="flex items-center gap-2 mt-2">
-                        <span class="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">25% DE TU PLATA</span>
+                        <span id="repAgujeroPorcentaje" class="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">0% DE TU INGRESO</span>
                         <p class="text-[10px] text-slate-500">Cuidado con los gastos hormiga</p>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                
                 <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-36">
                     <div class="flex justify-between items-start">
                         <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Patrimonio<br>Líquido</h3>
                         <button onclick="infoReporte('patrimonio')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                     </div>
                     <div>
-                        <p class="text-lg font-black text-slate-800 tracking-tight">1.600.000 <span class="text-[9px] text-slate-400">Gs</span></p>
+                        <p class="text-lg font-black text-slate-800 tracking-tight"><span id="repPatrimonio">0</span> <span class="text-[9px] text-slate-400">Gs</span></p>
                         <div class="mt-2">
                             <svg class="w-full h-8 text-primary" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor">
                                 <path d="M0 25 L20 20 L40 22 L60 10 L80 15 L100 5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -147,11 +140,11 @@
                         <button onclick="infoReporte('burnrate')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                     </div>
                     <div>
-                        <p class="text-lg font-black text-amber-500 tracking-tight">Rápida</p>
+                        <p id="repBurnRateText" class="text-lg font-black text-slate-800 tracking-tight">Calculando...</p>
                         <div class="mt-3 w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div class="bg-gradient-to-r from-amber-400 to-rose-500 h-2.5 rounded-full progress-bar" style="width: 75%"></div>
+                            <div id="repBurnRateBar" class="bg-slate-300 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
                         </div>
-                        <p class="text-[9px] text-slate-400 mt-2">Te queda poco saldo variable.</p>
+                        <p id="repBurnRateMsg" class="text-[9px] text-slate-400 mt-2">Cargando datos.</p>
                     </div>
                 </div>
             </div>
@@ -162,30 +155,33 @@
                     <button onclick="infoReporte('asfixia')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                 </div>
                 
-                <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner">
-                    <div class="bg-rose-500 h-full progress-bar" style="width: 60%" title="Gastos Fijos"></div>
-                    <div class="bg-amber-400 h-full progress-bar" style="width: 25%" title="Gastos Variables"></div>
-                    <div class="bg-primary h-full progress-bar" style="width: 15%" title="Ahorro"></div>
+                <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner bg-slate-100">
+                    <div id="barFijos" class="bg-rose-500 h-full progress-bar" style="width: 0%" title="Gastos Fijos"></div>
+                    <div id="barVar" class="bg-amber-400 h-full progress-bar" style="width: 0%" title="Gastos Variables"></div>
+                    <div id="barAhorro" class="bg-primary h-full progress-bar" style="width: 0%" title="Libre"></div>
                 </div>
                 
                 <div class="flex justify-between items-center mt-3 px-1">
-                    <div class="text-center">
-                        <div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div>
-                        <p class="text-[9px] font-bold text-slate-600">60% Fijo</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div>
-                        <p class="text-[9px] font-bold text-slate-600">25% Variable</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-2 h-2 rounded-full bg-primary mx-auto mb-1"></div>
-                        <p class="text-[9px] font-bold text-slate-600">15% Ahorro</p>
-                    </div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div><p id="txtFijos" class="text-[9px] font-bold text-slate-600">0% Fijo</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div><p id="txtVar" class="text-[9px] font-bold text-slate-600">0% Variable</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-primary mx-auto mb-1"></div><p id="txtAhorro" class="text-[9px] font-bold text-slate-600">0% Libre</p></div>
                 </div>
             </div>
 
-        </section>
+            <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 p-4 mt-6">
+                <summary class="flex items-center justify-between text-xs font-bold text-slate-600 cursor-pointer list-none hover:text-primary transition-colors">
+                    <span class="flex items-center gap-2">📊 Reporte Tradicional (Por Cuentas)</span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                
+                <div class="pt-4 mt-3 border-t border-slate-100">
+                    <p class="text-[10px] text-slate-500 mb-4">Suma de Fijos Pagados + Fugas (Agujero Negro) este mes por cuenta.</p>
+                    <div id="contenedorReporteTradicional" class="space-y-3">
+                        </div>
+                </div>
+            </details>
 
+        </section>
     </main>
 
     <div id="modalInfo" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -210,28 +206,19 @@
         <div id="modalAccionCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
             <h3 id="modalAccionTitulo" class="font-black font-display text-slate-900 text-xl mb-2">Título</h3>
             <p id="modalAccionMensaje" class="text-sm text-slate-600 mb-5 leading-relaxed whitespace-pre-line">Mensaje descriptivo aquí.</p>
-            
-            <div id="modalAccionInputContenedor" class="hidden mb-6">
-                <input type="text" id="modalAccionInput" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-400 transition-all">
-            </div>
-
-            <div class="flex gap-3">
-                <button id="btnModalCancelar" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors hidden">Cancelar</button>
-                <button id="btnModalConfirmar" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
-            </div>
+            <div id="modalAccionInputContenedor" class="hidden mb-6"><input type="text" id="modalAccionInput" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-400 transition-all"></div>
+            <div class="flex gap-3"><button id="btnModalCancelar" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors hidden">Cancelar</button><button id="btnModalConfirmar" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div>
         </div>
     </div>
 
     <div id="modalFormulario" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
         <div id="modalFormCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
             <h3 id="modalFormTitulo" class="font-black font-display text-slate-900 text-xl mb-4">Título</h3>
-            
             <div class="space-y-4 mb-6">
                 <div><label id="lblInput1" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 1</label><input type="text" id="modalFormInput1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
                 <div><label id="lblInput2" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 2</label><input type="text" id="modalFormInput2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
                 <div><label id="lblInput3" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Monto</label><input type="text" id="modalFormInput3" inputmode="numeric" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-primary font-black text-xl text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"></div>
             </div>
-
             <div class="flex flex-col gap-3">
                 <div class="flex gap-3"><button onclick="cerrarModalForm()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="guardarFormulario()" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Guardar</button></div>
                 <button id="btnEliminarItem" onclick="eliminarItemActual()" class="w-full bg-rose-50 text-rose-600 font-bold py-3 rounded-xl hover:bg-rose-100 transition-colors hidden flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Eliminar</button>
@@ -240,19 +227,15 @@
     </div>
 
     <script>
-        // --- TEXTOS EDUCATIVOS DE LOS REPORTES ---
         const descripcionesReportes = {
-            patrimonio: { tit: "📈 Curva de Patrimonio", desc: "La tendencia de tu riqueza real.\n\nNo importa cuánto ganes, sino cuánto retenés. Si esta línea sube, te estás volviendo más rico. Si baja, estás gastando tus ahorros para sobrevivir." },
-            burnrate: { tit: "⏱️ Velocidad de Quema", desc: "A qué velocidad desaparece tu dinero variable.\n\nSi la barra está roja a mediados de mes, te vas a quedar sin efectivo antes de cobrar. ¡Frená las salidas!" },
-            asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "El peso de tus obligaciones fijas.\n\nSi tus gastos fijos (alquiler, deudas) ocupan más del 60%, estás asfixiado financieramente. Cualquier imprevisto te va a endeudar." },
-            agujero: { tit: "🕳️ El Agujero Negro", desc: "El total de dinero fugado sin registrar.\n\nEs la suma de todos esos gastos que no anotaste (súper, salidas, cafés). Ver este número te dará el golpe de realidad necesario para controlar tu tarjeta." }
+            patrimonio: { tit: "📈 Curva de Patrimonio", desc: "La suma de todas tus cuentas reales.\n\nNo importa cuánto ganes, sino cuánto retenés. Si este número sube, te estás volviendo más rico." },
+            burnrate: { tit: "⏱️ Velocidad de Quema", desc: "A qué velocidad desaparece tu dinero libre.\n\nCompara los días que pasaron del mes con la plata que fugaste. Si dice 'Rápida', frená tus gastos." },
+            asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "El peso de tus obligaciones fijas.\n\nSi tus gastos fijos (alquiler, deudas) ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." },
+            agujero: { tit: "🕳️ El Agujero Negro", desc: "Dinero fugado sin registrar (Variables).\n\nEs la suma de todos esos gastos cuando le restaste saldo a tus cuentas a mano. Ver este número gigante te ayudará a controlar la tarjeta." }
         };
 
-        function infoReporte(clave) {
-            interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc);
-        }
+        function infoReporte(clave) { interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc); }
 
-        // --- SISTEMA CORE (Intacto) ---
         let modalResolve = null;
         const formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
         const obtenerFechaHoy = () => { const hoy = new Date(); return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`; };
@@ -264,6 +247,103 @@
 
         const guardarDatos = () => { localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); localStorage.setItem('mg_gastos', JSON.stringify(gastos)); localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos)); renderizarApp(); };
         const registrarMovimiento = (accion, detalle, monto = 0) => { const f = new Date(); const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`; historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto }); };
+
+        // --- EL MOTOR MATEMÁTICO DE LOS REPORTES ---
+        const configurarIngreso = async () => {
+            const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
+            const res = await interactuarApp('prompt', 'Configurar Ingreso Base', 'Para calcular la Asfixia Financiera, ingresá tu sueldo o ingreso mensual promedio.', actual, true);
+            if(res) {
+                localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, '')));
+                renderizarReportes();
+            }
+        };
+
+        const renderizarReportes = () => {
+            let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
+            
+            // 1. Patrimonio Líquido
+            let patrimonio = cuentas.reduce((acc, c) => acc + c.saldo, 0);
+            document.getElementById('repPatrimonio').innerText = formatoGs(patrimonio).replace(' Gs', '');
+            
+            // Filtro del mes actual
+            const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/";
+            const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
+
+            // 2. Agujero Negro & Fugas por Cuenta
+            let agujeroNegro = 0;
+            let fugasPorCuenta = {};
+            cuentas.forEach(c => fugasPorCuenta[c.nombre] = 0);
+
+            historialMes.forEach(h => {
+                if (h.accion === "Actualización de Saldo" && h.monto < 0) {
+                    agujeroNegro += Math.abs(h.monto);
+                    if(fugasPorCuenta[h.detalle] !== undefined) fugasPorCuenta[h.detalle] += Math.abs(h.monto);
+                }
+            });
+
+            document.getElementById('repAgujeroTotal').innerText = formatoGs(agujeroNegro).replace(' Gs', '');
+            let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0;
+            document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
+
+            // 3. Asfixia Financiera
+            let fijos = gastos.reduce((acc, g) => acc + g.monto, 0);
+            let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijos / ingresoTotal) * 100), 100) : 0;
+            let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0;
+            let porcAhorro = Math.max(0, 100 - porcFijos - porcVar);
+
+            document.getElementById('barFijos').style.width = `${porcFijos}%`;
+            document.getElementById('barVar').style.width = `${porcVar}%`;
+            document.getElementById('barAhorro').style.width = `${porcAhorro}%`;
+            document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`;
+            document.getElementById('txtVar').innerText = `${porcVar}% Var`;
+            document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
+
+            // 4. Velocidad de Quema
+            const hoy = new Date().getDate();
+            const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+            const avanceMes = (hoy / diasMes) * 100; 
+            
+            let margenVariable = ingresoTotal - fijos; 
+            let velocidad = "Falta Ingreso"; let barColor = "from-slate-300 to-slate-400"; let barWidth = 0; let msgQuema = "Tocá el ⚙️ para calcular.";
+
+            if (ingresoTotal > 0 && margenVariable > 0) {
+                let quema = (agujeroNegro / margenVariable) * 100;
+                barWidth = Math.min(quema, 100);
+                if (quema > avanceMes * 1.2) { velocidad = "Rápida"; barColor = "from-amber-400 to-rose-500"; msgQuema = "Estás gastando muy rápido."; } 
+                else { velocidad = "Normal"; barColor = "from-emerald-400 to-primary"; msgQuema = "Vas a buen ritmo."; }
+            } else if (ingresoTotal > 0) {
+                velocidad = "Peligro"; barColor = "from-rose-500 to-rose-600"; barWidth = 100; msgQuema = "No tenés margen libre.";
+            }
+
+            document.getElementById('repBurnRateText').innerText = velocidad;
+            document.getElementById('repBurnRateBar').className = `h-2.5 rounded-full progress-bar bg-gradient-to-r ${barColor}`;
+            document.getElementById('repBurnRateBar').style.width = `${barWidth}%`;
+            document.getElementById('repBurnRateMsg').innerText = msgQuema;
+
+            // 5. Reporte Tradicional Desplegable
+            const contTrad = document.getElementById('contenedorReporteTradicional');
+            contTrad.innerHTML = '';
+            
+            let gastosTotalesCuenta = {};
+            cuentas.forEach(c => gastosTotalesCuenta[c.nombre] = fugasPorCuenta[c.nombre] || 0);
+            gastos.forEach(g => { if(g.pagado) { gastosTotalesCuenta[g.cuenta] = (gastosTotalesCuenta[g.cuenta] || 0) + g.monto; } });
+
+            for (const [nomCuenta, totalGasto] of Object.entries(gastosTotalesCuenta)) {
+                if (totalGasto > 0 || ingresoTotal > 0) {
+                    let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalGasto / ingresoTotal) * 100), 100) : 0;
+                    contTrad.innerHTML += `
+                    <div class="mb-3">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-slate-700">${nomCuenta}</span>
+                            <span class="text-xs font-black text-slate-900">${formatoGs(totalGasto)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div>
+                    </div>`;
+                }
+            }
+            if(contTrad.innerHTML === '') contTrad.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún.</p>';
+        };
+
 
         const renderizarCuentas = () => {
             const cont = document.getElementById('contenedorCuentas'); cont.innerHTML = '';
@@ -298,7 +378,7 @@
             document.getElementById('totalPagado').innerText = formatoGs(totalSuma);
         };
 
-        const renderizarApp = () => { renderizarCuentas(); renderizarGastos(); };
+        const renderizarApp = () => { renderizarCuentas(); renderizarGastos(); renderizarReportes(); };
 
         function interactuarApp(tipo, titulo, mensaje, valorInicial = "", esNumero = false) {
             return new Promise((resolve) => {
@@ -342,7 +422,7 @@
             if(!v1 || !v3 || isNaN(v3)) { interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.'); return; }
             if (formActualTipo === 'cuenta') {
                 if (formActualId) { const c = cuentas.find(x => x.id === formActualId); c.nombre = v1; c.descripcion = v2 || "Sin descripción"; 
-                    if(c.saldo !== parseInt(v3)) { registrarMovimiento("Actualización Manual", `Se ajustó el saldo de ${c.nombre}`, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; }
+                    if(c.saldo !== parseInt(v3)) { registrarMovimiento("Actualización de Saldo", c.nombre, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; }
                 } else { cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: "💳" }); registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); }
             } else if (formActualTipo === 'gasto') {
                 if (formActualId) { const g = gastos.find(x => x.id === formActualId); g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); } 
