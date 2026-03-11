@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Macro Gestión</title>
+    <title>Macro Gestión - Ahorro Challenge</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,9 +20,11 @@
     </script>
     <style>
         summary::-webkit-details-marker { display: none; }
+        /* Animación suave para las barras de progreso */
+        .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
-<body class="font-body text-slate-800 bg-background overflow-x-hidden pb-20">
+<body class="font-body text-slate-800 bg-background overflow-x-hidden pb-24">
 
     <header class="bg-surface sticky top-0 z-40 border-b border-slate-100 p-4 flex justify-between items-center shadow-sm">
         <div>
@@ -82,6 +84,108 @@
             </details>
         </section>
 
+
+        <div class="my-10 relative flex items-center justify-center">
+            <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t-2 border-primary/30 border-dashed"></div>
+            </div>
+            <div class="relative bg-background px-4">
+                <span class="bg-emerald-50 text-primary font-black px-5 py-2 rounded-full text-[10px] tracking-widest uppercase border border-primary/20 shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Tu Salud Financiera
+                </span>
+            </div>
+        </div>
+
+        <section class="space-y-4">
+            
+            <div class="bg-gradient-to-br from-rose-50 to-surface border border-rose-100 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1.5">
+                            🕳️ El Agujero Negro
+                        </h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Dinero fugado sin registrar este mes</p>
+                    </div>
+                    <button onclick="infoReporte('agujero')" class="w-6 h-6 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors shadow-sm">
+                        <span class="font-bold font-display text-xs">i</span>
+                    </button>
+                </div>
+                
+                <div class="mt-4 relative z-10">
+                    <p class="text-4xl font-black text-rose-600 tracking-tighter">850.000 <span class="text-sm text-rose-400 font-bold">Gs</span></p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span class="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">25% DE TU PLATA</span>
+                        <p class="text-[10px] text-slate-500">Cuidado con los gastos hormiga</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-36">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Patrimonio<br>Líquido</h3>
+                        <button onclick="infoReporte('patrimonio')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                    </div>
+                    <div>
+                        <p class="text-lg font-black text-slate-800 tracking-tight">1.600.000 <span class="text-[9px] text-slate-400">Gs</span></p>
+                        <div class="mt-2">
+                            <svg class="w-full h-8 text-primary" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor">
+                                <path d="M0 25 L20 20 L40 22 L60 10 L80 15 L100 5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M0 25 L20 20 L40 22 L60 10 L80 15 L100 5 L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-36">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Velocidad<br>de Quema</h3>
+                        <button onclick="infoReporte('burnrate')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                    </div>
+                    <div>
+                        <p class="text-lg font-black text-amber-500 tracking-tight">Rápida</p>
+                        <div class="mt-3 w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-gradient-to-r from-amber-400 to-rose-500 h-2.5 rounded-full progress-bar" style="width: 75%"></div>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-2">Te queda poco saldo variable.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-surface border border-slate-100 rounded-3xl p-5 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">⚖️ Ratio de Asfixia</h3>
+                    <button onclick="infoReporte('asfixia')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                </div>
+                
+                <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner">
+                    <div class="bg-rose-500 h-full progress-bar" style="width: 60%" title="Gastos Fijos"></div>
+                    <div class="bg-amber-400 h-full progress-bar" style="width: 25%" title="Gastos Variables"></div>
+                    <div class="bg-primary h-full progress-bar" style="width: 15%" title="Ahorro"></div>
+                </div>
+                
+                <div class="flex justify-between items-center mt-3 px-1">
+                    <div class="text-center">
+                        <div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div>
+                        <p class="text-[9px] font-bold text-slate-600">60% Fijo</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div>
+                        <p class="text-[9px] font-bold text-slate-600">25% Variable</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="w-2 h-2 rounded-full bg-primary mx-auto mb-1"></div>
+                        <p class="text-[9px] font-bold text-slate-600">15% Ahorro</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
     </main>
 
     <div id="modalInfo" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -92,34 +196,20 @@
                 <p class="font-bold text-slate-900 text-base">Prueba la Macro gestión.</p>
                 <p>Aquí no anotas cada cafe, aquí separa tu dinero en cuentas. ej</p>
                 <div class="flex gap-2">
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p>
-                        <p class="text-xs font-bold text-slate-800 mt-1">Compras de casa</p>
-                    </div>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center">
-                        <p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p>
-                        <p class="text-xs font-bold text-slate-800 mt-1">Mantenimientos</p>
-                    </div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center"><p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p><p class="text-xs font-bold text-slate-800 mt-1">Compras de casa</p></div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center"><p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p><p class="text-xs font-bold text-slate-800 mt-1">Mantenimientos</p></div>
                 </div>
                 <p>Solo actualizando los saldos de esas cuentas, vas a tener un panorama de como se mueve tu dinero.</p>
-                <div class="bg-rose-50 p-3 rounded-xl border border-rose-100">
-                    <p class="text-xs font-bold text-rose-600 mb-1">⚠️ ADVERTENCIA SOBRE EL CACHE</p>
-                    <p class="text-[11px] text-slate-700 leading-relaxed">No borres el caché del navegador para no perder los datos.</p>
-                </div>
+                <div class="bg-rose-50 p-3 rounded-xl border border-rose-100"><p class="text-xs font-bold text-rose-600 mb-1">⚠️ ADVERTENCIA SOBRE EL CACHE</p><p class="text-[11px] text-slate-700 leading-relaxed">No borres el caché del navegador para no perder los datos.</p></div>
             </div>
-            <div class="mt-6">
-                <button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Descargar Historial (Excel)
-                </button>
-            </div>
+            <div class="mt-6"><button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Descargar Historial (Excel)</button></div>
         </div>
     </div>
 
-    <div id="modalAccion" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+    <div id="modalAccion" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity z-[60]">
         <div id="modalAccionCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
             <h3 id="modalAccionTitulo" class="font-black font-display text-slate-900 text-xl mb-2">Título</h3>
-            <p id="modalAccionMensaje" class="text-sm text-slate-500 mb-5 leading-relaxed">Mensaje descriptivo aquí.</p>
+            <p id="modalAccionMensaje" class="text-sm text-slate-600 mb-5 leading-relaxed whitespace-pre-line">Mensaje descriptivo aquí.</p>
             
             <div id="modalAccionInputContenedor" class="hidden mb-6">
                 <input type="text" id="modalAccionInput" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-400 transition-all">
@@ -137,129 +227,72 @@
             <h3 id="modalFormTitulo" class="font-black font-display text-slate-900 text-xl mb-4">Título</h3>
             
             <div class="space-y-4 mb-6">
-                <div>
-                    <label id="lblInput1" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 1</label>
-                    <input type="text" id="modalFormInput1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold">
-                </div>
-                <div>
-                    <label id="lblInput2" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 2</label>
-                    <input type="text" id="modalFormInput2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold">
-                </div>
-                <div>
-                    <label id="lblInput3" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Monto</label>
-                    <input type="text" id="modalFormInput3" inputmode="numeric" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-primary font-black text-xl text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
-                </div>
+                <div><label id="lblInput1" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 1</label><input type="text" id="modalFormInput1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
+                <div><label id="lblInput2" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 2</label><input type="text" id="modalFormInput2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
+                <div><label id="lblInput3" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Monto</label><input type="text" id="modalFormInput3" inputmode="numeric" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-primary font-black text-xl text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"></div>
             </div>
 
             <div class="flex flex-col gap-3">
-                <div class="flex gap-3">
-                    <button onclick="cerrarModalForm()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button>
-                    <button onclick="guardarFormulario()" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Guardar</button>
-                </div>
-                
-                <button id="btnEliminarItem" onclick="eliminarItemActual()" class="w-full bg-rose-50 text-rose-600 font-bold py-3 rounded-xl hover:bg-rose-100 transition-colors hidden flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Eliminar
-                </button>
+                <div class="flex gap-3"><button onclick="cerrarModalForm()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="guardarFormulario()" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Guardar</button></div>
+                <button id="btnEliminarItem" onclick="eliminarItemActual()" class="w-full bg-rose-50 text-rose-600 font-bold py-3 rounded-xl hover:bg-rose-100 transition-colors hidden flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Eliminar</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. Utilidades ---
+        // --- TEXTOS EDUCATIVOS DE LOS REPORTES ---
+        const descripcionesReportes = {
+            patrimonio: { tit: "📈 Curva de Patrimonio", desc: "La tendencia de tu riqueza real.\n\nNo importa cuánto ganes, sino cuánto retenés. Si esta línea sube, te estás volviendo más rico. Si baja, estás gastando tus ahorros para sobrevivir." },
+            burnrate: { tit: "⏱️ Velocidad de Quema", desc: "A qué velocidad desaparece tu dinero variable.\n\nSi la barra está roja a mediados de mes, te vas a quedar sin efectivo antes de cobrar. ¡Frená las salidas!" },
+            asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "El peso de tus obligaciones fijas.\n\nSi tus gastos fijos (alquiler, deudas) ocupan más del 60%, estás asfixiado financieramente. Cualquier imprevisto te va a endeudar." },
+            agujero: { tit: "🕳️ El Agujero Negro", desc: "El total de dinero fugado sin registrar.\n\nEs la suma de todos esos gastos que no anotaste (súper, salidas, cafés). Ver este número te dará el golpe de realidad necesario para controlar tu tarjeta." }
+        };
+
+        function infoReporte(clave) {
+            interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc);
+        }
+
+        // --- SISTEMA CORE (Intacto) ---
+        let modalResolve = null;
         const formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
-        const obtenerFechaHoy = () => {
-            const hoy = new Date();
-            return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
-        };
-        const formatoInputEnVivo = (e) => {
-            let val = e.target.value.replace(/\D/g, ''); 
-            e.target.value = val ? new Intl.NumberFormat('es-PY').format(val).replace(/,/g, '.') : '';
-        };
+        const obtenerFechaHoy = () => { const hoy = new Date(); return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`; };
+        const formatoInputEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val).replace(/,/g, '.') : ''; };
 
-        // --- 2. Base de Datos y Memoria Histórica ---
-        let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [
-            { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" },
-            { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" }
-        ];
-
-        let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [
-            { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" },
-            { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" }
-        ];
-
-        // NUEVO: El Libro Mayor que anota todo lo que pasa
+        let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [ { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" }, { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" } ];
+        let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [ { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" }, { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" } ];
         let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
 
-        const guardarDatos = () => {
-            localStorage.setItem('mg_cuentas', JSON.stringify(cuentas));
-            localStorage.setItem('mg_gastos', JSON.stringify(gastos));
-            localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos));
-            renderizarApp();
-        };
+        const guardarDatos = () => { localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); localStorage.setItem('mg_gastos', JSON.stringify(gastos)); localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos)); renderizarApp(); };
+        const registrarMovimiento = (accion, detalle, monto = 0) => { const f = new Date(); const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`; historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto }); };
 
-        const registrarMovimiento = (accion, detalle, monto = 0) => {
-            const f = new Date();
-            const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`;
-            historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto });
-        };
-
-        // --- 3. Renderizado en Pantalla ---
         const renderizarCuentas = () => {
-            const cont = document.getElementById('contenedorCuentas');
-            cont.innerHTML = '';
+            const cont = document.getElementById('contenedorCuentas'); cont.innerHTML = '';
             cuentas.forEach(c => {
                 cont.innerHTML += `
                 <div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center text-lg">${c.icono}</div>
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                                ${c.nombre}
-                                <button onclick="abrirModalForm('cuenta', ${c.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                            </h3>
-                            <p class="text-[11px] font-medium text-slate-500 leading-tight">${c.descripcion}</p>
-                            <p class="text-[9px] text-slate-400 mt-0.5">Última act: ${c.ultimaAct}</p>
-                        </div>
+                    <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-emerald-50 text-primary flex items-center justify-center text-lg">${c.icono}</div>
+                        <div><h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">${c.nombre}<button onclick="abrirModalForm('cuenta', ${c.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3>
+                        <p class="text-[11px] font-medium text-slate-500 leading-tight">${c.descripcion}</p><p class="text-[9px] text-slate-400 mt-0.5">Última act: ${c.ultimaAct}</p></div>
                     </div>
-                    <div class="text-right">
-                        <p class="font-bold text-base text-slate-900">${formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[9px] text-slate-500">Gs</span></p>
-                        <button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">ACTUALIZAR</button>
-                    </div>
+                    <div class="text-right"><p class="font-bold text-base text-slate-900">${formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[9px] text-slate-500">Gs</span></p>
+                    <button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">ACTUALIZAR</button></div>
                 </div>`;
             });
         };
 
         const renderizarGastos = () => {
-            const cont = document.getElementById('contenedorGastos');
-            cont.innerHTML = '';
-            let totalSuma = 0;
-
+            const cont = document.getElementById('contenedorGastos'); cont.innerHTML = ''; let totalSuma = 0;
             gastos.forEach(g => {
-                if(g.pagado) totalSuma += g.monto;
-                const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800";
-                
+                if(g.pagado) totalSuma += g.monto; const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800";
                 cont.innerHTML += `
                 <div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors">
                     <input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer">
-                    <div class="flex-grow">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">
-                                    ${g.nombre}
-                                    <button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-                                </h3>
-                                <p class="text-[10px] text-slate-500">${g.cuenta}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-sm ${clasePagado}">${formatoGs(g.monto)}</p>
-                            </div>
-                        </div>
-                        <div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">
-                            ${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}
-                            <button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button>
-                        </div>
-                    </div>
+                    <div class="flex-grow"><div class="flex justify-between items-start"><div>
+                    <h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3>
+                    <p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${formatoGs(g.monto)}</p></div></div>
+                    <div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">
+                    ${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}
+                    <button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div>
                 </div>`;
             });
             document.getElementById('totalPagado').innerText = formatoGs(totalSuma);
@@ -267,259 +300,98 @@
 
         const renderizarApp = () => { renderizarCuentas(); renderizarGastos(); };
 
-        // --- 4. Sistema Modal Acciones Rápidas ---
-        let modalResolve = null;
         function interactuarApp(tipo, titulo, mensaje, valorInicial = "", esNumero = false) {
             return new Promise((resolve) => {
-                modalResolve = resolve;
-                document.getElementById('modalAccionTitulo').innerText = titulo;
-                document.getElementById('modalAccionMensaje').innerText = mensaje;
-                const inputContenedor = document.getElementById('modalAccionInputContenedor');
-                const input = document.getElementById('modalAccionInput');
-                const btnCancelar = document.getElementById('btnModalCancelar');
-                const modal = document.getElementById('modalAccion');
-                const cuerpo = document.getElementById('modalAccionCuerpo');
-
-                input.removeEventListener('input', formatoInputEnVivo);
-                input.value = "";
-
-                if (tipo === 'prompt') {
-                    inputContenedor.classList.remove('hidden');
-                    btnCancelar.classList.remove('hidden');
-                    if (esNumero) {
-                        input.setAttribute('inputmode', 'numeric'); 
-                        input.classList.add('text-center', 'text-2xl', 'font-black', 'text-primary');
-                        input.classList.remove('text-sm', 'font-semibold');
-                        input.addEventListener('input', formatoInputEnVivo);
-                        if (valorInicial) input.value = new Intl.NumberFormat('es-PY').format(valorInicial).replace(/,/g, '.');
-                    } else {
-                        input.removeAttribute('inputmode'); 
-                        input.classList.remove('text-center', 'text-2xl', 'font-black', 'text-primary');
-                        input.classList.add('text-sm', 'font-semibold');
-                        input.value = valorInicial;
-                    }
-                } else if (tipo === 'confirm') {
-                    inputContenedor.classList.add('hidden');
-                    btnCancelar.classList.remove('hidden');
-                } else { 
-                    inputContenedor.classList.add('hidden');
-                    btnCancelar.classList.add('hidden');
-                }
-
-                modal.classList.remove('hidden');
-                setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); if (tipo === 'prompt') input.focus(); }, 10);
+                modalResolve = resolve; document.getElementById('modalAccionTitulo').innerText = titulo; document.getElementById('modalAccionMensaje').innerText = mensaje;
+                const inputContenedor = document.getElementById('modalAccionInputContenedor'); const input = document.getElementById('modalAccionInput'); const btnCancelar = document.getElementById('btnModalCancelar'); const modal = document.getElementById('modalAccion'); const cuerpo = document.getElementById('modalAccionCuerpo');
+                input.removeEventListener('input', formatoInputEnVivo); input.value = "";
+                if (tipo === 'prompt') { inputContenedor.classList.remove('hidden'); btnCancelar.classList.remove('hidden');
+                    if (esNumero) { input.setAttribute('inputmode', 'numeric'); input.classList.add('text-center', 'text-2xl', 'font-black', 'text-primary'); input.classList.remove('text-sm', 'font-semibold'); input.addEventListener('input', formatoInputEnVivo); if (valorInicial) input.value = new Intl.NumberFormat('es-PY').format(valorInicial).replace(/,/g, '.'); } 
+                    else { input.removeAttribute('inputmode'); input.classList.remove('text-center', 'text-2xl', 'font-black', 'text-primary'); input.classList.add('text-sm', 'font-semibold'); input.value = valorInicial; }
+                } else if (tipo === 'confirm') { inputContenedor.classList.add('hidden'); btnCancelar.classList.remove('hidden'); } else { inputContenedor.classList.add('hidden'); btnCancelar.classList.add('hidden'); }
+                modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); if (tipo === 'prompt') input.focus(); }, 10);
             });
         }
 
         function cerrarModalAccion(valorDevuelto) {
-            const modal = document.getElementById('modalAccion');
-            const cuerpo = document.getElementById('modalAccionCuerpo');
+            const modal = document.getElementById('modalAccion'); const cuerpo = document.getElementById('modalAccionCuerpo');
             cuerpo.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                if (modalResolve) { modalResolve(valorDevuelto); modalResolve = null; }
-            }, 200);
+            setTimeout(() => { modal.classList.add('hidden'); if (modalResolve) { modalResolve(valorDevuelto); modalResolve = null; } }, 200);
         }
 
         document.getElementById('btnModalCancelar').addEventListener('click', () => cerrarModalAccion(null));
-        document.getElementById('btnModalConfirmar').addEventListener('click', () => {
-            const inputContenedor = document.getElementById('modalAccionInputContenedor');
-            if (!inputContenedor.classList.contains('hidden')) {
-                cerrarModalAccion(document.getElementById('modalAccionInput').value);
-            } else { cerrarModalAccion(true); }
-        });
+        document.getElementById('btnModalConfirmar').addEventListener('click', () => { const inputContenedor = document.getElementById('modalAccionInputContenedor'); if (!inputContenedor.classList.contains('hidden')) { cerrarModalAccion(document.getElementById('modalAccionInput').value); } else { cerrarModalAccion(true); } });
 
-
-        // --- 5. Nuevo Sistema Modal Formulario ---
-        let formActualTipo = '';
-        let formActualId = null;
-
+        let formActualTipo = ''; let formActualId = null;
         const abrirModalForm = (tipo, id = null) => {
-            formActualTipo = tipo;
-            formActualId = id;
-            
-            const modal = document.getElementById('modalFormulario');
-            const cuerpo = document.getElementById('modalFormCuerpo');
-            const i1 = document.getElementById('modalFormInput1');
-            const i2 = document.getElementById('modalFormInput2');
-            const i3 = document.getElementById('modalFormInput3');
-            const btnEliminar = document.getElementById('btnEliminarItem');
-
-            i1.value = ''; i2.value = ''; i3.value = '';
-            i3.addEventListener('input', formatoInputEnVivo);
-
-            if (tipo === 'cuenta') {
-                document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Ueno Bank)';
-                document.getElementById('lblInput2').innerText = 'Descripción (Ej: Billetera)';
-                document.getElementById('lblInput3').innerText = 'Saldo Actual';
-                
-                if (id) {
-                    document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta';
-                    const c = cuentas.find(x => x.id === id);
-                    i1.value = c.nombre; i2.value = c.descripcion; 
-                    i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.');
-                    btnEliminar.classList.remove('hidden');
-                } else {
-                    document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta';
-                    btnEliminar.classList.add('hidden');
-                }
-            } else if (tipo === 'gasto') {
-                document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Internet)';
-                document.getElementById('lblInput2').innerText = 'Cuenta Asociada (Ej: Itaú, Efectivo)';
-                document.getElementById('lblInput3').innerText = 'Monto Mensual';
-                
-                if (id) {
-                    document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo';
-                    const g = gastos.find(x => x.id === id);
-                    i1.value = g.nombre; i2.value = g.cuenta;
-                    i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.');
-                    btnEliminar.classList.remove('hidden');
-                } else {
-                    document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo';
-                    btnEliminar.classList.add('hidden');
-                }
+            formActualTipo = tipo; formActualId = id;
+            const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); const i1 = document.getElementById('modalFormInput1'); const i2 = document.getElementById('modalFormInput2'); const i3 = document.getElementById('modalFormInput3'); const btnEliminar = document.getElementById('btnEliminarItem');
+            i1.value = ''; i2.value = ''; i3.value = ''; i3.addEventListener('input', formatoInputEnVivo);
+            if (tipo === 'cuenta') { document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Ueno Bank)'; document.getElementById('lblInput2').innerText = 'Descripción (Ej: Billetera)'; document.getElementById('lblInput3').innerText = 'Saldo Actual';
+                if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); }
+            } else if (tipo === 'gasto') { document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Internet)'; document.getElementById('lblInput2').innerText = 'Cuenta Asociada (Ej: Itaú, Efectivo)'; document.getElementById('lblInput3').innerText = 'Monto Mensual';
+                if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; const g = gastos.find(x => x.id === id); i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; btnEliminar.classList.add('hidden'); }
             }
-
-            modal.classList.remove('hidden');
-            setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10);
+            modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10);
         };
 
-        const cerrarModalForm = () => {
-            const modal = document.getElementById('modalFormulario');
-            const cuerpo = document.getElementById('modalFormCuerpo');
-            cuerpo.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => modal.classList.add('hidden'), 200);
-        };
+        const cerrarModalForm = () => { const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); cuerpo.classList.add('scale-95', 'opacity-0'); setTimeout(() => modal.classList.add('hidden'), 200); };
 
         const guardarFormulario = () => {
-            const v1 = document.getElementById('modalFormInput1').value.trim();
-            const v2 = document.getElementById('modalFormInput2').value.trim();
-            const v3 = document.getElementById('modalFormInput3').value.replace(/\./g, '');
-            
-            if(!v1 || !v3 || isNaN(v3)) {
-                interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.');
-                return;
-            }
-
+            const v1 = document.getElementById('modalFormInput1').value.trim(); const v2 = document.getElementById('modalFormInput2').value.trim(); const v3 = document.getElementById('modalFormInput3').value.replace(/\./g, '');
+            if(!v1 || !v3 || isNaN(v3)) { interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.'); return; }
             if (formActualTipo === 'cuenta') {
-                if (formActualId) {
-                    const c = cuentas.find(x => x.id === formActualId);
-                    c.nombre = v1; c.descripcion = v2 || "Sin descripción"; 
-                    if(c.saldo !== parseInt(v3)) {
-                        registrarMovimiento("Actualización Manual", `Se ajustó el saldo de ${c.nombre}`, parseInt(v3) - c.saldo);
-                        c.saldo = parseInt(v3);
-                        const hoy = new Date();
-                        c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
-                    }
-                } else {
-                    cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: "💳" });
-                    registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3));
-                }
+                if (formActualId) { const c = cuentas.find(x => x.id === formActualId); c.nombre = v1; c.descripcion = v2 || "Sin descripción"; 
+                    if(c.saldo !== parseInt(v3)) { registrarMovimiento("Actualización Manual", `Se ajustó el saldo de ${c.nombre}`, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; }
+                } else { cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: "💳" }); registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); }
             } else if (formActualTipo === 'gasto') {
-                if (formActualId) {
-                    const g = gastos.find(x => x.id === formActualId);
-                    g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3);
-                } else {
-                    gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" });
-                    registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3));
-                }
+                if (formActualId) { const g = gastos.find(x => x.id === formActualId); g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); } 
+                else { gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); }
             }
-            guardarDatos();
-            cerrarModalForm();
+            guardarDatos(); cerrarModalForm();
         };
 
-        // --- SOLUCIÓN AL PROBLEMA DE ELIMINAR (Evita ventanas encimadas) ---
         const eliminarItemActual = () => {
-            cerrarModalForm(); // Ocultamos el formulario primero
-            
+            cerrarModalForm(); 
             setTimeout(async () => {
                 const confirmacion = await interactuarApp('confirm', '⚠️ ¿Eliminar Definitivamente?', 'Esta acción no se puede deshacer. ¿Aceptás borrarlo?');
                 if (confirmacion) {
                     let nombreBorrado = "";
-                    if (formActualTipo === 'cuenta') { 
-                        nombreBorrado = cuentas.find(x => x.id === formActualId).nombre;
-                        cuentas = cuentas.filter(x => x.id !== formActualId); 
-                    } else { 
-                        nombreBorrado = gastos.find(x => x.id === formActualId).nombre;
-                        gastos = gastos.filter(x => x.id !== formActualId); 
-                    }
-                    registrarMovimiento(`Eliminación de ${formActualTipo}`, nombreBorrado, 0);
-                    guardarDatos();
-                } else {
-                    abrirModalForm(formActualTipo, formActualId); // Si canceló, le devolvemos el form
-                }
-            }, 250); // Esperamos a que la animación de cierre termine
+                    if (formActualTipo === 'cuenta') { nombreBorrado = cuentas.find(x => x.id === formActualId).nombre; cuentas = cuentas.filter(x => x.id !== formActualId); } 
+                    else { nombreBorrado = gastos.find(x => x.id === formActualId).nombre; gastos = gastos.filter(x => x.id !== formActualId); }
+                    registrarMovimiento(`Eliminación de ${formActualTipo}`, nombreBorrado, 0); guardarDatos();
+                } else { abrirModalForm(formActualTipo, formActualId); }
+            }, 250); 
         };
 
-
-        // --- 6. Funciones Individuales ---
         const actualizarSaldo = async (id) => {
-            const cuenta = cuentas.find(c => c.id === id);
-            const r = await interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true);
-            if (r) {
-                const nuevoMonto = parseInt(r.replace(/\./g, ''));
-                registrarMovimiento("Actualización de Saldo", cuenta.nombre, nuevoMonto - cuenta.saldo);
-                cuenta.saldo = nuevoMonto;
-                const hoy = new Date();
-                cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
-                guardarDatos();
-            }
+            const cuenta = cuentas.find(c => c.id === id); const r = await interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true);
+            if (r) { const nuevoMonto = parseInt(r.replace(/\./g, '')); registrarMovimiento("Actualización de Saldo", cuenta.nombre, nuevoMonto - cuenta.saldo); cuenta.saldo = nuevoMonto; const hoy = new Date(); cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; guardarDatos(); }
         };
 
         const cambiarMontoGasto = async (id) => {
-            const gasto = gastos.find(g => g.id === id);
-            const r = await interactuarApp('prompt', 'Cambiar Monto', `Ingresá el nuevo monto para ${gasto.nombre}.`, gasto.monto, true);
-            if (r) {
-                gasto.monto = parseInt(r.replace(/\./g, ''));
-                guardarDatos();
-            }
+            const gasto = gastos.find(g => g.id === id); const r = await interactuarApp('prompt', 'Cambiar Monto', `Ingresá el nuevo monto para ${gasto.nombre}.`, gasto.monto, true);
+            if (r) { gasto.monto = parseInt(r.replace(/\./g, '')); guardarDatos(); }
         };
 
         const tildarGasto = (id) => {
-            const gasto = gastos.find(g => g.id === id);
-            gasto.pagado = !gasto.pagado;
-            gasto.fechaPago = gasto.pagado ? obtenerFechaHoy() : "";
-            
-            if(gasto.pagado) {
-                registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto);
-            } else {
-                registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto);
-            }
+            const gasto = gastos.find(g => g.id === id); gasto.pagado = !gasto.pagado; gasto.fechaPago = gasto.pagado ? obtenerFechaHoy() : "";
+            if(gasto.pagado) { registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto); } else { registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto); }
             guardarDatos();
         };
 
         const cerrarMes = async () => {
             const r = await interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).');
-            if (r) {
-                gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; });
-                registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0);
-                guardarDatos();
-                interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.');
-            }
+            if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); guardarDatos(); interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); }
         };
 
-        // --- SOLUCIÓN DE DESCARGA: EXCEL (CSV) EN LUGAR DE CÓDIGO ---
         const descargarDatosCSV = () => {
-            if (historialMovimientos.length === 0) {
-                interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.');
-                return;
-            }
-
+            if (historialMovimientos.length === 0) { interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; }
             let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n";
-            historialMovimientos.forEach(h => {
-                csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`;
-            });
-
-            // Agregamos código BOM para que Excel lea los acentos (UTF-8)
-            const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
-            const btn = document.createElement("a");
-            btn.setAttribute("href", url);
-            btn.setAttribute("download", `MacroGestion_Historial_${obtenerFechaHoy().replace(/\//g, '-')}.csv`);
-            document.body.appendChild(btn);
-            btn.click();
-            btn.remove();
+            historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; });
+            const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob);
+            const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${obtenerFechaHoy().replace(/\//g, '-')}.csv`);
+            document.body.appendChild(btn); btn.click(); btn.remove();
         };
 
         function toggleModal(modalID) { document.getElementById(modalID).classList.toggle('hidden'); }
