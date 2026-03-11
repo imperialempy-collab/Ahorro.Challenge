@@ -9,7 +9,7 @@ const BATTLES = [
                 type: "boolean",
                 question: "Ganar 10.000 dólares al mes te convierte automáticamente en una persona rica.",
                 correct: false,
-                feedback: "¡Exacto! Mike Tyson ganó $300 millones en su carrera y quebró. La riqueza no es lo que ganas, es lo que NO gastas."
+                feedback: "Mike Tyson ganó $300 millones en su carrera y quebró. La riqueza no es lo que ganas, es lo que NO gastas."
             },
             {
                 type: "story",
@@ -61,7 +61,7 @@ const BATTLES = [
                 type: "boolean",
                 question: "Si inviertes dinero hoy, el 'Interés Compuesto' significa que ganarás intereses no solo sobre tu dinero, sino también sobre los intereses pasados.",
                 correct: true,
-                feedback: "¡Correcto! Es como una bola de nieve rodando cuesta abajo. Cada vuelta se hace más grande por sí sola."
+                feedback: "Es como una bola de nieve rodando cuesta abajo. Cada vuelta se hace más grande por sí sola."
             },
             {
                 type: "trivia",
@@ -95,7 +95,7 @@ const BATTLES = [
                 type: "boolean",
                 question: "Guardar tus ahorros en el cajón de tu ropa interior es la forma más segura de proteger tu dinero a largo plazo.",
                 correct: false,
-                feedback: "¡Peligro! Eso es suicidio financiero. La inflación (el aumento de precios) hace que el dinero guardado bajo el colchón pierda valor cada año."
+                feedback: "Eso es suicidio financiero. La inflación (el aumento de precios) hace que el dinero guardado bajo el colchón pierda valor cada año."
             },
             {
                 type: "trivia",
@@ -117,7 +117,7 @@ const BATTLES = [
                     "Transferir el 10% a una cuenta de ahorro/inversión (Pagarte a ti primero)."
                 ],
                 correctOrder: [2, 0, 1], // El índice 2 es el paso 1, el 0 es el paso 2, el 1 es el paso 3.
-                feedback: "¡Excelente! Los ricos se pagan a sí mismos PRIMERO y adaptan su vida al dinero que queda. La clase media paga a los demás y ahorra 'si le sobra'."
+                feedback: "Los ricos se pagan a sí mismos PRIMERO y adaptan su vida al dinero que queda. La clase media paga a los demás y ahorra 'si le sobra'."
             }
         ]
     },
@@ -135,7 +135,7 @@ const BATTLES = [
                 type: "boolean",
                 question: "Toda deuda es mala y debes evitar pedir préstamos a toda costa.",
                 correct: false,
-                feedback: "¡Falso! Existe Deuda Mala (comprar ropa o viajes con tarjeta) y Deuda Buena (un préstamo a tasa baja para comprar un activo que te da dinero mensual)."
+                feedback: "Existe Deuda Mala (comprar ropa o viajes con tarjeta) y Deuda Buena (un préstamo a tasa baja para comprar un activo que te da dinero mensual)."
             },
             {
                 type: "trivia",
@@ -157,7 +157,7 @@ const BATTLES = [
                     "Préstamo personal (15% de interés anual)."
                 ],
                 correctOrder: [1, 2, 0],
-                feedback: "¡Correcto! En el método Avalancha, siempre atacas primero a la deuda que te cobra la Tasa de Interés más alta."
+                feedback: "En el método Avalancha, siempre atacas primero a la deuda que te cobra la Tasa de Interés más alta para frenar el sangrado."
             }
         ]
     },
@@ -186,7 +186,7 @@ const BATTLES = [
                 type: "boolean",
                 question: "Tu auto de uso personal es tu mayor activo financiero.",
                 correct: false,
-                feedback: "Falso. Un auto pierde entre el 10% y el 20% de su valor el día que sale del concesionario, y requiere combustible y mantenimiento. Es un Pasivo."
+                feedback: "Un auto pierde entre el 10% y el 20% de su valor el día que sale del concesionario, y requiere combustible y mantenimiento. Es un Pasivo."
             },
             {
                 type: "story",
