@@ -4,6 +4,7 @@ const BATTLES = [
     {
         id: 1,
         title: "El Golpe de Realidad",
+        mapEmoji: "🧠", // Ícono para el mapa
         screens: [
             {
                 type: "boolean",
@@ -39,6 +40,7 @@ const BATTLES = [
     {
         id: 2,
         title: "La 8va Maravilla",
+        mapEmoji: "📈", // Ícono para el mapa
         screens: [
             {
                 type: "story",
@@ -84,6 +86,7 @@ const BATTLES = [
     {
         id: 3,
         title: "El Ladrón Invisible",
+        mapEmoji: "🥷", // Ícono para el mapa
         screens: [
             {
                 type: "story",
@@ -116,7 +119,7 @@ const BATTLES = [
                     "Gastar en gustos (Salidas, Ropa).",
                     "Transferir el 10% a una cuenta de ahorro/inversión (Pagarte a ti primero)."
                 ],
-                correctOrder: [2, 0, 1], // El índice 2 es el paso 1, el 0 es el paso 2, el 1 es el paso 3.
+                correctOrder: [2, 0, 1],
                 feedback: "Los ricos se pagan a sí mismos PRIMERO y adaptan su vida al dinero que queda. La clase media paga a los demás y ahorra 'si le sobra'."
             }
         ]
@@ -124,6 +127,7 @@ const BATTLES = [
     {
         id: 4,
         title: "Deuda: Cadenas y Palancas",
+        mapEmoji: "⚖️", // Ícono para el mapa
         screens: [
             {
                 type: "story",
@@ -164,6 +168,7 @@ const BATTLES = [
     {
         id: 5,
         title: "Activos vs Pasivos",
+        mapEmoji: "🏢", // Ícono para el mapa
         screens: [
             {
                 type: "quote",
