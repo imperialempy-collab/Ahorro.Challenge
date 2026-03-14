@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Macro Gestión - Ahorro Challenge</title>
     
+    <link rel="manifest" href="../manifest-macro.json">
+    <meta name="theme-color" content="#10b981">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -24,6 +27,60 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
+            authDomain: "ahorro-dinamico.firebaseapp.com",
+            projectId: "ahorro-dinamico",
+            storageBucket: "ahorro-dinamico.firebasestorage.app",
+            messagingSenderId: "906931960122",
+            appId: "1:906931960122:web:02b6d090d163c2c135f803"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Variables Globales de Acceso
+        window.userAccessStatus = localStorage.getItem('mg_access_status') || 'prueba';
+
+        async function checkFirebaseAccess(user) {
+            if (window.userAccessStatus === 'pagado') return; // Cierre definitivo si ya pagó. Cero gastos.
+
+            const lastCheck = localStorage.getItem('mg_last_check');
+            const now = new Date().getTime();
+            const daysSinceCheck = lastCheck ? (now - parseInt(lastCheck)) / (1000 * 60 * 60 * 24) : 999;
+
+            if (daysSinceCheck > 15) {
+                try {
+                    const userRef = doc(db, "usuarios_multimeta", user.email);
+                    const docSnap = await getDoc(userRef);
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        if (userData.status === 'pagado') {
+                            window.userAccessStatus = 'pagado';
+                        } else {
+                            const start = new Date(userData.fechaInicio);
+                            const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+                            window.userAccessStatus = diffDays > 7 ? 'vencido' : 'prueba';
+                        }
+                        localStorage.setItem('mg_access_status', window.userAccessStatus);
+                        localStorage.setItem('mg_last_check', now.toString());
+                    }
+                } catch (e) { console.error("Revisión silenciosa falló, usando caché."); }
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) { checkFirebaseAccess(user); } 
+            else { window.userAccessStatus = 'vencido'; } // Si entró sin login, no puede editar.
+        });
+    </script>
 </head>
 <body class="font-body text-slate-800 bg-background overflow-x-hidden pb-24">
 
@@ -85,7 +142,6 @@
             </details>
         </section>
 
-
         <div class="my-10 relative flex items-center justify-center">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t-2 border-primary/30 border-dashed"></div></div>
             <div class="relative bg-background px-4 flex items-center gap-2">
@@ -127,8 +183,7 @@
                     </div>
                     <div class="mt-auto">
                         <p class="text-lg font-black text-slate-800 tracking-tight"><span id="repFlujoCaja">0</span> <span class="text-[9px] text-slate-400">Gs</span></p>
-                        <div class="mt-2" id="graficoFlujo">
-                            </div>
+                        <div class="mt-2" id="graficoFlujo"></div>
                     </div>
                 </div>
 
@@ -161,13 +216,11 @@
                     <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">⚖️ Ratio de Asfixia</h3>
                     <button onclick="infoReporte('asfixia')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                 </div>
-                
                 <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner bg-slate-100">
-                    <div id="barFijos" class="bg-amber-400 h-full progress-bar" style="width: 0%" title="Gastos Fijos"></div>
-                    <div id="barVar" class="bg-rose-500 h-full progress-bar" style="width: 0%" title="Gastos Variables (Agujero Negro)"></div>
-                    <div id="barAhorro" class="bg-primary h-full progress-bar" style="width: 0%" title="Libre"></div>
+                    <div id="barFijos" class="bg-amber-400 h-full progress-bar" style="width: 0%"></div>
+                    <div id="barVar" class="bg-rose-500 h-full progress-bar" style="width: 0%"></div>
+                    <div id="barAhorro" class="bg-primary h-full progress-bar" style="width: 0%"></div>
                 </div>
-                
                 <div class="flex justify-between items-center mt-3 px-1">
                     <div class="text-center"><div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div><p id="txtFijos" class="text-[9px] font-bold text-slate-600">0% Fijo</p></div>
                     <div class="text-center"><div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div><p id="txtVar" class="text-[9px] font-bold text-slate-600">0% Var</p></div>
@@ -185,7 +238,6 @@
                     </span>
                     <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </summary>
-                
                 <div class="pt-4 mt-3 border-t border-slate-100">
                     <div id="contenedorReporteTradicional" class="space-y-3"></div>
                 </div>
@@ -206,9 +258,50 @@
                     <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center"><p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p><p class="text-xs font-bold text-slate-800 mt-1">Mantenimientos</p></div>
                 </div>
                 <p>Solo actualizando los saldos de esas cuentas, vas a tener un panorama de como se mueve tu dinero.</p>
-                <div class="bg-rose-50 p-3 rounded-xl border border-rose-100"><p class="text-xs font-bold text-rose-600 mb-1">⚠️ ADVERTENCIA SOBRE EL CACHE</p><p class="text-[11px] text-slate-700 leading-relaxed">No borres el caché del navegador para no perder los datos.</p></div>
             </div>
-            <div class="mt-6"><button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Descargar Historial (Excel)</button></div>
+            <div class="mt-6 flex flex-col gap-3">
+                <button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Descargar Historial (Excel)</button>
+                
+                <button onclick="instalarApp()" class="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-slate-800 text-sm transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Instalar en Inicio (App)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="iosInstallModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+        <div class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 text-center">
+            <button onclick="document.getElementById('iosInstallModal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            <div class="text-5xl mb-4 mt-2">📱</div>
+            <h3 class="font-display font-black text-slate-900 text-2xl mb-2">Instalar en iPhone</h3>
+            <p class="text-sm text-slate-600 mb-6 font-medium">Instalá Macro Gestión como App en 2 pasos:</p>
+            <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-left text-sm text-slate-700 space-y-4 shadow-inner">
+                <p class="flex items-center gap-2">1. Tocá el ícono <b>Compartir</b> <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> en tu navegador abajo.</p>
+                <hr class="border-slate-200">
+                <p class="flex items-center gap-2">2. Seleccioná <span class="bg-white px-2 py-1 rounded-md shadow-sm border border-slate-200 font-bold flex items-center gap-1">Agregar a Inicio <b class="text-lg leading-none">+</b></span></p>
+            </div>
+            <button onclick="document.getElementById('iosInstallModal').classList.add('hidden')" class="w-full mt-6 bg-primary text-white font-bold py-3.5 rounded-xl shadow-md">¡Entendido!</button>
+        </div>
+    </div>
+
+    <div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100 relative">
+            <button onclick="cerrarUpgrade()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⏳</span>
+            </div>
+            <h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Esperamos que hayas disfrutado tus 7 días gratis. Para seguir anotando saldos y no perder tu historial, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
+            </p>
+            <div class="space-y-3">
+                <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Pagar por Transferencia (WhatsApp)
+                </a>
+            </div>
+            <button onclick="cerrarUpgrade()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-slate-600 transition-colors">Cerrar y seguir mirando</button>
         </div>
     </div>
 
@@ -227,8 +320,7 @@
             
             <div id="selectorIconosContainer" class="hidden mb-5">
                 <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Elegí el Logo de la cuenta</label>
-                <div id="grillaIconos" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1">
-                </div>
+                <div id="grillaIconos" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1"></div>
             </div>
 
             <div class="space-y-4 mb-6">
@@ -244,6 +336,42 @@
     </div>
 
     <script>
+        // LÓGICA DE INSTALACIÓN PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.instalarApp = async () => {
+            toggleModal('modalInfo'); // Cerrar modal info
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            
+            if (isIOS) {
+                document.getElementById('iosInstallModal').classList.remove('hidden');
+            } else if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                interactuarApp('alert', 'Instalación', 'Tu navegador no soporta instalación automática o ya tienes la app instalada.');
+            }
+        };
+
+        // LÓGICA DE SEGURIDAD FANTASMA
+        function verificarAcceso() {
+            if (window.userAccessStatus === 'vencido') {
+                document.getElementById('upgradeScreen').classList.remove('hidden');
+                return false;
+            }
+            return true;
+        }
+
+        window.cerrarUpgrade = () => {
+            document.getElementById('upgradeScreen').classList.add('hidden');
+        };
+
+        // DESCRIPCIONES (I)
         const descripcionesReportes = {
             flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste. La gráfica te muestra cómo tu sueldo se va consumiendo día a día." },
             burnrate: { tit: "⏱️ Velocidad de Quema", desc: "Es una carrera entre tu Dinero y el Calendario.\n\nCompara qué porcentaje de tu Ingreso ya te gastaste, frente a qué porcentaje del mes ya pasó. Si gastaste mucho y apenas estamos a mitad de mes, la aguja irá a ROJO y deberás frenar." },
@@ -308,13 +436,14 @@
         const guardarDatos = () => { localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); localStorage.setItem('mg_gastos', JSON.stringify(gastos)); localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos)); renderizarApp(); };
         const registrarMovimiento = (accion, detalle, monto = 0) => { const f = new Date(); const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`; historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto }); };
 
+        // PROTEGIDO CON VERIFICAR ACCESO
         const configurarIngreso = async () => {
+            if (!verificarAcceso()) return; // Si venció, corta la función y abre el modal
             const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
             const res = await interactuarApp('prompt', 'Configurar Ingreso Base', 'Ingresá tu sueldo o ingreso mensual promedio para calcular tu Ratio de Asfixia.', actual, true);
             if(res) { localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, ''))); renderizarReportes(); }
         };
 
-        // GRÁFICO DINÁMICO DE FLUJO DE CAJA
         const dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => {
             if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`;
 
@@ -325,29 +454,25 @@
             const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/";
             const historialMes = historial.filter(h => h.fecha.includes(mesStr));
 
-            // Reconstruimos la historia hacia atrás
             for(let i = 0; i < historialMes.length; i++) {
                 if(puntos.length >= 6) break;
                 let h = historialMes[i];
-                // Si es actualización de saldo (fuga) o un gasto fijo, lo sumamos al saldo hacia atrás
                 if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) {
                     saldoTemp = saldoTemp + Math.abs(h.monto); 
                     puntos.unshift(saldoTemp);
                 }
             }
             
-            // Rellenar hasta el inicio con el sueldo total
             while(puntos.length < 6) { puntos.unshift(ingresoBase); }
             
             let max = ingresoBase; 
             let min = 0;
-            
             let pathD = "M0 25 ";
             let xStep = 100 / 5;
             
             puntos.forEach((p, index) => {
                 let x = index * xStep;
-                let pNorm = Math.max(0, Math.min(p, max)); // Limitar para no romper el dibujo
+                let pNorm = Math.max(0, Math.min(p, max)); 
                 let y = 25 - ((pNorm - min) / (max - min)) * 20; 
                 pathD += `L${x} ${y} `;
             });
@@ -362,7 +487,6 @@
 
         const renderizarReportes = () => {
             let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
-            
             const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/";
             const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
 
@@ -383,12 +507,10 @@
             let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0);
             let granTotalGastos = agujeroNegro + fijosPagadosTotales;
 
-            // FLUJO DE CAJA
             let flujoDeCajaActual = ingresoTotal - granTotalGastos;
             document.getElementById('repFlujoCaja').innerText = formatoGs(flujoDeCajaActual).replace(' Gs', '');
             document.getElementById('graficoFlujo').innerHTML = dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
 
-            // RATIO DE ASFIXIA
             let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijos / ingresoTotal) * 100), 100) : 0;
             let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0;
             let porcAhorro = Math.max(0, 100 - porcFijos - porcVar);
@@ -396,49 +518,26 @@
             document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`;
             document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
 
-            // EL VELOCÍMETRO (CARRERA DEL MES: Tiempo vs Gasto)
             const hoy = new Date().getDate(); 
             const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
             const porcentajeTiempo = (hoy / diasMes) * 100;
             const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
 
             let ratioCarrera = 0;
-            if (porcentajeTiempo > 0) {
-                ratioCarrera = porcentajeGasto / porcentajeTiempo;
-            }
+            if (porcentajeTiempo > 0) { ratioCarrera = porcentajeGasto / porcentajeTiempo; }
 
-            // Mapeamos el ratio para que gire la aguja. (1.0 = Centro). Max 100% de la barra.
             let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100);
-
-            let velocidad = "Sin Datos"; 
-            let colorClase = "text-slate-300"; 
-            let msgQuema = "Tocá el ⚙️ para calcular.";
+            let velocidad = "Sin Datos"; let colorClase = "text-slate-300"; let msgQuema = "Tocá el ⚙️ para calcular.";
 
             if (ingresoTotal > 0) {
-                if (ratioCarrera < 0.8) {
-                    velocidad = "Excelente";
-                    colorClase = "text-primary"; // Verde
-                    msgQuema = "Vas gastando más lento de lo que avanza el mes.";
-                } else if (ratioCarrera <= 1.1) {
-                    velocidad = "Normal";
-                    colorClase = "text-amber-400"; // Amarillo
-                    msgQuema = "Ritmo ideal. Vas a la par del calendario.";
-                } else {
-                    velocidad = "Peligro";
-                    colorClase = "text-rose-500"; // Rojo
-                    msgQuema = "Alerta: Estás quemando dinero muy rápido.";
-                }
+                if (ratioCarrera < 0.8) { velocidad = "Excelente"; colorClase = "text-primary"; msgQuema = "Vas gastando más lento de lo que avanza el mes."; } 
+                else if (ratioCarrera <= 1.1) { velocidad = "Normal"; colorClase = "text-amber-400"; msgQuema = "Ritmo ideal. Vas a la par del calendario."; } 
+                else { velocidad = "Peligro"; colorClase = "text-rose-500"; msgQuema = "Alerta: Estás quemando dinero muy rápido."; }
             }
 
-            if (granTotalGastos >= ingresoTotal && ingresoTotal > 0) {
-                velocidad = "Agotado";
-                colorClase = "text-rose-600";
-                msgQuema = "Has consumido todo tu ingreso del mes.";
-                dialPorcentaje = 100;
-            }
+            if (granTotalGastos >= ingresoTotal && ingresoTotal > 0) { velocidad = "Agotado"; colorClase = "text-rose-600"; msgQuema = "Has consumido todo tu ingreso del mes."; dialPorcentaje = 100; }
 
-            // Aplicar la rotación y el llenado del SVG
-            const circunferenciaTotal = 125.66; // Para SVG de radio 40
+            const circunferenciaTotal = 125.66; 
             const offset = circunferenciaTotal - (dialPorcentaje / 100 * circunferenciaTotal);
             const rotacionAguja = -90 + (dialPorcentaje / 100 * 180);
 
@@ -453,27 +552,20 @@
             const aguja = document.getElementById('speedoNeedle');
             aguja.style.transform = `rotate(${rotacionAguja}deg)`;
 
-            // RENDERIZADO DEL REPORTE TRADICIONAL
             const contTrad = document.getElementById('contenedorReporteTradicional'); 
-            contTrad.innerHTML = '';
-            
-            contTrad.innerHTML += `
+            contTrad.innerHTML = `
             <div class="text-center mb-5 pb-4 border-b border-slate-100">
                 <p class="text-2xl font-black text-slate-900 tracking-tight">${formatoGs(granTotalGastos)}</p>
                 <p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p>
             </div>
-            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>
-            `;
+            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>`;
 
             for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) {
                 if (totalFuga > 0) {
                     let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0;
                     contTrad.innerHTML += `
                     <div class="mb-3">
-                        <div class="flex justify-between items-end mb-1">
-                            <span class="text-xs font-bold text-slate-700">${nomCuenta}</span>
-                            <span class="text-xs font-black text-slate-900">${formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span>
-                        </div>
+                        <div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-slate-700">${nomCuenta}</span><span class="text-xs font-black text-slate-900">${formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span></div>
                         <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div>
                     </div>`;
                 }
@@ -483,38 +575,22 @@
                 let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0;
                 contTrad.innerHTML += `
                 <div class="mb-2 mt-4 pt-4 border-t border-slate-100">
-                    <div class="flex justify-between items-end mb-1">
-                        <span class="text-xs font-bold text-amber-500 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            Gastos Fijos Tildados
-                        </span>
-                        <span class="text-xs font-black text-slate-900">${formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span>
-                    </div>
+                    <div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-amber-500 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Gastos Fijos Tildados</span><span class="text-xs font-black text-slate-900">${formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span></div>
                     <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: ${porcFijosPagados}%"></div></div>
                 </div>`;
             }
 
-            if(agujeroNegro === 0 && fijosPagadosTotales === 0) {
-                contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>';
-            }
+            if(agujeroNegro === 0 && fijosPagadosTotales === 0) { contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; }
         };
 
         const renderizarCuentas = () => {
             const cont = document.getElementById('contenedorCuentas'); cont.innerHTML = '';
             cuentas.forEach(c => {
-                let iconoHtml = '';
-                if (c.icono && c.icono.includes('.png')) {
-                    iconoHtml = `<img src="logos/${c.icono}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='🏦';" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">`;
-                } else {
-                    iconoHtml = `<span class="text-xl">${c.icono || '💳'}</span>`;
-                }
-
+                let iconoHtml = (c.icono && c.icono.includes('.png')) ? `<img src="logos/${c.icono}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='🏦';" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` : `<span class="text-xl">${c.icono || '💳'}</span>`;
                 cont.innerHTML += `
                 <div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100">
                     <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0 overflow-hidden text-primary">
-                            ${iconoHtml}
-                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0 overflow-hidden text-primary">${iconoHtml}</div>
                         <div>
                             <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">${c.nombre}<button onclick="abrirModalForm('cuenta', ${c.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3>
                             <p class="text-[11px] font-medium text-slate-500 leading-tight">${c.descripcion}</p><p class="text-[9px] text-slate-400 mt-0.5">Última act: ${c.ultimaAct}</p>
@@ -563,8 +639,7 @@
 
         function cerrarModalAccion(valorDevuelto) {
             const modal = document.getElementById('modalAccion'); const cuerpo = document.getElementById('modalAccionCuerpo');
-            cuerpo.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); if (modalResolve) { modalResolve(valorDevuelto); modalResolve = null; } }, 200);
+            cuerpo.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); if (modalResolve) { modalResolve(valorDevuelto); modalResolve = null; } }, 200);
         }
 
         document.getElementById('btnModalCancelar').addEventListener('click', () => cerrarModalAccion(null));
@@ -579,21 +654,10 @@
             if (tipo === 'cuenta') { 
                 document.getElementById('selectorIconosContainer').classList.remove('hidden');
                 document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Ueno Bank)'; document.getElementById('lblInput2').innerText = 'Descripción (Ej: Billetera)'; document.getElementById('lblInput3').innerText = 'Saldo Actual';
-                
-                if (id) { 
-                    document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); 
-                    i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); 
-                    
-                    iconoSeleccionado = c.icono || '🏦';
-                    if(iconoSeleccionado.includes('.png')){ setTimeout(() => seleccionarIcono(iconoSeleccionado), 50); } else { limpiarSeleccionIconos(); }
-                } else { 
-                    document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); 
-                    iconoSeleccionado = '🏦'; limpiarSeleccionIconos();
-                }
+                if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); iconoSeleccionado = c.icono || '🏦'; if(iconoSeleccionado.includes('.png')){ setTimeout(() => seleccionarIcono(iconoSeleccionado), 50); } else { limpiarSeleccionIconos(); } } else { document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); iconoSeleccionado = '🏦'; limpiarSeleccionIconos(); }
             } else if (tipo === 'gasto') { 
                 document.getElementById('selectorIconosContainer').classList.add('hidden');
                 document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Internet)'; document.getElementById('lblInput2').innerText = 'Cuenta Asociada (Ej: Itaú, Efectivo)'; document.getElementById('lblInput3').innerText = 'Monto Mensual';
-                
                 if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; const g = gastos.find(x => x.id === id); i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; btnEliminar.classList.add('hidden'); }
             }
             modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10);
@@ -604,14 +668,10 @@
         const guardarFormulario = () => {
             const v1 = document.getElementById('modalFormInput1').value.trim(); const v2 = document.getElementById('modalFormInput2').value.trim(); const v3 = document.getElementById('modalFormInput3').value.replace(/\./g, '');
             if(!v1 || !v3 || isNaN(v3)) { interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.'); return; }
-            
             if (formActualTipo === 'cuenta') {
-                if (formActualId) { const c = cuentas.find(x => x.id === formActualId); c.nombre = v1; c.descripcion = v2 || "Sin descripción"; c.icono = iconoSeleccionado;
-                    if(c.saldo !== parseInt(v3)) { registrarMovimiento("Actualización de Saldo", c.nombre, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; }
-                } else { cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: iconoSeleccionado }); registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); }
+                if (formActualId) { const c = cuentas.find(x => x.id === formActualId); c.nombre = v1; c.descripcion = v2 || "Sin descripción"; c.icono = iconoSeleccionado; if(c.saldo !== parseInt(v3)) { registrarMovimiento("Actualización de Saldo", c.nombre, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; } } else { cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: iconoSeleccionado }); registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); }
             } else if (formActualTipo === 'gasto') {
-                if (formActualId) { const g = gastos.find(x => x.id === formActualId); g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); } 
-                else { gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); }
+                if (formActualId) { const g = gastos.find(x => x.id === formActualId); g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); } else { gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); }
             }
             guardarDatos(); cerrarModalForm();
         };
@@ -629,17 +689,29 @@
             }, 250); 
         };
 
+        // PROTEGIDO CON VERIFICAR ACCESO
         const actualizarSaldo = async (id) => {
+            if (!verificarAcceso()) return; // Si venció, corta la función y abre el modal
             const cuenta = cuentas.find(c => c.id === id); const r = await interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true);
             if (r) { const nuevoMonto = parseInt(r.replace(/\./g, '')); registrarMovimiento("Actualización de Saldo", cuenta.nombre, nuevoMonto - cuenta.saldo); cuenta.saldo = nuevoMonto; const hoy = new Date(); cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; guardarDatos(); }
         };
 
+        // PROTEGIDO CON VERIFICAR ACCESO
         const cambiarMontoGasto = async (id) => {
+            if (!verificarAcceso()) return; 
             const gasto = gastos.find(g => g.id === id); const r = await interactuarApp('prompt', 'Cambiar Monto', `Ingresá el nuevo monto para ${gasto.nombre}.`, gasto.monto, true);
             if (r) { gasto.monto = parseInt(r.replace(/\./g, '')); guardarDatos(); }
         };
 
+        // PROTEGIDO CON VERIFICAR ACCESO
         const tildarGasto = (id) => {
+            if (!verificarAcceso()) {
+                // Prevenir que el checkbox se marque visualmente si está bloqueado
+                event.preventDefault(); 
+                const checkbox = event.target;
+                checkbox.checked = !checkbox.checked; // Revertir el estado visual
+                return;
+            }
             const gasto = gastos.find(g => g.id === id); gasto.pagado = !gasto.pagado; gasto.fechaPago = gasto.pagado ? obtenerFechaHoy() : "";
             if(gasto.pagado) { registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto); } else { registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto); }
             guardarDatos();
