@@ -18,5 +18,20 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Macro Gestión",
+      "short_name": "Macro",
+      "description": "Abrir el panel de Macro Gestión",
+      "url": "./macro-gestion/macro-gestion.html",
+      "icons": [
+        {
+          "src": "icon-macro.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
