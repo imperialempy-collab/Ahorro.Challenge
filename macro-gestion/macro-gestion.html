@@ -21,7 +21,6 @@
     <style>
         summary::-webkit-details-marker { display: none; }
         .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
-        /* Ocultar barra de scroll en el carrusel de logos */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -94,7 +93,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     Tu Salud Financiera
                 </span>
-                <button onclick="configurarIngreso()" class="w-8 h-8 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Configurar Ingreso Mensual">
+                <button onclick="configurarIngreso()" class="w-8 h-8 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Configurar Ingreso Promedio">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </button>
             </div>
@@ -107,7 +106,7 @@
                 <div class="flex justify-between items-start relative z-10">
                     <div>
                         <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1.5">🕳️ El Agujero Negro</h3>
-                        <p class="text-[10px] text-slate-500 mt-1">Dinero fugado sin registrar este mes</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Dinero fugado este mes</p>
                     </div>
                     <button onclick="infoReporte('agujero')" class="w-6 h-6 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors shadow-sm"><span class="font-bold font-display text-xs">i</span></button>
                 </div>
@@ -159,26 +158,30 @@
                 </div>
                 
                 <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner bg-slate-100">
-                    <div id="barFijos" class="bg-rose-500 h-full progress-bar" style="width: 0%" title="Gastos Fijos"></div>
-                    <div id="barVar" class="bg-amber-400 h-full progress-bar" style="width: 0%" title="Gastos Variables"></div>
+                    <div id="barFijos" class="bg-amber-400 h-full progress-bar" style="width: 0%" title="Gastos Fijos"></div>
+                    <div id="barVar" class="bg-rose-500 h-full progress-bar" style="width: 0%" title="Gastos Variables (Agujero Negro)"></div>
                     <div id="barAhorro" class="bg-primary h-full progress-bar" style="width: 0%" title="Libre"></div>
                 </div>
                 
                 <div class="flex justify-between items-center mt-3 px-1">
-                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div><p id="txtFijos" class="text-[9px] font-bold text-slate-600">0% Fijo</p></div>
-                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div><p id="txtVar" class="text-[9px] font-bold text-slate-600">0% Var</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div><p id="txtFijos" class="text-[9px] font-bold text-slate-600">0% Fijo</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div><p id="txtVar" class="text-[9px] font-bold text-slate-600">0% Var</p></div>
                     <div class="text-center"><div class="w-2 h-2 rounded-full bg-primary mx-auto mb-1"></div><p id="txtAhorro" class="text-[9px] font-bold text-slate-600">0% Libre</p></div>
                 </div>
             </div>
 
             <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 p-4 mt-6">
                 <summary class="flex items-center justify-between text-xs font-bold text-slate-600 cursor-pointer list-none hover:text-primary transition-colors">
-                    <span class="flex items-center gap-2">📊 Reporte Tradicional (Por Cuentas)</span>
+                    <span class="flex items-center gap-2">
+                        📊 Reporte Tradicional (Por Cuentas)
+                        <button onclick="event.preventDefault(); event.stopPropagation(); infoReporte('tradicional')" class="text-slate-300 hover:text-primary ml-1" title="Ver info">
+                            <span class="font-bold font-display text-[10px] bg-slate-50 rounded-full w-4 h-4 flex items-center justify-center border border-slate-100 shadow-sm">i</span>
+                        </button>
+                    </span>
                     <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </summary>
                 
                 <div class="pt-4 mt-3 border-t border-slate-100">
-                    <p class="text-[10px] text-slate-500 mb-4">Suma de Fijos Pagados + Fugas (Agujero Negro) este mes por cuenta.</p>
                     <div id="contenedorReporteTradicional" class="space-y-3"></div>
                 </div>
             </details>
@@ -220,7 +223,7 @@
             <div id="selectorIconosContainer" class="hidden mb-5">
                 <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Elegí el Logo de la cuenta</label>
                 <div id="grillaIconos" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1">
-                    </div>
+                </div>
             </div>
 
             <div class="space-y-4 mb-6">
@@ -237,10 +240,11 @@
 
     <script>
         const descripcionesReportes = {
-            patrimonio: { tit: "📈 Curva de Patrimonio", desc: "La suma de todas tus cuentas reales.\n\nNo importa cuánto ganes, sino cuánto retenés. Si este número sube, te estás volviendo más rico." },
+            patrimonio: { tit: "📈 Patrimonio Líquido", desc: "La suma del dinero que queda Disponible en tus cuentas reales.\n\nNo importa cuánto ganes, sino cuánto retenés. Si este número sube, te estás volviendo más rico." },
             burnrate: { tit: "⏱️ Velocidad de Quema", desc: "A qué velocidad desaparece tu dinero libre.\n\nCompara los días que pasaron del mes con la plata que fugaste. Si dice 'Rápida', frená tus gastos." },
-            asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "El peso de tus obligaciones fijas.\n\nSi tus gastos fijos (alquiler, deudas) ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." },
-            agujero: { tit: "🕳️ El Agujero Negro", desc: "Dinero fugado sin registrar (Variables).\n\nEs la suma de todos esos gastos cuando le restaste saldo a tus cuentas a mano. Ver este número gigante te ayudará a controlar la tarjeta." }
+            asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en el ⚙️.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." },
+            agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma de todo el dinero que gastaste al ir actualizando los saldos de tus cuentas a mano.\n\nIMPORTANTE: Esta suma NO incluye los Gastos Fijos que vas tildando arriba. Es pura y exclusivamente tu gasto variable y hormiga." },
+            tradicional: { tit: "📊 Reporte Tradicional", desc: "Los porcentajes reflejan cuánto representa cada gasto frente al Ingreso Promedio que configuraste manualmente en el ⚙️." }
         };
 
         function infoReporte(clave) { interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc); }
@@ -263,7 +267,6 @@
             const grilla = document.getElementById('grillaIconos');
             grilla.innerHTML = logosDisponibles.map(logo => {
                 const logoId = logo.replace('.png', '');
-                // EL CAMBIO DE TAMAÑO ESTÁ AQUÍ: "p-0.5" y "scale-125" para hacerlo gigante y perfecto
                 return `
                 <div id="logo-${logoId}" onclick="seleccionarIcono('${logo}')" class="logo-opt w-14 h-14 shrink-0 bg-white border-2 border-slate-100 rounded-xl p-0.5 cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm overflow-hidden">
                     <img src="logos/${logo}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='🏦';" class="w-full h-full object-contain scale-125 transform transition-transform" alt="${logo}">
@@ -302,7 +305,7 @@
 
         const configurarIngreso = async () => {
             const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
-            const res = await interactuarApp('prompt', 'Configurar Ingreso Base', 'Para calcular la Asfixia Financiera, ingresá tu sueldo o ingreso mensual promedio.', actual, true);
+            const res = await interactuarApp('prompt', 'Configurar Ingreso Base', 'Ingresá tu sueldo o ingreso mensual promedio para calcular tu Ratio de Asfixia.', actual, true);
             if(res) { localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, ''))); renderizarReportes(); }
         };
 
@@ -328,6 +331,11 @@
             document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
 
             let fijos = gastos.reduce((acc, g) => acc + g.monto, 0);
+            
+            // LA CIRUGÍA DEL REPORTE TRADICIONAL
+            let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0);
+            let granTotalGastos = agujeroNegro + fijosPagadosTotales;
+
             let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijos / ingresoTotal) * 100), 100) : 0;
             let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0;
             let porcAhorro = Math.max(0, 100 - porcFijos - porcVar);
@@ -349,20 +357,54 @@
             document.getElementById('repBurnRateBar').className = `h-2.5 rounded-full progress-bar bg-gradient-to-r ${barColor}`;
             document.getElementById('repBurnRateBar').style.width = `${barWidth}%`; document.getElementById('repBurnRateMsg').innerText = msgQuema;
 
-            const contTrad = document.getElementById('contenedorReporteTradicional'); contTrad.innerHTML = '';
-            let gastosTotalesCuenta = {};
-            cuentas.forEach(c => gastosTotalesCuenta[c.nombre] = fugasPorCuenta[c.nombre] || 0);
-            gastos.forEach(g => { if(g.pagado) { gastosTotalesCuenta[g.cuenta] = (gastosTotalesCuenta[g.cuenta] || 0) + g.monto; } });
+            // RENDERIZADO DEL REPORTE TRADICIONAL
+            const contTrad = document.getElementById('contenedorReporteTradicional'); 
+            contTrad.innerHTML = '';
+            
+            // Bloque 1: El Gran Total
+            contTrad.innerHTML += `
+            <div class="text-center mb-5 pb-4 border-b border-slate-100">
+                <p class="text-2xl font-black text-slate-900 tracking-tight">${formatoGs(granTotalGastos)}</p>
+                <p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p>
+            </div>
+            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>
+            `;
 
-            for (const [nomCuenta, totalGasto] of Object.entries(gastosTotalesCuenta)) {
-                if (totalGasto > 0 || ingresoTotal > 0) {
-                    let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalGasto / ingresoTotal) * 100), 100) : 0;
+            // Bloque 2: La lista de Cuentas (Solo Fugas / Variables)
+            for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) {
+                if (totalFuga > 0) {
+                    let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0;
                     contTrad.innerHTML += `
-                    <div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-slate-700">${nomCuenta}</span><span class="text-xs font-black text-slate-900">${formatoGs(totalGasto)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span></div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div></div>`;
+                    <div class="mb-3">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-xs font-bold text-slate-700">${nomCuenta}</span>
+                            <span class="text-xs font-black text-slate-900">${formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div>
+                    </div>`;
                 }
             }
-            if(contTrad.innerHTML === '') contTrad.innerHTML = '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún.</p>';
+
+            // Bloque 3: El apartado exclusivo de Fijos Tildados
+            if (fijosPagadosTotales > 0) {
+                let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0;
+                contTrad.innerHTML += `
+                <div class="mb-2 mt-4 pt-4 border-t border-slate-100">
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-xs font-bold text-amber-500 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            Gastos Fijos Tildados
+                        </span>
+                        <span class="text-xs font-black text-slate-900">${formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: ${porcFijosPagados}%"></div></div>
+                </div>`;
+            }
+
+            // Si no hay nada de nada
+            if(agujeroNegro === 0 && fijosPagadosTotales === 0) {
+                contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>';
+            }
         };
 
         const renderizarCuentas = () => {
@@ -370,7 +412,6 @@
             cuentas.forEach(c => {
                 let iconoHtml = '';
                 if (c.icono && c.icono.includes('.png')) {
-                    // EL CAMBIO DE TAMAÑO ESTÁ AQUÍ TAMBIÉN: "scale-125"
                     iconoHtml = `<img src="logos/${c.icono}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='🏦';" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">`;
                 } else {
                     iconoHtml = `<span class="text-xl">${c.icono || '💳'}</span>`;
