@@ -1,0 +1,21 @@
+{
+    "name": "Macro Gestión",
+    "short_name": "Macro Gestión",
+    "start_url": "macro-gestion/macro-gestion.html",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#10b981",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon-macro.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icon-macro.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
