@@ -120,33 +120,38 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-36">
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-[155px]">
                     <div class="flex justify-between items-start">
-                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Patrimonio<br>Líquido</h3>
-                        <button onclick="infoReporte('patrimonio')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Flujo de<br>Caja</h3>
+                        <button onclick="infoReporte('flujo')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                     </div>
-                    <div>
-                        <p class="text-lg font-black text-slate-800 tracking-tight"><span id="repPatrimonio">0</span> <span class="text-[9px] text-slate-400">Gs</span></p>
-                        <div class="mt-2">
-                            <svg class="w-full h-8 text-primary" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor">
-                                <path d="M0 25 L20 20 L40 22 L60 10 L80 15 L100 5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M0 25 L20 20 L40 22 L60 10 L80 15 L100 5 L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/>
-                            </svg>
-                        </div>
+                    <div class="mt-auto">
+                        <p class="text-lg font-black text-slate-800 tracking-tight"><span id="repFlujoCaja">0</span> <span class="text-[9px] text-slate-400">Gs</span></p>
+                        <div class="mt-2" id="graficoFlujo">
+                            </div>
                     </div>
                 </div>
 
-                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-36">
-                    <div class="flex justify-between items-start">
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-[155px]">
+                    <div class="flex justify-between items-start z-10">
                         <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Velocidad<br>de Quema</h3>
                         <button onclick="infoReporte('burnrate')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
                     </div>
-                    <div>
-                        <p id="repBurnRateText" class="text-lg font-black text-slate-800 tracking-tight">Calculando...</p>
-                        <div class="mt-3 w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                            <div id="repBurnRateBar" class="bg-slate-300 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                    <div class="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end overflow-hidden rounded-b-3xl pb-2">
+                        <h4 id="repBurnRateText" class="text-sm font-black text-slate-800 z-10 -mb-1">Calculando</h4>
+                        <div class="w-full px-2 mt-1 relative h-[50px] flex justify-center overflow-visible">
+                            <svg viewBox="0 0 100 55" class="w-full h-full overflow-visible drop-shadow-sm">
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" stroke-width="8" stroke-linecap="round" />
+                                <path id="speedoPath" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"
+                                      stroke-dasharray="125.66" stroke-dashoffset="125.66" class="text-slate-300 transition-all duration-1000 ease-out" />
+                                <g id="speedoNeedle" class="transition-transform duration-1000 ease-out" style="transform-origin: 50px 50px; transform: rotate(-90deg);">
+                                    <polygon points="48,50 52,50 50,15" fill="#334155" />
+                                    <circle cx="50" cy="50" r="4" fill="#1e293b" />
+                                    <circle cx="50" cy="50" r="1.5" fill="#ffffff" />
+                                </g>
+                            </svg>
                         </div>
-                        <p id="repBurnRateMsg" class="text-[9px] text-slate-400 mt-2">Cargando datos.</p>
+                        <p id="repBurnRateMsg" class="text-[8px] text-slate-400 font-medium px-2 text-center leading-tight mt-1">Ingresá datos ⚙️</p>
                     </div>
                 </div>
             </div>
@@ -240,8 +245,8 @@
 
     <script>
         const descripcionesReportes = {
-            patrimonio: { tit: "📈 Patrimonio Líquido", desc: "La suma del dinero que queda Disponible en tus cuentas reales.\n\nNo importa cuánto ganes, sino cuánto retenés. Si este número sube, te estás volviendo más rico." },
-            burnrate: { tit: "⏱️ Velocidad de Quema", desc: "A qué velocidad desaparece tu dinero libre.\n\nCompara los días que pasaron del mes con la plata que fugaste. Si dice 'Rápida', frená tus gastos." },
+            flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste. La gráfica te muestra cómo tu sueldo se va consumiendo día a día." },
+            burnrate: { tit: "⏱️ Velocidad de Quema", desc: "Es una carrera entre tu Dinero y el Calendario.\n\nCompara qué porcentaje de tu Ingreso ya te gastaste, frente a qué porcentaje del mes ya pasó. Si gastaste mucho y apenas estamos a mitad de mes, la aguja irá a ROJO y deberás frenar." },
             asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en el ⚙️.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." },
             agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma de todo el dinero que gastaste al ir actualizando los saldos de tus cuentas a mano.\n\nIMPORTANTE: Esta suma NO incluye los Gastos Fijos que vas tildando arriba. Es pura y exclusivamente tu gasto variable y hormiga." },
             tradicional: { tit: "📊 Reporte Tradicional", desc: "Los porcentajes reflejan cuánto representa cada gasto frente al Ingreso Promedio que configuraste manualmente en el ⚙️." }
@@ -309,10 +314,54 @@
             if(res) { localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, ''))); renderizarReportes(); }
         };
 
+        // GRÁFICO DINÁMICO DE FLUJO DE CAJA
+        const dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => {
+            if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`;
+
+            let flujoActual = ingresoBase - totalGastado;
+            let puntos = [flujoActual];
+            let saldoTemp = flujoActual;
+            
+            const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/";
+            const historialMes = historial.filter(h => h.fecha.includes(mesStr));
+
+            // Reconstruimos la historia hacia atrás
+            for(let i = 0; i < historialMes.length; i++) {
+                if(puntos.length >= 6) break;
+                let h = historialMes[i];
+                // Si es actualización de saldo (fuga) o un gasto fijo, lo sumamos al saldo hacia atrás
+                if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) {
+                    saldoTemp = saldoTemp + Math.abs(h.monto); 
+                    puntos.unshift(saldoTemp);
+                }
+            }
+            
+            // Rellenar hasta el inicio con el sueldo total
+            while(puntos.length < 6) { puntos.unshift(ingresoBase); }
+            
+            let max = ingresoBase; 
+            let min = 0;
+            
+            let pathD = "M0 25 ";
+            let xStep = 100 / 5;
+            
+            puntos.forEach((p, index) => {
+                let x = index * xStep;
+                let pNorm = Math.max(0, Math.min(p, max)); // Limitar para no romper el dibujo
+                let y = 25 - ((pNorm - min) / (max - min)) * 20; 
+                pathD += `L${x} ${y} `;
+            });
+            
+            let colorLinea = flujoActual < (ingresoBase * 0.2) ? "text-rose-500" : "text-primary";
+
+            return `<svg class="w-full h-8 ${colorLinea}" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor">
+                        <path d="${pathD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="${pathD} L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/>
+                    </svg>`;
+        };
+
         const renderizarReportes = () => {
             let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
-            let patrimonio = cuentas.reduce((acc, c) => acc + c.saldo, 0);
-            document.getElementById('repPatrimonio').innerText = formatoGs(patrimonio).replace(' Gs', '');
             
             const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/";
             const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
@@ -331,11 +380,15 @@
             document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
 
             let fijos = gastos.reduce((acc, g) => acc + g.monto, 0);
-            
-            // LA CIRUGÍA DEL REPORTE TRADICIONAL
             let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0);
             let granTotalGastos = agujeroNegro + fijosPagadosTotales;
 
+            // FLUJO DE CAJA
+            let flujoDeCajaActual = ingresoTotal - granTotalGastos;
+            document.getElementById('repFlujoCaja').innerText = formatoGs(flujoDeCajaActual).replace(' Gs', '');
+            document.getElementById('graficoFlujo').innerHTML = dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
+
+            // RATIO DE ASFIXIA
             let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijos / ingresoTotal) * 100), 100) : 0;
             let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0;
             let porcAhorro = Math.max(0, 100 - porcFijos - porcVar);
@@ -343,25 +396,67 @@
             document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`;
             document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
 
-            const hoy = new Date().getDate(); const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-            const avanceMes = (hoy / diasMes) * 100; let margenVariable = ingresoTotal - fijos; 
-            let velocidad = "Falta Ingreso"; let barColor = "from-slate-300 to-slate-400"; let barWidth = 0; let msgQuema = "Tocá el ⚙️ para calcular.";
+            // EL VELOCÍMETRO (CARRERA DEL MES: Tiempo vs Gasto)
+            const hoy = new Date().getDate(); 
+            const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+            const porcentajeTiempo = (hoy / diasMes) * 100;
+            const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
 
-            if (ingresoTotal > 0 && margenVariable > 0) {
-                let quema = (agujeroNegro / margenVariable) * 100; barWidth = Math.min(quema, 100);
-                if (quema > avanceMes * 1.2) { velocidad = "Rápida"; barColor = "from-amber-400 to-rose-500"; msgQuema = "Estás gastando muy rápido."; } 
-                else { velocidad = "Normal"; barColor = "from-emerald-400 to-primary"; msgQuema = "Vas a buen ritmo."; }
-            } else if (ingresoTotal > 0) { velocidad = "Peligro"; barColor = "from-rose-500 to-rose-600"; barWidth = 100; msgQuema = "No tenés margen libre."; }
+            let ratioCarrera = 0;
+            if (porcentajeTiempo > 0) {
+                ratioCarrera = porcentajeGasto / porcentajeTiempo;
+            }
+
+            // Mapeamos el ratio para que gire la aguja. (1.0 = Centro). Max 100% de la barra.
+            let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100);
+
+            let velocidad = "Sin Datos"; 
+            let colorClase = "text-slate-300"; 
+            let msgQuema = "Tocá el ⚙️ para calcular.";
+
+            if (ingresoTotal > 0) {
+                if (ratioCarrera < 0.8) {
+                    velocidad = "Excelente";
+                    colorClase = "text-primary"; // Verde
+                    msgQuema = "Vas gastando más lento de lo que avanza el mes.";
+                } else if (ratioCarrera <= 1.1) {
+                    velocidad = "Normal";
+                    colorClase = "text-amber-400"; // Amarillo
+                    msgQuema = "Ritmo ideal. Vas a la par del calendario.";
+                } else {
+                    velocidad = "Peligro";
+                    colorClase = "text-rose-500"; // Rojo
+                    msgQuema = "Alerta: Estás quemando dinero muy rápido.";
+                }
+            }
+
+            if (granTotalGastos >= ingresoTotal && ingresoTotal > 0) {
+                velocidad = "Agotado";
+                colorClase = "text-rose-600";
+                msgQuema = "Has consumido todo tu ingreso del mes.";
+                dialPorcentaje = 100;
+            }
+
+            // Aplicar la rotación y el llenado del SVG
+            const circunferenciaTotal = 125.66; // Para SVG de radio 40
+            const offset = circunferenciaTotal - (dialPorcentaje / 100 * circunferenciaTotal);
+            const rotacionAguja = -90 + (dialPorcentaje / 100 * 180);
 
             document.getElementById('repBurnRateText').innerText = velocidad;
-            document.getElementById('repBurnRateBar').className = `h-2.5 rounded-full progress-bar bg-gradient-to-r ${barColor}`;
-            document.getElementById('repBurnRateBar').style.width = `${barWidth}%`; document.getElementById('repBurnRateMsg').innerText = msgQuema;
+            document.getElementById('repBurnRateText').className = `text-sm font-black z-10 -mb-1 ${colorClase}`;
+            document.getElementById('repBurnRateMsg').innerText = msgQuema;
+
+            const pathVelocimetro = document.getElementById('speedoPath');
+            pathVelocimetro.className = `transition-all duration-1000 ease-out ${colorClase}`;
+            pathVelocimetro.style.strokeDashoffset = offset;
+
+            const aguja = document.getElementById('speedoNeedle');
+            aguja.style.transform = `rotate(${rotacionAguja}deg)`;
 
             // RENDERIZADO DEL REPORTE TRADICIONAL
             const contTrad = document.getElementById('contenedorReporteTradicional'); 
             contTrad.innerHTML = '';
             
-            // Bloque 1: El Gran Total
             contTrad.innerHTML += `
             <div class="text-center mb-5 pb-4 border-b border-slate-100">
                 <p class="text-2xl font-black text-slate-900 tracking-tight">${formatoGs(granTotalGastos)}</p>
@@ -370,7 +465,6 @@
             <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>
             `;
 
-            // Bloque 2: La lista de Cuentas (Solo Fugas / Variables)
             for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) {
                 if (totalFuga > 0) {
                     let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0;
@@ -385,7 +479,6 @@
                 }
             }
 
-            // Bloque 3: El apartado exclusivo de Fijos Tildados
             if (fijosPagadosTotales > 0) {
                 let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0;
                 contTrad.innerHTML += `
@@ -401,7 +494,6 @@
                 </div>`;
             }
 
-            // Si no hay nada de nada
             if(agujeroNegro === 0 && fijosPagadosTotales === 0) {
                 contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>';
             }
