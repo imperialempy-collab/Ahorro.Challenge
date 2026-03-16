@@ -33,6 +33,8 @@
         const db = getFirestore(app); 
         const provider = new GoogleAuthProvider();
 
+        window.userAccessStatus = 'prueba';
+
         window.mostrarAlerta = (mensaje) => {
             document.getElementById('customAlertMessage').innerText = mensaje;
             document.getElementById('customAlert').classList.remove('hidden');
@@ -120,6 +122,26 @@
             signOut(auth).then(() => location.reload());
         };
 
+        // Función global para actualizar el botón de pago desde cualquier parte
+        window.actualizarUI_Pago = () => {
+            const btnPagar = document.getElementById('btnSidebarPagar');
+            if (!btnPagar) return;
+            if(window.userAccessStatus === 'pagado') {
+                btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>';
+                btnPagar.onclick = null;
+                btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50');
+                btnPagar.classList.replace('text-white', 'text-emerald-700');
+            } else if (window.userAccessStatus === 'pendiente') {
+                btnPagar.innerHTML = 'Pago en revisión ⏳';
+                btnPagar.onclick = null;
+                btnPagar.classList.replace('bg-slate-900', 'bg-amber-100');
+                btnPagar.classList.replace('text-white', 'text-amber-700');
+            } else {
+                btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
+                btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
+            }
+        };
+
         onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('loginScreen');
             const appContent = document.getElementById('appContent');
@@ -128,6 +150,7 @@
             const loginText = document.getElementById('loginText');
 
             if (user) {
+                document.getElementById('sidebarUserEmail').innerText = user.email;
                 const userRef = doc(db, "usuarios_multimeta", user.email);
                 const docSnap = await getDoc(userRef);
 
@@ -137,28 +160,37 @@
                         status: 'prueba',
                         fechaInicio: new Date().toISOString()
                     });
+                    window.userAccessStatus = 'prueba';
+                    window.actualizarUI_Pago();
                     loginScreen.classList.add('hidden');
                     appContent.classList.remove('hidden');
                     initApp(); 
                 } else {
                     const userData = docSnap.data();
+                    window.userAccessStatus = userData.status;
+                    window.actualizarUI_Pago();
+
                     if (userData.status === 'pagado') {
                         loginScreen.classList.add('hidden');
                         appContent.classList.remove('hidden');
                         initApp();
-                    } else if (userData.status === 'prueba') {
+                    } else if (userData.status === 'prueba' || userData.status === 'pendiente') {
                         const start = new Date(userData.fechaInicio);
                         const now = new Date();
                         const diffTime = Math.abs(now - start);
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                        if (diffDays > 7) {
+                        if (diffDays > 7 && userData.status !== 'pendiente') {
+                            window.userAccessStatus = 'vencido';
+                            window.actualizarUI_Pago();
                             loginScreen.classList.add('hidden');
                             appContent.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
-                            document.getElementById('btnProbarGratis').classList.remove('hidden');
-                            mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
+                            if (userData.status !== 'pendiente') {
+                                document.getElementById('btnProbarGratis').classList.remove('hidden');
+                                mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`);
+                            }
                             loginScreen.classList.add('hidden');
                             document.getElementById('upgradeScreen').classList.add('hidden');
                             appContent.classList.remove('hidden');
@@ -231,147 +263,92 @@
         </div>
     </div>
 
-    <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
-            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
-            <p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
-            <div class="flex gap-3">
-                <button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden transition-opacity" onclick="toggleSidebar()"></div>
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-[100] flex flex-col border-r border-slate-100">
+        <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <div>
+                <h2 class="font-display font-black text-sm text-slate-400 uppercase tracking-widest">Cuenta</h2>
+                <p id="sidebarUserEmail" class="text-xs text-slate-800 font-bold truncate max-w-[150px]">usuario@mail.com</p>
             </div>
-        </div>
-    </div>
-
-    <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
-            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
-            <p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p>
-            <input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-            <div class="flex gap-3">
-                <button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100">
-            <h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3>
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label>
-                    <input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label>
-                    <select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                    </select>
-                </div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col">
-            <div class="flex justify-between items-center mb-6 shrink-0">
-                <h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3>
-                <button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            <div class="flex items-center gap-2">
+                <button class="relative p-1.5 bg-white rounded-full text-slate-400 shadow-sm border border-slate-200" title="Sincronización a la nube">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
+                </button>
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-rose-500 bg-white p-1 rounded-lg border border-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+        </div>
+        
+        <div class="flex-grow p-4 space-y-2 overflow-y-auto">
+            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors">
+                <span class="text-xl">🎯</span> Ahorro Challenge
+            </a>
+            <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
+                <span class="text-xl">📊</span> Macro Gestión
+            </a>
+            <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
+                <span class="text-xl">🏋️</span> Gimnasio Financiero
+            </a>
             
-            <button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
-                Nueva Meta
+            <hr class="border-slate-100 my-4">
+            
+            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">
+                Activar Acceso Ilimitado 👑
             </button>
-
-            <div id="goalsAdminList" class="space-y-3 mb-6"></div>
-
-            <button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">
-                Aceptar
+        </div>
+        
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Cerrar Sesión
             </button>
         </div>
     </div>
 
-    <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3>
-                <button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+    <div id="paywallScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100 relative">
+            <button onclick="cerrarPaywall()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             </div>
-            
-            <p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p>
-
-            <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tipo de Aviso</label>
-                    <select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                        <option value="semanal">Semanal (Día de la semana)</option>
-                        <option value="mensual">Mensual (Día del mes)</option>
-                    </select>
-                </div>
-
-                <div id="weeklyOptions">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día de la semana</label>
-                    <select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                        <option value="Lunes">Todos los Lunes</option>
-                        <option value="Martes">Todos los Martes</option>
-                        <option value="Miércoles">Todos los Miércoles</option>
-                        <option value="Jueves">Todos los Jueves</option>
-                        <option value="Viernes">Todos los Viernes</option>
-                        <option value="Sábado">Todos los Sábados</option>
-                        <option value="Domingo">Todos los Domingos</option>
-                    </select>
-                </div>
-
-                <div id="monthlyOptions" class="hidden">
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día del Mes</label>
-                    <input type="number" id="reminderDate" placeholder="Ej: 5" min="1" max="31" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                </div>
-
-                <div>
-                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Hora</label>
-                    <input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
-                </div>
-
-                <button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
-                    Abrir Calendario
+            <h2 class="text-2xl font-display font-black text-slate-900 mb-2">Acceso Ilimitado</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Activá tu cuenta de por vida por un **único pago de 20.000 Gs.** Transferí a los siguientes datos y subí tu comprobante:
+            </p>
+            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-left text-sm text-slate-700 mb-6 font-medium">
+                <p>🏦 Banco: <b>Ueno Bank</b></p>
+                <p>👤 Titular: <b>Axel</b></p>
+                <p>💳 CI/RUC: <b>1234567</b></p>
+                <p>🔢 Cuenta: <b>000111222</b></p>
+            </div>
+            <div class="space-y-3">
+                <input type="file" id="comprobanteInput" accept="image/*,application/pdf" class="hidden" onchange="mostrarNombreArchivo()">
+                <button onclick="document.getElementById('comprobanteInput').click()" class="w-full flex items-center justify-center gap-2 py-4 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-200 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span id="txtArchivo">1. Elegir Comprobante</span>
+                </button>
+                <button onclick="enviarComprobante()" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                    2. Enviar y Activar
                 </button>
             </div>
         </div>
     </div>
+
+    <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div></div></div>
+    <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p><input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary focus:border-transparent"><div class="flex gap-3"><button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div></div></div>
+    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3><div class="space-y-4 mb-6"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label><input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label><select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></select></div></div><div class="flex gap-3"><button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button></div></div></div>
+    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col"><div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3><button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>Nueva Meta</button><div id="goalsAdminList" class="space-y-3 mb-6"></div><button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">Aceptar</button></div></div>
+    <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3><button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tipo de Aviso</label><select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="semanal">Semanal (Día de la semana)</option><option value="mensual">Mensual (Día del mes)</option></select></div><div id="weeklyOptions"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día de la semana</label><select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="Lunes">Todos los Lunes</option><option value="Martes">Todos los Martes</option><option value="Miércoles">Todos los Miércoles</option><option value="Jueves">Todos los Jueves</option><option value="Viernes">Todos los Viernes</option><option value="Sábado">Todos los Sábados</option><option value="Domingo">Todos los Domingos</option></select></div><div id="monthlyOptions" class="hidden"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día del Mes</label><input type="number" id="reminderDate" placeholder="Ej: 5" min="1" max="31" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Hora</label><input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>Abrir Calendario</button></div></div></div>
     
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
             <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
-            
             <p id="loginText" class="hidden text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
-            
-            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4">
-                <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-            </div>
-
-            <button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
-                <svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    <path fill="none" d="M0 0h48v48H0z"/>
-                </svg>
-                Entrar con Google
-            </button>
+            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4"><svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+            <button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm"><svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>Entrar con Google</button>
         </div>
     </div>
 
@@ -471,7 +448,7 @@
             if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia.");
             mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve.");
             window.userAccessStatus = 'pendiente';
-            actualizarUI_Pago();
+            if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago();
             document.getElementById('paywallScreen').classList.add('hidden');
         };
 
@@ -503,7 +480,7 @@
         window.deleteParticipant = async (n) => { const seguro = await mostrarConfirm(`¿Seguro querés eliminar a ${n} y todo su progreso?`); if (seguro) { participants = participants.filter(p => p !== n); if (userProgress[n]) delete userProgress[n]; if (userSchedules[n]) delete userSchedules[n]; if (participantGoals[n]) delete participantGoals[n]; if (userReminders[n]) delete userReminders[n]; if (activeParticipant === n) { activeParticipant = participants.length > 0 ? participants[0] : ""; } save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); } };
         window.setActiveParticipant = (n) => { activeParticipant = n; statsView = 'INDIVIDUAL'; save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); };
         window.setStatsView = (v) => { statsView = v; updateStats(); updateViewButtons(); renderGoals(); };
-        function updateViewButtons() { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-active"; indBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-inactive"; indBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-active"; } }
+        function updateViewButtons() { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; } }
         window.toggle = (semanaNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum); if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); recalculateRemaining(activeParticipant); } else { const montoOriginal = userSchedules[activeParticipant][semanaNum - 1]; const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d }); } save(); renderGoals(); updateStats(); };
         window.promptManual = async (semNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const previsto = userSchedules[activeParticipant][semNum - 1]; const val = await mostrarPrompt("Ingresá el monto real:", previsto, "number"); if (val !== null && val !== "") { const num = parseInt(val.toString().replace(/\D/g,'')); if (num > 0) { const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum); const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; } else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); } recalculateRemaining(activeParticipant); save(); renderGoals(); updateStats(); } } };
         function updateStats() { let totalGeneral = 0; Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado)); const strokeVal = 113; if (statsView === 'COLECTIVO') { document.getElementById('statsTitle').innerText = "Gran Total Colectivo"; document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`; let totalObjetivoGlobal = 0; participants.forEach(p => { totalObjetivoGlobal += getGoalForUser(p).amount; }); const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral); } else { if(!activeParticipant) { document.getElementById('statsTitle').innerText = "Ahorro de -"; document.getElementById('metaLabel').innerText = "Sin meta"; document.getElementById('progressPercentage').innerText = "0%"; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal; document.getElementById('totalSavedCounter').innerText = "0 Gs."; return; } const userGoal = getGoalForUser(activeParticipant); const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0); document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`; const falta = userGoal.amount - miTotal; document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!"; const p = (miTotal / userGoal.amount) * 100; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal); } }
