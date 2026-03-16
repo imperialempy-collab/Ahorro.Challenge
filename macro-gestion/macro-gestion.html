@@ -7,6 +7,7 @@
     
     <link rel="manifest" href="../manifest-macro.json">
     <meta name="theme-color" content="#10b981">
+    <meta name="color-scheme" content="light">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,7 +44,7 @@
         window.logout = () => { signOut(auth).then(() => { window.location.href = '../index.html'; }); };
 
         async function checkFirebaseAccess(user) {
-            document.getElementById('sidebarUserEmail').innerText = user.email; // Poner el email en el menú lateral
+            document.getElementById('sidebarUserEmail').innerText = user.email; 
             
             if (window.userAccessStatus === 'pagado') return actualizarUI_Pago(); 
 
@@ -76,11 +77,12 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) { checkFirebaseAccess(user); } 
-            else { window.userAccessStatus = 'vencido'; window.location.href = '../index.html'; } // Obligar login
+            else { window.userAccessStatus = 'vencido'; window.location.href = '../index.html'; }
         });
 
-        function actualizarUI_Pago() {
+        window.actualizarUI_Pago = () => {
             const btnPagar = document.getElementById('btnSidebarPagar');
+            if (!btnPagar) return;
             if(window.userAccessStatus === 'pagado') {
                 btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>';
                 btnPagar.onclick = null;
@@ -93,9 +95,9 @@
                 btnPagar.classList.replace('text-white', 'text-amber-700');
             } else {
                 btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
-                btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); toggleSidebar(); };
+                btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
             }
-        }
+        };
     </script>
 </head>
 <body class="font-body text-slate-800 bg-background overflow-x-hidden pb-24">
@@ -120,13 +122,16 @@
         
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
             <a href="../index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <span class="text-xl">🎯</span> Ahorro Challenge
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
+                Ahorro Challenge
             </a>
             <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors">
-                <span class="text-xl">📊</span> Macro Gestión
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Macro Gestión
             </a>
             <a href="../arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <span class="text-xl">🏋️</span> Gimnasio Financiero
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Gimnasio Financiero
             </a>
             
             <hr class="border-slate-100 my-4">
@@ -224,7 +229,6 @@
         </div>
 
         <section class="space-y-4">
-            
             <div class="bg-gradient-to-br from-rose-50 to-surface border border-rose-100 rounded-3xl p-5 shadow-lg relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
                 <div class="flex justify-between items-start relative z-10">
