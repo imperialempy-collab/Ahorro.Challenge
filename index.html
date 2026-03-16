@@ -20,7 +20,6 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
-        // Esto deshabilitará el guardado manual y forzará el guardado automático de 1 vez al día.
         window.ENABLE_MANUAL_SYNC = true; 
 
         const firebaseConfig = {
@@ -55,7 +54,7 @@
             else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); }; }
         };
 
-        // --- MOTOR DE SINCRONIZACIÓN EN LA NUBE ---
+        // --- MOTOR DE SINCRONIZACIÓN EN LA NUBE (BLINDADO) ---
         window.sincronizarNube = async (manual = false) => {
             if (!auth.currentUser) return;
             if (manual && !window.ENABLE_MANUAL_SYNC) {
@@ -66,15 +65,16 @@
             try {
                 document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
 
-                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
-                const localCuentas = localStorage.getItem('mg_cuentas');
-                const localGastos = localStorage.getItem('mg_gastos');
-                const localHistorial = localStorage.getItem('mg_historial');
-                const localIngreso = localStorage.getItem('mg_ingreso');
+                const safeParse = (str) => { try { return str ? JSON.parse(str) : null; } catch(e) { return null; } };
 
                 const payload = {
-                    ahorro_data: localAhorro ? JSON.parse(localAhorro) : null,
-                    macro_data: { cuentas: localCuentas ? JSON.parse(localCuentas) : null, gastos: localGastos ? JSON.parse(localGastos) : null, historial: localHistorial ? JSON.parse(localHistorial) : null, ingreso: localIngreso || 0 },
+                    ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+                    macro_data: { 
+                        cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
+                        gastos: safeParse(localStorage.getItem('mg_gastos')), 
+                        historial: safeParse(localStorage.getItem('mg_historial')), 
+                        ingreso: localStorage.getItem('mg_ingreso') || 0 
+                    },
                     last_sync: new Date().toISOString()
                 };
 
@@ -82,60 +82,80 @@
                 await updateDoc(userRef, payload);
 
                 localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
-                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
                 
                 if (manual) mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
             } catch (error) {
                 console.error("Error sincronizando:", error);
-                if (manual) mostrarAlerta("❌ Hubo un error al guardar. Revisá tu conexión a internet.");
-                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full");
+                if (manual) mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos se guardaron localmente en tu celular.");
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
             }
         };
 
         window.verificarAutoSync = () => {
+            if (typeof window.sincronizarNube !== 'function') return;
             const lastSync = localStorage.getItem('last_cloud_sync');
             const now = new Date().getTime();
-            if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 86400000ms = 24hs
-                sincronizarNube(false);
+            if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24hs
+                window.sincronizarNube(false);
             }
         };
 
         onAuthStateChanged(auth, async (user) => {
-            const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
+            const loginScreen = document.getElementById('loginScreen'); 
+            const appContent = document.getElementById('appContent'); 
+            const loadingSpinner = document.getElementById('loadingSpinner'); 
+            const googleLoginBtn = document.getElementById('googleLoginBtn'); 
+            const loginText = document.getElementById('loginText');
+
             if (user) {
                 document.getElementById('sidebarUserEmail').innerText = user.email;
                 const userRef = doc(db, "usuarios_multimeta", user.email);
-                const docSnap = await getDoc(userRef);
+                
+                try {
+                    const docSnap = await getDoc(userRef);
 
-                if (!docSnap.exists()) {
-                    await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
-                    window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); 
-                } else {
-                    const userData = docSnap.data();
-                    window.userAccessStatus = userData.status;
-                    
-                    // DESCARGA DESDE LA NUBE AL CELULAR (Solo inyecta si existen datos)
-                    if (userData.ahorro_data) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
-                    if (userData.macro_data) {
-                        if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
-                        if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
-                        if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
-                        if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
-                    }
+                    if (!docSnap.exists()) {
+                        await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
+                        window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); 
+                    } else {
+                        const userData = docSnap.data();
+                        window.userAccessStatus = userData.status || 'prueba';
+                        
+                        // DESCARGA DESDE LA NUBE AL CELULAR SEGURO
+                        if (userData.ahorro_data) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
+                        if (userData.macro_data) {
+                            if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                            if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                            if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                            if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                        }
 
-                    window.actualizarUI_Pago();
-                    document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+                        window.actualizarUI_Pago();
+                        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
 
-                    if (userData.status === 'pagado') { loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); } 
-                    else if (userData.status === 'prueba' || userData.status === 'pendiente') {
-                        const start = new Date(userData.fechaInicio); const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
-                        if (diffDays > 7 && userData.status !== 'pendiente') {
-                            window.userAccessStatus = 'vencido'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                        if (window.userAccessStatus === 'pagado') { 
+                            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); 
+                        } else if (window.userAccessStatus === 'vencido') {
+                            loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
-                            if (userData.status !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
-                            loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); initApp();
+                            const start = new Date(userData.fechaInicio || new Date()); 
+                            const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                            
+                            if (diffDays > 7 && window.userAccessStatus !== 'pendiente') {
+                                window.userAccessStatus = 'vencido'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                            } else {
+                                if (window.userAccessStatus !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
+                                loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); initApp();
+                            }
                         }
                     }
+                } catch (error) {
+                    console.error("Modo Offline activado:", error);
+                    // Si no hay internet o falla, abre la app en modo local
+                    loginScreen.classList.add('hidden');
+                    appContent.classList.remove('hidden');
+                    initApp();
                 }
             } else {
                 loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden');
@@ -159,7 +179,7 @@
 </head>
 <body class="font-body text-slate-800">
 
-    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="space-y-2"><a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Activar Acceso Ilimitado 👑</a><button id="btnProbarGratis" onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Seguir probando gratis</button></div></div></div>
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100 transform transition-all scale-100"><img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="space-y-2"><a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Activar Acceso Ilimitado 👑</a><button id="btnProbarGratis" onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Seguir probando gratis</button></div></div></div>
     <div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md"><div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100"><div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-3xl">⏳</span></div><h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2><p class="text-slate-600 text-sm mb-6 leading-relaxed">Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**</p><div class="space-y-3"><a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>Pagar por Transferencia (WhatsApp)</a></div><button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">Cerrar sesión</button></div></div>
 
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden transition-opacity" onclick="toggleSidebar()"></div>
@@ -179,13 +199,12 @@
                 </button>
             </div>
         </div>
-        
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
             <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>Ahorro Challenge</a>
             <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>Macro Gestión</a>
             <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Gimnasio Financiero</a>
             <hr class="border-slate-100 my-4">
-            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
+            <button id="btnSidebarPagar" onclick="abrirPaywall()" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
         </div>
         <div class="p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Cerrar Sesión</button>
@@ -203,33 +222,15 @@
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col gap-3">
-                
                 <div class="relative flex items-center justify-center w-full">
-                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    
-                    <div class="text-center">
-                        <h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1>
-                        <div class="flex gap-2 mt-1 justify-center">
-                            <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button>
-                            <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button>
-                        </div>
-                    </div>
+                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <div class="text-center"><h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1><div class="flex gap-2 mt-1 justify-center"><button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button><button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button></div></div>
                 </div>
-
                 <div class="flex justify-center gap-3">
-                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    </button>
-                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Compartir Reto">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                    </button>
+                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg></button>
+                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Compartir Reto"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg></button>
                 </div>
-
                 <div class="flex items-center gap-2 md:gap-4 bg-white/50 p-2 md:p-3 rounded-2xl border border-white shadow-sm w-full">
                     <div class="relative w-10 h-10 md:w-12 md:h-12 shrink-0">
                         <svg class="w-full h-full transform -rotate-90">
@@ -244,7 +245,6 @@
                         <div class="text-[9px] md:text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -259,7 +259,6 @@
                         <div id="participantList" class="space-y-1"></div>
                     </div>
                 </aside>
-
                 <main class="lg:col-span-3">
                     <div id="goalsList" class="space-y-2"></div>
                 </main>
@@ -268,18 +267,43 @@
     </div>
 
     <script>
+        // Funciones UI Generales
+        window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
+        window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
+        window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
+        window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia."); mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
+
+        // --- LÓGICA DE AHORRO MULTIMETA ---
         const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
         let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
         
         function save() { 
-            localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
-            // Ponemos el puntito en ROJO para indicar que hay cambios locales
-            document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
-            verificarAutoSync(); 
+            try {
+                localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+                if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync(); 
+            } catch (e) { console.error("Error guardando localmente:", e); }
         }
 
-        function load() { const saved = localStorage.getItem(DB_KEY); if (saved) { const p = JSON.parse(saved); if (p.config && (!p.goals || p.goals.length === 0)) { goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; participantGoals = {}; (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); } else { goals = p.goals || goals; participantGoals = p.participantGoals || {}; } participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; } updateGoalDropdown(); }
+        function load() { 
+            try {
+                const saved = localStorage.getItem(DB_KEY); 
+                if (saved) { 
+                    const p = JSON.parse(saved); 
+                    if (p.config && (!p.goals || p.goals.length === 0)) { 
+                        goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
+                        participantGoals = {}; 
+                        (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
+                    } else { 
+                        goals = p.goals || goals; 
+                        participantGoals = p.participantGoals || {}; 
+                    } 
+                    participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
+                } 
+            } catch (e) { console.error("Cache corrupto, cargando datos vacios", e); }
+            updateGoalDropdown(); 
+        }
         
         window.openAddParticipantModal = () => { document.getElementById('newParticipantInput').value = ''; updateGoalDropdown(); document.getElementById('addParticipantModal').classList.remove('hidden'); setTimeout(() => document.getElementById('newParticipantInput').focus(), 100); };
         window.closeAddParticipantModal = () => { document.getElementById('addParticipantModal').classList.add('hidden'); };
@@ -302,7 +326,7 @@
         window.deleteParticipant = async (n) => { const seguro = await mostrarConfirm(`¿Seguro querés eliminar a ${n} y todo su progreso?`); if (seguro) { participants = participants.filter(p => p !== n); if (userProgress[n]) delete userProgress[n]; if (userSchedules[n]) delete userSchedules[n]; if (participantGoals[n]) delete participantGoals[n]; if (userReminders[n]) delete userReminders[n]; if (activeParticipant === n) { activeParticipant = participants.length > 0 ? participants[0] : ""; } save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); } };
         window.setActiveParticipant = (n) => { activeParticipant = n; statsView = 'INDIVIDUAL'; save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); };
         window.setStatsView = (v) => { statsView = v; updateStats(); updateViewButtons(); renderGoals(); };
-        function updateViewButtons() { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; } }
+        function updateViewButtons() { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-active"; indBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-inactive"; indBtn.className = "px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all btn-view-active"; } }
         window.toggle = (semanaNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum); if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); recalculateRemaining(activeParticipant); } else { const montoOriginal = userSchedules[activeParticipant][semanaNum - 1]; const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d }); } save(); renderGoals(); updateStats(); };
         window.promptManual = async (semNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const previsto = userSchedules[activeParticipant][semNum - 1]; const val = await mostrarPrompt("Ingresá el monto real:", previsto, "number"); if (val !== null && val !== "") { const num = parseInt(val.toString().replace(/\D/g,'')); if (num > 0) { const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum); const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; } else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); } recalculateRemaining(activeParticipant); save(); renderGoals(); updateStats(); } } };
         function updateStats() { let totalGeneral = 0; Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado)); const strokeVal = 113; if (statsView === 'COLECTIVO') { document.getElementById('statsTitle').innerText = "Gran Total Colectivo"; document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`; let totalObjetivoGlobal = 0; participants.forEach(p => { totalObjetivoGlobal += getGoalForUser(p).amount; }); const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral); } else { if(!activeParticipant) { document.getElementById('statsTitle').innerText = "Ahorro de -"; document.getElementById('metaLabel').innerText = "Sin meta"; document.getElementById('progressPercentage').innerText = "0%"; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal; document.getElementById('totalSavedCounter').innerText = "0 Gs."; return; } const userGoal = getGoalForUser(activeParticipant); const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0); document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`; const falta = userGoal.amount - miTotal; document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!"; const p = (miTotal / userGoal.amount) * 100; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal); } }
