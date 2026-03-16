@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="google" content="notranslate">
     <meta name="robots" content="notranslate">
+    <meta name="color-scheme" content="light">
+    
     <title>Ahorro Challenge - MultiMeta</title>
+    
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
@@ -29,83 +33,154 @@
         const db = getFirestore(app); 
         const provider = new GoogleAuthProvider();
 
-        window.userAccessStatus = 'prueba';
+        window.mostrarAlerta = (mensaje) => {
+            document.getElementById('customAlertMessage').innerText = mensaje;
+            document.getElementById('customAlert').classList.remove('hidden');
+        };
 
-        window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
-        window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
-        window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
-        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
+        window.closeCustomAlert = () => {
+            document.getElementById('customAlert').classList.add('hidden');
+        };
+
+        window.mostrarConfirm = (mensaje) => {
+            return new Promise((resolve) => {
+                document.getElementById('customConfirmMessage').innerText = mensaje;
+                const modal = document.getElementById('customConfirm');
+                const btnOk = document.getElementById('btnConfirmOk');
+                const btnCancel = document.getElementById('btnConfirmCancel');
+
+                const cleanUp = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => { cleanUp(); resolve(true); };
+                btnCancel.onclick = () => { cleanUp(); resolve(false); };
+
+                modal.classList.remove('hidden');
+            });
+        };
+
+        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => {
+            return new Promise((resolve) => {
+                document.getElementById('customPromptMessage').innerText = mensaje;
+                const input = document.getElementById('customPromptInput');
+                
+                input.type = tipoInput === 'number' ? 'text' : tipoInput;
+                input.inputMode = tipoInput === 'number' ? 'numeric' : 'text';
+                
+                const formatNumber = (e) => {
+                    if (tipoInput === 'number') {
+                        let val = e.target.value.replace(/\D/g, '');
+                        e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
+                    }
+                };
+                
+                input.oninput = formatNumber;
+                
+                if (tipoInput === 'number' && valorPorDefecto !== '') {
+                    let val = valorPorDefecto.toString().replace(/\D/g, '');
+                    input.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
+                } else {
+                    input.value = valorPorDefecto;
+                }
+
+                const modal = document.getElementById('customPrompt');
+                const btnOk = document.getElementById('btnPromptOk');
+                const btnCancel = document.getElementById('btnPromptCancel');
+
+                const cleanUp = () => {
+                    modal.classList.add('hidden');
+                    btnOk.onclick = null;
+                    btnCancel.onclick = null;
+                };
+
+                btnOk.onclick = () => { cleanUp(); resolve(input.value); };
+                btnCancel.onclick = () => { cleanUp(); resolve(null); };
+
+                modal.classList.remove('hidden');
+                input.focus();
+            });
+        };
         
-        window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { mostrarAlerta("Error al entrar: " + error.message); } }); };
-        window.logout = () => { signOut(auth).then(() => location.reload()); };
+        window.login = () => {
+            signInWithPopup(auth, provider).catch(error => {
+                if (error.code === 'auth/user-disabled') {
+                    document.getElementById('btnProbarGratis').classList.add('hidden');
+                    mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
+                } else {
+                    document.getElementById('btnProbarGratis').classList.remove('hidden');
+                    mostrarAlerta("Error al entrar: " + error.message);
+                }
+            });
+        };
+
+        window.logout = () => {
+            signOut(auth).then(() => location.reload());
+        };
 
         onAuthStateChanged(auth, async (user) => {
             const loginScreen = document.getElementById('loginScreen');
             const appContent = document.getElementById('appContent');
             const loadingSpinner = document.getElementById('loadingSpinner');
             const googleLoginBtn = document.getElementById('googleLoginBtn');
+            const loginText = document.getElementById('loginText');
 
             if (user) {
-                document.getElementById('sidebarUserEmail').innerText = user.email;
                 const userRef = doc(db, "usuarios_multimeta", user.email);
                 const docSnap = await getDoc(userRef);
 
                 if (!docSnap.exists()) {
-                    await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
-                    window.userAccessStatus = 'prueba';
-                    actualizarUI_Pago();
-                    loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); 
+                    await setDoc(userRef, {
+                        email: user.email,
+                        status: 'prueba',
+                        fechaInicio: new Date().toISOString()
+                    });
+                    loginScreen.classList.add('hidden');
+                    appContent.classList.remove('hidden');
+                    initApp(); 
                 } else {
                     const userData = docSnap.data();
-                    window.userAccessStatus = userData.status;
-                    actualizarUI_Pago();
-
                     if (userData.status === 'pagado') {
-                        loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp();
-                    } else if (userData.status === 'prueba' || userData.status === 'pendiente') {
+                        loginScreen.classList.add('hidden');
+                        appContent.classList.remove('hidden');
+                        initApp();
+                    } else if (userData.status === 'prueba') {
                         const start = new Date(userData.fechaInicio);
-                        const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+                        const now = new Date();
+                        const diffTime = Math.abs(now - start);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                        if (diffDays > 7 && userData.status !== 'pendiente') {
-                            window.userAccessStatus = 'vencido';
-                            actualizarUI_Pago();
-                            loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); 
-                            document.getElementById('paywallScreen').classList.remove('hidden');
+                        if (diffDays > 7) {
+                            loginScreen.classList.add('hidden');
+                            appContent.classList.add('hidden');
+                            document.getElementById('upgradeScreen').classList.remove('hidden');
                         } else {
-                            if (userData.status !== 'pendiente') mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`);
-                            loginScreen.classList.add('hidden'); document.getElementById('paywallScreen').classList.add('hidden'); appContent.classList.remove('hidden'); initApp();
+                            document.getElementById('btnProbarGratis').classList.remove('hidden');
+                            mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis. Aprovechá para organizar tus metas.`);
+                            loginScreen.classList.add('hidden');
+                            document.getElementById('upgradeScreen').classList.add('hidden');
+                            appContent.classList.remove('hidden');
+                            initApp();
                         }
                     }
                 }
             } else {
-                loginScreen.classList.remove('hidden'); appContent.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+                appContent.classList.add('hidden');
                 if (loadingSpinner) loadingSpinner.classList.add('hidden');
                 if (googleLoginBtn) googleLoginBtn.classList.remove('hidden');
+                if (loginText) loginText.classList.remove('hidden');
             }
         });
-
-        function actualizarUI_Pago() {
-            const btnPagar = document.getElementById('btnSidebarPagar');
-            if(window.userAccessStatus === 'pagado') {
-                btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>';
-                btnPagar.onclick = null;
-                btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50');
-                btnPagar.classList.replace('text-white', 'text-emerald-700');
-            } else if (window.userAccessStatus === 'pendiente') {
-                btnPagar.innerHTML = 'Pago en revisión ⏳';
-                btnPagar.onclick = null;
-                btnPagar.classList.replace('bg-slate-900', 'bg-amber-100');
-                btnPagar.classList.replace('text-white', 'text-amber-700');
-            } else {
-                btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
-                btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); toggleSidebar(); };
-            }
-        }
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script> tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } } </script>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+    </script>
     <style>
         body { background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); min-height: 100vh; }
         .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
@@ -119,66 +194,184 @@
 </head>
 <body class="font-body text-slate-800">
 
-    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden transition-opacity" onclick="toggleSidebar()"></div>
-    <div id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-[100] flex flex-col border-r border-slate-100">
-        <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-            <div>
-                <h2 class="font-display font-black text-sm text-slate-400 uppercase tracking-widest">Cuenta</h2>
-                <p id="sidebarUserEmail" class="text-xs text-slate-800 font-bold truncate max-w-[150px]">usuario@mail.com</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button class="relative p-1.5 bg-white rounded-full text-slate-400 shadow-sm border border-slate-200" title="Sincronización a la nube">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
-                    <span class="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
-                </button>
-                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-rose-500 bg-white p-1 rounded-lg border border-slate-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100 transform transition-all scale-100">
+            <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
+            <div class="space-y-2">
+                <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">
+                    Activar Acceso Ilimitado 👑
+                </a>
+                <button id="btnProbarGratis" onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">
+                    Seguir probando gratis
                 </button>
             </div>
         </div>
-        
-        <div class="flex-grow p-4 space-y-2 overflow-y-auto">
-            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors">
-                <span class="text-xl">🎯</span> Ahorro Challenge
-            </a>
-            <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <span class="text-xl">📊</span> Macro Gestión
-            </a>
-            <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <span class="text-xl">🏋️</span> Gimnasio Financiero
-            </a>
-            
-            <hr class="border-slate-100 my-4">
-            
-            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">
-                Activar Acceso Ilimitado 👑
-            </button>
-        </div>
-        
-        <div class="p-4 border-t border-slate-100 bg-slate-50">
-            <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                Cerrar Sesión
+    </div>
+
+    <div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100">
+            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl">⏳</span>
+            </div>
+            <h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso de por vida por un **único pago de 20.000 Gs.**
+            </p>
+            <div class="space-y-3">
+                <a href="https://wa.me/595992049430?text=Hola,%20probe%20la%20app%20AhorroChallenge%20y%20quiero%20activar%20mi%20acceso%20ilimitado!!" target="_blank" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    Pagar por Transferencia (WhatsApp)
+                </a>
+            </div>
+            <button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">
+                Cerrar sesión
             </button>
         </div>
     </div>
 
-    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div>
+    <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
+            <p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p>
+            <input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            <div class="flex gap-3">
+                <button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100">
+            <h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3>
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label>
+                    <input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label>
+                    <select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
+                <button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col">
+            <div class="flex justify-between items-center mb-6 shrink-0">
+                <h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3>
+                <button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+                Nueva Meta
+            </button>
+
+            <div id="goalsAdminList" class="space-y-3 mb-6"></div>
+
+            <button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+    <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3>
+                <button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tipo de Aviso</label>
+                    <select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                        <option value="semanal">Semanal (Día de la semana)</option>
+                        <option value="mensual">Mensual (Día del mes)</option>
+                    </select>
+                </div>
+
+                <div id="weeklyOptions">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día de la semana</label>
+                    <select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                        <option value="Lunes">Todos los Lunes</option>
+                        <option value="Martes">Todos los Martes</option>
+                        <option value="Miércoles">Todos los Miércoles</option>
+                        <option value="Jueves">Todos los Jueves</option>
+                        <option value="Viernes">Todos los Viernes</option>
+                        <option value="Sábado">Todos los Sábados</option>
+                        <option value="Domingo">Todos los Domingos</option>
+                    </select>
+                </div>
+
+                <div id="monthlyOptions" class="hidden">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día del Mes</label>
+                    <input type="number" id="reminderDate" placeholder="Ej: 5" min="1" max="31" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Hora</label>
+                    <input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium">
+                </div>
+
+                <button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
+                    Abrir Calendario
+                </button>
+            </div>
+        </div>
+    </div>
     
-    <div id="paywallScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md"><div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100 relative"><button onclick="cerrarPaywall()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button><div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div><h2 class="text-2xl font-display font-black text-slate-900 mb-2">Acceso Ilimitado</h2><p class="text-slate-600 text-sm mb-6 leading-relaxed">Activá tu cuenta de por vida por un **único pago de 20.000 Gs.** Transferí a los siguientes datos y subí tu comprobante:</p><div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-left text-sm text-slate-700 mb-6 font-medium"><p>🏦 Banco: <b>Ueno Bank</b></p><p>👤 Titular: <b>Axel</b></p><p>💳 CI/RUC: <b>1234567</b></p><p>🔢 Cuenta: <b>000111222</b></p></div><div class="space-y-3"><input type="file" id="comprobanteInput" accept="image/*,application/pdf" class="hidden" onchange="mostrarNombreArchivo()"><button onclick="document.getElementById('comprobanteInput').click()" class="w-full flex items-center justify-center gap-2 py-4 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-200 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span id="txtArchivo">1. Elegir Comprobante</span></button><button onclick="enviarComprobante()" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">2. Enviar y Activar</button></div></div></div>
-
-    <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 shadow-md">Aceptar</button></div></div></div>
-    <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p><input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary"><div class="flex gap-3"><button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancelar</button><button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 shadow-md">Aceptar</button></div></div></div>
-    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3><div class="space-y-4 mb-6"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label><input type="text" id="newParticipantInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta</label><select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"></select></div></div><div class="flex gap-3"><button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancelar</button><button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 shadow-md">Agregar</button></div></div></div>
-    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col"><div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3><button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500">✕</button></div><button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold flex justify-center gap-2">Nueva Meta</button><div id="goalsAdminList" class="space-y-3 mb-6"></div><button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold mt-auto">Aceptar</button></div></div>
-    <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3><button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500">✕</button></div><div class="space-y-4"><div><select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="semanal">Semanal</option><option value="mensual">Mensual</option></select></div><div id="weeklyOptions"><select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="Lunes">Lunes</option><option value="Martes">Martes</option><option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option><option value="Viernes">Viernes</option><option value="Sábado">Sábado</option><option value="Domingo">Domingo</option></select></div><div id="monthlyOptions" class="hidden"><input type="number" id="reminderDate" placeholder="Ej: 5" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary font-medium"></div><button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold shadow-md">Abrir Calendario</button></div></div></div>
-
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
             <img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover">
-            <h1 class="text-3xl font-display font-black text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
-            <div id="loadingSpinner" class="flex justify-center py-4 mb-4"><svg class="animate-spin h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
-            <button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 font-bold text-slate-700 shadow-sm"><svg class="w-6 h-6" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg> Entrar con Google</button>
+            <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1>
+            
+            <p id="loginText" class="hidden text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p>
+            
+            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4">
+                <svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm">
+                <svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    <path fill="none" d="M0 0h48v48H0z"/>
+                </svg>
+                Entrar con Google
+            </button>
         </div>
     </div>
 
@@ -201,14 +394,14 @@
                 </div>
 
                 <div class="flex justify-center gap-3">
-                    <button id="btnCampanita" onclick="openReminderModal()" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Configurar Alarma">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                     </button>
-                    <button onclick="openGoalsModal()" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Gestor de Metas">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </button>
-                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Compartir Reto">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Compartir Reto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
                     </button>
                 </div>
 
@@ -259,20 +452,30 @@
         };
 
         window.cerrarPaywall = () => {
-            if(window.userAccessStatus === 'vencido') { mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } 
-            else { document.getElementById('paywallScreen').classList.add('hidden'); }
+            if(window.userAccessStatus === 'vencido') {
+                mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso.");
+            } else {
+                document.getElementById('paywallScreen').classList.add('hidden');
+            }
         };
 
-        window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
+        window.mostrarNombreArchivo = () => {
+            const input = document.getElementById('comprobanteInput');
+            if(input.files.length > 0) {
+                document.getElementById('txtArchivo').innerText = input.files[0].name;
+            }
+        };
 
         window.enviarComprobante = () => {
             const input = document.getElementById('comprobanteInput');
             if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia.");
             mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve.");
-            window.userAccessStatus = 'pendiente'; actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden');
+            window.userAccessStatus = 'pendiente';
+            actualizarUI_Pago();
+            document.getElementById('paywallScreen').classList.add('hidden');
         };
 
-        // --- LÓGICA DE AHORRO MULTIMETA (MANTENIDA INTACTA) ---
+        // --- LÓGICA DE AHORRO MULTIMETA (INTACTA) ---
         const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
         let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
         const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
