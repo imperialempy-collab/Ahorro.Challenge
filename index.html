@@ -29,55 +29,14 @@
         const db = getFirestore(app); 
         const provider = new GoogleAuthProvider();
 
-        window.userAccessStatus = 'prueba'; // Variable global para el sidebar
+        window.userAccessStatus = 'prueba';
 
-        window.mostrarAlerta = (mensaje) => {
-            document.getElementById('customAlertMessage').innerText = mensaje;
-            document.getElementById('customAlert').classList.remove('hidden');
-        };
+        window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
         window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
-
-        window.mostrarConfirm = (mensaje) => {
-            return new Promise((resolve) => {
-                document.getElementById('customConfirmMessage').innerText = mensaje;
-                const modal = document.getElementById('customConfirm');
-                const btnOk = document.getElementById('btnConfirmOk');
-                const btnCancel = document.getElementById('btnConfirmCancel');
-                const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; };
-                btnOk.onclick = () => { cleanUp(); resolve(true); };
-                btnCancel.onclick = () => { cleanUp(); resolve(false); };
-                modal.classList.remove('hidden');
-            });
-        };
-
-        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => {
-            return new Promise((resolve) => {
-                document.getElementById('customPromptMessage').innerText = mensaje;
-                const input = document.getElementById('customPromptInput');
-                input.type = tipoInput === 'number' ? 'text' : tipoInput;
-                input.inputMode = tipoInput === 'number' ? 'numeric' : 'text';
-                const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } };
-                input.oninput = formatNumber;
-                if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; }
-                const modal = document.getElementById('customPrompt');
-                const btnOk = document.getElementById('btnPromptOk');
-                const btnCancel = document.getElementById('btnPromptCancel');
-                const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; };
-                btnOk.onclick = () => { cleanUp(); resolve(input.value); };
-                btnCancel.onclick = () => { cleanUp(); resolve(null); };
-                modal.classList.remove('hidden');
-                input.focus();
-            });
-        };
+        window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
+        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
         
-        window.login = () => {
-            signInWithPopup(auth, provider).catch(error => {
-                if (error.code === 'auth/user-disabled') {
-                    mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
-                } else { mostrarAlerta("Error al entrar: " + error.message); }
-            });
-        };
-
+        window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { mostrarAlerta("Error al entrar: " + error.message); } }); };
         window.logout = () => { signOut(auth).then(() => location.reload()); };
 
         onAuthStateChanged(auth, async (user) => {
@@ -125,7 +84,6 @@
             }
         });
 
-        // Actualiza el botón del sidebar según el estado
         function actualizarUI_Pago() {
             const btnPagar = document.getElementById('btnSidebarPagar');
             if(window.userAccessStatus === 'pagado') {
@@ -165,29 +123,38 @@
     <div id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-[100] flex flex-col border-r border-slate-100">
         <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <div>
-                <h2 class="font-display font-black text-xl text-slate-900">Ahorro<span class="text-primary">App</span></h2>
-                <p id="sidebarUserEmail" class="text-xs text-slate-500 font-medium truncate max-w-[180px]">usuario@mail.com</p>
+                <h2 class="font-display font-black text-sm text-slate-400 uppercase tracking-widest">Cuenta</h2>
+                <p id="sidebarUserEmail" class="text-xs text-slate-800 font-bold truncate max-w-[150px]">usuario@mail.com</p>
             </div>
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-rose-500 bg-white p-1.5 rounded-lg border border-slate-200">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            <div class="flex items-center gap-2">
+                <button class="relative p-1.5 bg-white rounded-full text-slate-400 shadow-sm border border-slate-200" title="Sincronización a la nube">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
+                    <span class="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
+                </button>
+                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-rose-500 bg-white p-1 rounded-lg border border-slate-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
         </div>
+        
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-2">Módulos</p>
             <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors">
-                <span class="text-xl">🏋️</span> Gimnasio Financiero
+                <span class="text-xl">🎯</span> Ahorro Challenge
             </a>
             <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
                 <span class="text-xl">📊</span> Macro Gestión
             </a>
+            <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
+                <span class="text-xl">🏋️</span> Gimnasio Financiero
+            </a>
             
-            <div class="mt-8 pt-6 border-t border-slate-100">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2 mb-2">Mi Cuenta</p>
-                <button id="btnSidebarPagar" class="w-full mb-3 p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">
-                    Activar Acceso Ilimitado 👑
-                </button>
-            </div>
+            <hr class="border-slate-100 my-4">
+            
+            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">
+                Activar Acceso Ilimitado 👑
+            </button>
         </div>
+        
         <div class="p-4 border-t border-slate-100 bg-slate-50">
             <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -196,42 +163,9 @@
         </div>
     </div>
 
-    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100">
-            <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
-            <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
-            <button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button>
-        </div>
-    </div>
-
-    <div id="paywallScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100 relative">
-            <button onclick="cerrarPaywall()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
-            <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            </div>
-            <h2 class="text-2xl font-display font-black text-slate-900 mb-2">Acceso Ilimitado</h2>
-            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
-                Activá tu cuenta de por vida por un **único pago de 20.000 Gs.** Transferí a los siguientes datos y subí tu comprobante:
-            </p>
-            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-left text-sm text-slate-700 mb-6 font-medium">
-                <p>🏦 Banco: <b>Ueno Bank</b></p>
-                <p>👤 Titular: <b>Axel</b></p>
-                <p>💳 CI/RUC: <b>1234567</b></p>
-                <p>🔢 Cuenta: <b>000111222</b></p>
-            </div>
-            <div class="space-y-3">
-                <input type="file" id="comprobanteInput" accept="image/*,application/pdf" class="hidden" onchange="mostrarNombreArchivo()">
-                <button onclick="document.getElementById('comprobanteInput').click()" class="w-full flex items-center justify-center gap-2 py-4 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-200 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                    <span id="txtArchivo">1. Elegir Comprobante</span>
-                </button>
-                <button onclick="enviarComprobante()" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
-                    2. Enviar y Activar
-                </button>
-            </div>
-        </div>
-    </div>
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div>
+    
+    <div id="paywallScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md"><div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100 relative"><button onclick="cerrarPaywall()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button><div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4 text-emerald-500"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div><h2 class="text-2xl font-display font-black text-slate-900 mb-2">Acceso Ilimitado</h2><p class="text-slate-600 text-sm mb-6 leading-relaxed">Activá tu cuenta de por vida por un **único pago de 20.000 Gs.** Transferí a los siguientes datos y subí tu comprobante:</p><div class="bg-slate-50 border border-slate-200 p-4 rounded-xl text-left text-sm text-slate-700 mb-6 font-medium"><p>🏦 Banco: <b>Ueno Bank</b></p><p>👤 Titular: <b>Axel</b></p><p>💳 CI/RUC: <b>1234567</b></p><p>🔢 Cuenta: <b>000111222</b></p></div><div class="space-y-3"><input type="file" id="comprobanteInput" accept="image/*,application/pdf" class="hidden" onchange="mostrarNombreArchivo()"><button onclick="document.getElementById('comprobanteInput').click()" class="w-full flex items-center justify-center gap-2 py-4 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-bold hover:bg-slate-200 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg><span id="txtArchivo">1. Elegir Comprobante</span></button><button onclick="enviarComprobante()" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">2. Enviar y Activar</button></div></div></div>
 
     <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 shadow-md">Aceptar</button></div></div></div>
     <div id="customPrompt" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p><input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary"><div class="flex gap-3"><button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancelar</button><button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 shadow-md">Aceptar</button></div></div></div>
@@ -250,22 +184,35 @@
 
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
-            <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="max-w-6xl mx-auto flex flex-col gap-3">
                 
-                <div class="w-full md:w-auto text-center md:text-left flex items-center justify-between md:justify-start gap-4">
-                    <button onclick="toggleSidebar()" class="p-2 -ml-2 text-slate-500 hover:text-primary transition-colors">
+                <div class="relative flex items-center justify-center w-full">
+                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
-                    <div>
-                        <h1 class="text-xl md:text-2xl font-display font-black text-slate-900 tracking-tight">Gimnasio <span class="text-primary uppercase">Financiero</span></h1>
-                        <div class="flex gap-2 mt-1 justify-start">
+                    
+                    <div class="text-center">
+                        <h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1>
+                        <div class="flex gap-2 mt-1 justify-center">
                             <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button>
                             <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2 md:gap-4 bg-white/50 p-2 md:p-3 rounded-2xl border border-white shadow-sm min-w-[280px]">
+                <div class="flex justify-center gap-3">
+                    <button id="btnCampanita" onclick="openReminderModal()" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Configurar Alarma">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    </button>
+                    <button onclick="openGoalsModal()" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Gestor de Metas">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-2 bg-slate-100/80 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Compartir Reto">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 md:gap-4 bg-white/50 p-2 md:p-3 rounded-2xl border border-white shadow-sm w-full">
                     <div class="relative w-10 h-10 md:w-12 md:h-12 shrink-0">
                         <svg class="w-full h-full transform -rotate-90">
                             <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
@@ -278,23 +225,8 @@
                         <div class="text-base md:text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
                         <div class="text-[9px] md:text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
                     </div>
-                    
-                    <button class="relative p-2 bg-slate-50 rounded-full text-slate-400" title="Sincronización a la nube">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
-                    </button>
-
-                    <button onclick="openReminderModal()" class="p-2 bg-amber-50 rounded-full hover:bg-amber-100 text-amber-500 transition-colors" title="Configurar Alarma">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    </button>
-                    <button onclick="openGoalsModal()" class="p-2 bg-slate-100 rounded-full hover:bg-slate-200 text-slate-500 transition-colors" title="Gestor de Metas">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    
-                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-2 bg-blue-50 rounded-full hover:bg-blue-100 text-blue-500 transition-colors" title="Compartir Reto">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"></path></svg>
-                    </button>
                 </div>
+
             </div>
         </div>
 
@@ -326,30 +258,18 @@
             else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); }
         };
 
-        // Lógica Visual Subida Archivo (Fase 1)
         window.cerrarPaywall = () => {
-            if(window.userAccessStatus === 'vencido') {
-                mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso.");
-            } else {
-                document.getElementById('paywallScreen').classList.add('hidden');
-            }
+            if(window.userAccessStatus === 'vencido') { mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } 
+            else { document.getElementById('paywallScreen').classList.add('hidden'); }
         };
 
-        window.mostrarNombreArchivo = () => {
-            const input = document.getElementById('comprobanteInput');
-            if(input.files.length > 0) {
-                document.getElementById('txtArchivo').innerText = input.files[0].name;
-            }
-        };
+        window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
 
         window.enviarComprobante = () => {
             const input = document.getElementById('comprobanteInput');
             if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia.");
-            // Aquí en Fase 3 irá Firebase Storage
             mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve.");
-            window.userAccessStatus = 'pendiente';
-            actualizarUI_Pago();
-            document.getElementById('paywallScreen').classList.add('hidden');
+            window.userAccessStatus = 'pendiente'; actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden');
         };
 
         // --- LÓGICA DE AHORRO MULTIMETA (MANTENIDA INTACTA) ---
