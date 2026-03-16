@@ -65,7 +65,7 @@
             try {
                 document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
 
-                const safeParse = (str) => { try { return str ? JSON.parse(str) : null; } catch(e) { return null; } };
+                const safeParse = (str) => { try { return (str && str !== "null") ? JSON.parse(str) : null; } catch(e) { return null; } };
 
                 const payload = {
                     ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
@@ -122,8 +122,10 @@
                         const userData = docSnap.data();
                         window.userAccessStatus = userData.status || 'prueba';
                         
-                        // DESCARGA DESDE LA NUBE AL CELULAR SEGURO
-                        if (userData.ahorro_data) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
+                        // DESCARGA DESDE LA NUBE AL CELULAR (CON ESCUDO ANTI-NULL)
+                        if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
+                            localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
+                        }
                         if (userData.macro_data) {
                             if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
                             if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
@@ -151,8 +153,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error("Modo Offline activado:", error);
-                    // Si no hay internet o falla, abre la app en modo local
+                    console.error("Modo Offline activado o Error:", error);
                     loginScreen.classList.add('hidden');
                     appContent.classList.remove('hidden');
                     initApp();
@@ -199,6 +200,7 @@
                 </button>
             </div>
         </div>
+        
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
             <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>Ahorro Challenge</a>
             <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>Macro Gestión</a>
@@ -286,22 +288,25 @@
             } catch (e) { console.error("Error guardando localmente:", e); }
         }
 
+        // EL ESCUDO CONTRA EL ERROR "NULL" ESTÁ AQUÍ
         function load() { 
             try {
                 const saved = localStorage.getItem(DB_KEY); 
-                if (saved) { 
+                if (saved && saved !== "null") { 
                     const p = JSON.parse(saved); 
-                    if (p.config && (!p.goals || p.goals.length === 0)) { 
-                        goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
-                        participantGoals = {}; 
-                        (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
-                    } else { 
-                        goals = p.goals || goals; 
-                        participantGoals = p.participantGoals || {}; 
-                    } 
-                    participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
+                    if (p) { 
+                        if (p.config && (!p.goals || p.goals.length === 0)) { 
+                            goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
+                            participantGoals = {}; 
+                            (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
+                        } else { 
+                            goals = p.goals || goals; 
+                            participantGoals = p.participantGoals || {}; 
+                        } 
+                        participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
+                    }
                 } 
-            } catch (e) { console.error("Cache corrupto, cargando datos vacios", e); }
+            } catch (e) { console.error("Cache ignorado por seguridad", e); }
             updateGoalDropdown(); 
         }
         
