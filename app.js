@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
+// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita bloquear el botón manual
 window.ENABLE_MANUAL_SYNC = true; 
 
 const firebaseConfig = {
@@ -21,13 +21,13 @@ const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
 
-// --- UTILIDADES GLOBALES (Modales y Alertas) ---
+// --- UTILIDADES GLOBALES ---
 window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
-// --- LÓGICA DE AUTENTICACIÓN Y ESTADO DE PAGO ---
+// --- LÓGICA DE AUTENTICACIÓN ---
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { document.getElementById('btnProbarGratis').classList.add('hidden'); window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 window.logout = () => { signOut(auth).then(() => location.reload()); };
 
@@ -39,15 +39,16 @@ window.actualizarUI_Pago = () => {
     else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); }; }
 };
 
-// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE (BLINDADO) ---
+// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.mostrarAlerta("La actualización manual está desactivada temporalmente. Tus datos se respaldarán automáticamente una vez al día para optimizar la red.");
+        window.mostrarAlerta("La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día.");
         return;
     }
 
     try {
+        // Animación de subiendo (Amarillo)
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
 
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
@@ -67,12 +68,14 @@ window.sincronizarNube = async (manual = false) => {
         await updateDoc(userRef, payload);
 
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        // Volvemos a Verde
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
         
         if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
     } catch (error) {
         console.error("Error sincronizando:", error);
-        if (manual) window.mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos se guardaron localmente en tu celular.");
+        if (manual) window.mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos están seguros en tu celular.");
+        // Si falla, lo dejamos en rojo para que sepa que no se subió
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
     }
 };
@@ -81,11 +84,12 @@ window.verificarAutoSync = () => {
     if (typeof window.sincronizarNube !== 'function') return;
     const lastSync = localStorage.getItem('last_cloud_sync');
     const now = new Date().getTime();
-    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24hs
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24 horas (86400000 ms)
         window.sincronizarNube(false);
     }
 };
 
+// --- AUTENTICACIÓN OFFLINE-FIRST ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
@@ -104,17 +108,15 @@ onAuthStateChanged(auth, async (user) => {
                 window.userAccessStatus = userData.status || 'prueba';
                 
                 // --- BARRERA OFFLINE-FIRST ---
-                // Leemos si el celular ya tiene datos
+                // Si el celular ya tiene datos de Ahorro, IGNORA a Firebase para no aplastar tu trabajo local.
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
                 
-                // Si el celular NO tiene datos, y Firebase SÍ tiene, descargamos. Si el celular ya tiene, ignoramos Firebase.
-                if (!hasLocalAhorro) {
-                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
-                        localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
-                    }
+                if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
+                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
                 }
                 
+                // Lo mismo para Macro Gestión
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
                     if (userData.macro_data) {
@@ -145,7 +147,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } catch (error) {
-            console.error("Error al cargar desde la nube. Iniciando en Modo Local Seguro:", error);
+            console.error("Error cargando de la nube. Iniciando Offline Seguro:", error);
             loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
         }
     } else {
@@ -167,10 +169,10 @@ const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0
 window.save = () => { 
     try {
         localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
-        // Cambia el puntito a rojo indicando que hay cambios sin subir
+        // 🔴 Pinta de rojo avisando que hay cambios sin subir a la nube
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
-        if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
-    } catch(e) { console.error("Error guardando:", e) }
+        if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync(); 
+    } catch(e) { console.error(e); }
 };
 
 window.load = () => { 
@@ -178,19 +180,11 @@ window.load = () => {
         const saved = localStorage.getItem(DB_KEY); 
         if (saved && saved !== "null" && saved !== "undefined") { 
             const p = JSON.parse(saved); 
-            if (p) {
-                if (p.config && (!p.goals || p.goals.length === 0)) { 
-                    goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
-                    participantGoals = {}; 
-                    (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
-                } else { 
-                    goals = p.goals || goals; 
-                    participantGoals = p.participantGoals || {}; 
-                } 
-                participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
+            if(p) {
+                if (p.config && (!p.goals || p.goals.length === 0)) { goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; participantGoals = {}; (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); } else { goals = p.goals || goals; participantGoals = p.participantGoals || {}; } participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
             }
         } 
-    } catch(e) { console.error("Caché local ignorado por error de formato"); }
+    } catch(e) { console.error("Ignorando caché corrupto."); }
     window.updateGoalDropdown(); 
 };
 
@@ -223,6 +217,14 @@ window.renderGoals = () => { const container = document.getElementById('goalsLis
 window.renderParticipants = () => { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = window.getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); };
 window.scrollToNext = () => { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = window.getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } };
 
-window.initApp = () => { window.load(); window.updateViewButtons(); window.renderParticipants(); window.renderGoals(); window.updateStats(); };
+// --- NUEVO: AUTOGUARDADO AL INICIAR ---
+window.initApp = () => { 
+    window.load(); 
+    window.updateViewButtons(); 
+    window.renderParticipants(); 
+    window.renderGoals(); 
+    window.updateStats(); 
+    if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
+};
 
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
