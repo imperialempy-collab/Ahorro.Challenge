@@ -1,6 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
+window.ENABLE_MANUAL_SYNC = true; 
 
 const firebaseConfig = {
     apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
@@ -25,7 +28,7 @@ window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { documen
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
 // --- LÓGICA DE AUTENTICACIÓN Y ESTADO DE PAGO ---
-window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { document.getElementById('btnProbarGratis').classList.add('hidden'); mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { document.getElementById('btnProbarGratis').classList.remove('hidden'); mostrarAlerta("Error al entrar: " + error.message); } }); };
+window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { document.getElementById('btnProbarGratis').classList.add('hidden'); window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 window.logout = () => { signOut(auth).then(() => location.reload()); };
 
 window.actualizarUI_Pago = () => {
@@ -36,30 +39,104 @@ window.actualizarUI_Pago = () => {
     else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); }; }
 };
 
+// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE (BLINDADO) ---
+window.sincronizarNube = async (manual = false) => {
+    if (!auth.currentUser) return;
+    if (manual && !window.ENABLE_MANUAL_SYNC) {
+        window.mostrarAlerta("La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día para optimizar la red.");
+        return;
+    }
+
+    try {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+
+        // Escudo Anti-Null: Parsea con cuidado
+        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+
+        const payload = {
+            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+            macro_data: { 
+                cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
+                gastos: safeParse(localStorage.getItem('mg_gastos')), 
+                historial: safeParse(localStorage.getItem('mg_historial')), 
+                ingreso: localStorage.getItem('mg_ingreso') || 0 
+            },
+            last_sync: new Date().toISOString()
+        };
+
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+        await updateDoc(userRef, payload);
+
+        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        
+        if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
+    } catch (error) {
+        console.error("Error sincronizando:", error);
+        if (manual) window.mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos se guardaron localmente en tu celular.");
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+    }
+};
+
+window.verificarAutoSync = () => {
+    if (typeof window.sincronizarNube !== 'function') return;
+    const lastSync = localStorage.getItem('last_cloud_sync');
+    const now = new Date().getTime();
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24hs
+        window.sincronizarNube(false);
+    }
+};
+
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
+    
     if (user) {
         document.getElementById('sidebarUserEmail').innerText = user.email;
         const userRef = doc(db, "usuarios_multimeta", user.email);
-        const docSnap = await getDoc(userRef);
+        
+        try {
+            const docSnap = await getDoc(userRef);
 
-        if (!docSnap.exists()) {
-            await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
-            window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); 
-        } else {
-            const userData = docSnap.data();
-            window.userAccessStatus = userData.status;
-            window.actualizarUI_Pago();
+            if (!docSnap.exists()) {
+                await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
+                window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
+            } else {
+                const userData = docSnap.data();
+                window.userAccessStatus = userData.status || 'prueba';
+                
+                // DESCARGA DESDE LA NUBE AL CELULAR (CON ESCUDO ANTI-CRASH)
+                if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
+                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
+                }
+                if (userData.macro_data) {
+                    if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                    if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                    if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                    if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                }
 
-            if (userData.status === 'pagado') { loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); initApp(); } 
-            else if (userData.status === 'prueba' || userData.status === 'pendiente') {
-                const start = new Date(userData.fechaInicio); const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
-                if (diffDays > 7 && userData.status !== 'pendiente') { window.userAccessStatus = 'vencido'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden'); } 
-                else {
-                    if (userData.status !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
-                    loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); initApp();
+                window.actualizarUI_Pago();
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+
+                if (window.userAccessStatus === 'pagado') { 
+                    loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
+                } else if (window.userAccessStatus === 'vencido') {
+                    loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                } else {
+                    const start = new Date(userData.fechaInicio || new Date()); 
+                    const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays > 7 && window.userAccessStatus !== 'pendiente') {
+                        window.userAccessStatus = 'vencido'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                    } else {
+                        if (window.userAccessStatus !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
+                        loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
+                    }
                 }
             }
+        } catch (error) {
+            console.error("Error al cargar desde la nube. Iniciando en Modo Local Seguro:", error);
+            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
         }
     } else {
         loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden');
@@ -68,17 +145,44 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- UI EVENTOS GENERALES ---
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
-window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
+window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { window.mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
 window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
-window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia."); mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
+window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.mostrarAlerta("Primero elegí la foto de tu transferencia."); window.mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
 
 // --- LÓGICA DE AHORRO MULTIMETA (LOCAL STORAGE) ---
 const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
 let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
 const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
-window.save = () => { localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); };
-window.load = () => { const saved = localStorage.getItem(DB_KEY); if (saved) { const p = JSON.parse(saved); if (p.config && (!p.goals || p.goals.length === 0)) { goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; participantGoals = {}; (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); } else { goals = p.goals || goals; participantGoals = p.participantGoals || {}; } participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; } window.updateGoalDropdown(); };
+window.save = () => { 
+    try {
+        localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
+        // Cambia el puntito a rojo indicando que hay cambios sin subir
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+        if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
+    } catch(e) { console.error("Error guardando:", e) }
+};
+
+window.load = () => { 
+    try {
+        const saved = localStorage.getItem(DB_KEY); 
+        if (saved && saved !== "null" && saved !== "undefined") { 
+            const p = JSON.parse(saved); 
+            if (p) {
+                if (p.config && (!p.goals || p.goals.length === 0)) { 
+                    goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
+                    participantGoals = {}; 
+                    (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
+                } else { 
+                    goals = p.goals || goals; 
+                    participantGoals = p.participantGoals || {}; 
+                } 
+                participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
+            }
+        } 
+    } catch(e) { console.error("Caché local ignorado por error de formato"); }
+    window.updateGoalDropdown(); 
+};
 
 window.openAddParticipantModal = () => { document.getElementById('newParticipantInput').value = ''; window.updateGoalDropdown(); document.getElementById('addParticipantModal').classList.remove('hidden'); setTimeout(() => document.getElementById('newParticipantInput').focus(), 100); };
 window.closeAddParticipantModal = () => { document.getElementById('addParticipantModal').classList.add('hidden'); };
