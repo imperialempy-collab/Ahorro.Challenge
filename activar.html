@@ -80,50 +80,28 @@
             }
         });
 
+        // CONTROL DE UX PARA SUBIR ARCHIVOS
         window.handleFileSelect = (event) => {
             const file = event.target.files[0];
-            const btnSubmit = document.getElementById('btnSubmitFile');
-            const boxUpload = document.getElementById('boxUpload');
-            const estadoVacio = document.getElementById('estadoVacio');
-            const estadoLleno = document.getElementById('estadoLleno');
             
             if (!file) return;
 
-            if (file.size > 3145728) {
+            if (file.size > 3145728) { // 3 MB
                 alert("El archivo es muy pesado (Máximo 3MB). Por favor sacale una captura de pantalla y subí esa foto.");
-                event.target.value = ""; 
-                
-                // Resetear UI si falla
-                estadoVacio.classList.remove('hidden');
-                estadoLleno.classList.add('hidden');
-                boxUpload.classList.replace('border-emerald-500', 'border-slate-300');
-                boxUpload.classList.replace('bg-emerald-50', 'bg-slate-50');
-                boxUpload.classList.add('border-dashed');
-                boxUpload.classList.remove('border-solid');
-                
-                btnSubmit.classList.add('opacity-50', 'pointer-events-none');
-                btnSubmit.classList.remove('animate-pulse');
-                btnSubmit.innerHTML = "Confirmar y Enviar";
+                window.eliminarArchivo();
                 return;
             }
 
-            // --- MAGIA UX: Transformar el cuadro y el botón ---
-            
-            // 1. Mostrar estado lleno en el cuadro
-            estadoVacio.classList.add('hidden');
-            estadoLleno.classList.remove('hidden');
+            // Ocultar caja de subida y mostrar caja de "Archivo Subido"
+            document.getElementById('estadoVacio').classList.add('hidden');
+            document.getElementById('estadoLleno').classList.remove('hidden');
             document.getElementById('nombreArchivoUI').innerText = file.name;
-            
-            // 2. Pintar cuadro de verde sólido
-            boxUpload.classList.replace('border-slate-300', 'border-emerald-500');
-            boxUpload.classList.replace('bg-slate-50', 'bg-emerald-50');
-            boxUpload.classList.remove('border-dashed');
-            boxUpload.classList.add('border-solid');
+        };
 
-            // 3. Encender botón de envío
-            btnSubmit.classList.remove('opacity-50', 'pointer-events-none');
-            btnSubmit.innerHTML = "2. ¡Enviar Comprobante Ahora! 🚀";
-            btnSubmit.classList.add('animate-pulse'); // Llama la atención para que no se olviden de clickear
+        window.eliminarArchivo = () => {
+            document.getElementById('fileUpload').value = ""; // Limpiamos el input invisible
+            document.getElementById('estadoLleno').classList.add('hidden');
+            document.getElementById('estadoVacio').classList.remove('hidden');
         };
 
         window.subirComprobante = async () => {
@@ -136,9 +114,11 @@
 
             const btn = document.getElementById('btnSubmitFile');
             const originalText = btn.innerHTML;
-            btn.innerHTML = "Subiendo archivo... ⏳";
-            btn.classList.remove('animate-pulse');
+            btn.innerHTML = "Enviando... ⏳";
             btn.classList.add('opacity-50', 'pointer-events-none');
+            
+            // Ocultamos el botón de eliminar para que no lo toquen mientras sube
+            document.getElementById('btnEliminarArchivo').classList.add('hidden');
 
             try {
                 const fileExt = file.name.split('.').pop();
@@ -152,7 +132,7 @@
                 await updateDoc(userRef, {
                     status: 'pendiente',
                     comprobante_url: downloadURL,
-                    comprobante_ruta: storageRef.fullPath, // Guardamos la ruta exacta para borrarlo fácil desde el Admin
+                    comprobante_ruta: storageRef.fullPath,
                     comprobante_fecha: new Date().toISOString(),
                     mensaje_admin: ""
                 });
@@ -164,7 +144,7 @@
                 alert("Hubo un error al subir el archivo. Intentá de nuevo.");
                 btn.innerHTML = originalText;
                 btn.classList.remove('opacity-50', 'pointer-events-none');
-                btn.classList.add('animate-pulse');
+                document.getElementById('btnEliminarArchivo').classList.remove('hidden');
             }
         };
 
@@ -207,11 +187,11 @@
                 <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Datos para Transferencia</h2>
                 
                 <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-700 mb-6 font-medium shadow-inner">
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900">Ueno Bank</span></div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900">Axel</span></div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">CI/RUC:</span> <span class="font-black text-slate-900">1234567</span></div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900">000111222</span></div>
-                    <div class="flex justify-between pt-1"><span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg">20.000 Gs</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900 text-right">Ueno Bank (SIPAP)</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900 text-right">Axel Nuñez</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">CI / Alias:</span> <span class="font-black text-slate-900 text-right">4290008</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900 text-right">61969822</span></div>
+                    <div class="flex justify-between pt-1"><span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg text-right">20.000 Gs</span></div>
                 </div>
 
                 <div class="space-y-4">
@@ -219,26 +199,33 @@
                     
                     <input type="file" id="fileUpload" accept="image/png, image/jpeg, application/pdf" class="hidden" onchange="handleFileSelect(event)">
                     
-                    <button id="boxUpload" onclick="document.getElementById('fileUpload').click()" class="w-full relative overflow-hidden py-6 bg-slate-50 text-slate-600 border-2 border-dashed border-slate-300 rounded-2xl hover:bg-slate-100 transition-all group">
-                        
-                        <div id="estadoVacio" class="flex flex-col items-center justify-center gap-2 pointer-events-none">
-                            <svg class="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            <span class="font-bold text-sm text-slate-700">1. Tocar para buscar archivo</span>
-                            <span class="text-[10px] text-slate-400 font-medium">Soporta PDF o Imagen (Max. 3MB)</span>
+                    <button id="estadoVacio" onclick="document.getElementById('fileUpload').click()" class="w-full flex flex-col items-center justify-center gap-2 py-6 bg-slate-50 text-slate-600 border-2 border-dashed border-slate-300 rounded-2xl hover:bg-slate-100 hover:border-primary hover:text-primary transition-all group">
+                        <svg class="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span class="font-bold text-sm">Tocar para buscar archivo</span>
+                        <span class="text-[10px] text-slate-400 font-medium">Soporta PDF o Imagen (Max. 3MB)</span>
+                    </button>
+
+                    <div id="estadoLleno" class="hidden w-full animate-fade-in">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                                <div class="truncate">
+                                    <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest">1 Archivo Listo</p>
+                                    <p class="text-sm font-bold text-slate-800 truncate" id="nombreArchivoUI">foto.jpg</p>
+                                </div>
+                            </div>
+                            <button id="btnEliminarArchivo" onclick="eliminarArchivo()" class="w-8 h-8 rounded-full bg-white border border-rose-100 text-rose-500 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center shrink-0 transition-colors shadow-sm" title="Eliminar archivo">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
 
-                        <div id="estadoLleno" class="hidden flex flex-col items-center justify-center gap-2 pointer-events-none px-4 w-full">
-                            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-1 shadow-sm">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                            </div>
-                            <span class="font-bold text-sm text-emerald-700 w-full truncate text-center" id="nombreArchivoUI">archivo.jpg</span>
-                            <span class="text-[10px] text-slate-500 font-medium underline">Tocar para cambiar de foto</span>
-                        </div>
-                    </button>
-                    
-                    <button id="btnSubmitFile" onclick="subirComprobante()" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30 opacity-50 pointer-events-none">
-                        Confirmar y Enviar
-                    </button>
+                        <button id="btnSubmitFile" onclick="subirComprobante()" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                            Confirmar y Enviar
+                        </button>
+                    </div>
+
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-slate-100 text-center">
@@ -290,5 +277,10 @@
         </div>
 
     </main>
+
+    <style>
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </body>
 </html>
