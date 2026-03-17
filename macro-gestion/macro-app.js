@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
 window.ENABLE_MANUAL_SYNC = true;
 
 const firebaseConfig = {
@@ -18,15 +17,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-window.userAccessStatus = localStorage.getItem('mg_access_status') || 'prueba';
-window.logout = () => { signOut(auth).then(() => { window.location.href = '../index.html'; }); };
+window.userAccessStatus = localStorage.getItem('local_user_status') || 'prueba';
+window.logout = () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => { window.location.href = '../index.html'; }); };
 
-// UI GENERALES Y ALERTAS
+// UI GENERALES
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
-window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { window.interactuarApp('alert', 'Acceso Restringido', 'Debes activar tu cuenta para continuar editando tu progreso.'); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
-window.abrirPaywall = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
-window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
-window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.interactuarApp('alert', 'Falta comprobante', "Primero elegí la foto de tu transferencia."); window.interactuarApp('alert', '¡Enviado!', "¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
+window.cerrarPaywall = () => {}; // Desactivado porque ahora redirigimos
+window.abrirPaywall = () => { window.location.href = '../activar.html'; };
 window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
 window.actualizarUI_Pago = () => {
@@ -38,51 +35,60 @@ window.actualizarUI_Pago = () => {
         btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50');
         btnPagar.classList.replace('text-white', 'text-emerald-700');
     } else if (window.userAccessStatus === 'pendiente') {
-        btnPagar.innerHTML = 'Pago en revisión ⏳';
-        btnPagar.onclick = null;
+        btnPagar.innerHTML = 'Ver mi Comprobante ⏳';
+        btnPagar.onclick = () => window.location.href = '../activar.html';
         btnPagar.classList.replace('bg-slate-900', 'bg-amber-100');
         btnPagar.classList.replace('text-white', 'text-amber-700');
     } else {
         btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
-        btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
+        btnPagar.onclick = () => window.location.href = '../activar.html';
     }
 };
 
-// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE (MACRO GESTIÓN) ---
+// --- MOTOR DE SINCRONIZACIÓN Y SEGURIDAD DIFERIDA ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.interactuarApp('alert', 'Actualización Manual', 'La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día.');
+        window.interactuarApp('alert', 'Actualización Manual', 'La actualización manual está desactivada.');
         return;
     }
 
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
 
+        // 1. SEGURIDAD A CABALLITO
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const realStatus = docSnap.data().status;
+            localStorage.setItem('local_user_status', realStatus);
+            window.userAccessStatus = realStatus;
+
+            if (realStatus === 'vencido' || realStatus === 'rechazado') {
+                window.location.href = '../activar.html';
+                return;
+            }
+        }
+
+        // 2. GUARDADO
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
-
         const payload = {
             ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
-            macro_data: { 
-                cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
-                gastos: safeParse(localStorage.getItem('mg_gastos')), 
-                historial: safeParse(localStorage.getItem('mg_historial')), 
-                ingreso: localStorage.getItem('mg_ingreso') || 0 
-            },
+            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
             last_sync: new Date().toISOString(),
-            sync_count: increment(1) // CONTADOR DE CLICS PARA EL PANEL ADMIN
+            sync_count: increment(1)
         };
 
-        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
         await updateDoc(userRef, payload);
 
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        window.actualizarUI_Pago();
         
         if (manual) window.interactuarApp('alert', 'Nube Sincronizada', '✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.');
     } catch (error) {
         console.error("Error sincronizando:", error);
-        if (manual) window.interactuarApp('alert', 'Error', '❌ Hubo un error al guardar en la nube. Tus datos se guardaron localmente en tu celular.');
+        if (manual) window.interactuarApp('alert', 'Error', '❌ Hubo un error al guardar en la nube.');
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
     }
 };
@@ -91,27 +97,37 @@ window.verificarAutoSync = () => {
     if (typeof window.sincronizarNube !== 'function') return;
     const lastSync = localStorage.getItem('last_cloud_sync');
     const now = new Date().getTime();
-    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24hs
-        window.sincronizarNube(false);
-    }
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
 };
 
-// --- AUTENTICACIÓN OFFLINE-FIRST ---
+// --- AUTENTICACIÓN OPTIMISTA (EL PASE VIP) ---
 onAuthStateChanged(auth, async (user) => {
     if (user) { 
         document.getElementById('sidebarUserEmail').innerText = user.email;
-        const userRef = doc(db, "usuarios_multimeta", user.email);
         
+        // --- 🚀 PASE VIP LOCAL ---
+        const localStatus = localStorage.getItem('local_user_status');
+        if (localStatus === 'pagado') {
+            window.userAccessStatus = 'pagado';
+            window.actualizarUI_Pago();
+            document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+            window.renderizarSelectorIconos(); 
+            window.renderizarApp();
+            window.verificarAutoSync(); 
+            return; // SALIDA RÁPIDA VIP
+        }
+
+        // --- SI NO ES VIP, VA A FIREBASE ---
+        const userRef = doc(db, "usuarios_multimeta", user.email);
         try {
             const docSnap = await getDoc(userRef);
             if (docSnap.exists()) {
                 const userData = docSnap.data();
                 window.userAccessStatus = userData.status || 'prueba';
+                localStorage.setItem('local_user_status', window.userAccessStatus);
                 
-                // BARRERA OFFLINE-FIRST
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
-
                 if (!hasLocalMacro) {
                     if (userData.macro_data) {
                         if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
@@ -123,28 +139,30 @@ onAuthStateChanged(auth, async (user) => {
                 
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 if (!localAhorro || localAhorro === "null" || localAhorro === "undefined") {
-                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
-                        localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
-                    }
+                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
                 }
 
-                localStorage.setItem('mg_access_status', window.userAccessStatus);
+                if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') {
+                    window.location.href = '../activar.html';
+                    return;
+                }
+
                 document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
-                
             } else {
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
+                window.userAccessStatus = 'prueba';
+                localStorage.setItem('local_user_status', 'prueba');
             }
-        } catch(e) {
-            console.error("Modo local forzado (Sin internet o error).", e);
-        }
+        } catch(e) { console.error("Modo local forzado.", e); }
         
         window.actualizarUI_Pago();
         window.renderizarSelectorIconos(); 
         window.renderizarApp();
-        window.verificarAutoSync(); // Disparamos el chequeo al cargar
+        window.verificarAutoSync(); 
         
     } else { 
-        window.userAccessStatus = 'vencido'; window.location.href = '../index.html'; 
+        localStorage.removeItem('local_user_status');
+        window.location.href = '../index.html'; 
     }
 });
 
