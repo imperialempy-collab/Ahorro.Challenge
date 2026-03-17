@@ -1,0 +1,26 @@
+body { 
+    background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); 
+    min-height: 100vh; 
+}
+.glass-card { 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px); 
+    border: 1px solid rgba(255, 255, 255, 0.5); 
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.badge-active { 
+    background: #10b981 !important; 
+    color: white !important; 
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); 
+}
+.sticky-header { 
+    position: sticky; 
+    top: 0; 
+    z-index: 50; 
+    padding-top: 1rem; 
+    padding-bottom: 1rem; 
+}
+.btn-view-active { border-color: #10b981 !important; color: #10b981 !important; font-weight: 700; }
+.btn-view-inactive { border-color: #e2e8f0 !important; color: #94a3b8 !important; }
+.hidden { display: none !important; }
