@@ -36,23 +36,32 @@ window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.t
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 
-// 🧹 ESCOBA DIGITAL CON GUARDADO AUTOMÁTICO ANTES DE SALIR
+// 🧹 ESCOBA DIGITAL CON GUARDADO AUTOMÁTICO ANTES DE SALIR (CORREGIDO)
 window.logout = async () => { 
     if (auth.currentUser) {
         try {
-            await window.sincronizarNube(false);
+            const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+            const payload = {
+                ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+                macro_data: { 
+                    cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
+                    gastos: safeParse(localStorage.getItem('mg_gastos')), 
+                    historial: safeParse(localStorage.getItem('mg_historial')), 
+                    ingreso: localStorage.getItem('mg_ingreso') || 0 
+                },
+                last_sync: new Date().toISOString()
+            };
+            const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+            // setDoc con merge bloquea la recarga hasta estar 100% seguros de que se guardó en la nube
+            await setDoc(userRef, payload, { merge: true });
         } catch (e) {
-            console.error("Error al guardar antes de salir:", e);
+            console.error("Error crítico al guardar antes de salir:", e);
         }
     }
     
-    localStorage.removeItem('local_user_status'); 
-    localStorage.removeItem('ahorro_dinamico_LAB_TEST_MULTIMETA'); 
-    localStorage.removeItem('mg_cuentas'); 
-    localStorage.removeItem('mg_gastos'); 
-    localStorage.removeItem('mg_historial'); 
-    localStorage.removeItem('mg_ingreso'); 
-    localStorage.removeItem('last_cloud_sync'); 
+    // Limpiamos minuciosamente el celular
+    const keys = ['local_user_status', 'ahorro_dinamico_LAB_TEST_MULTIMETA', 'mg_cuentas', 'mg_gastos', 'mg_historial', 'mg_ingreso', 'last_cloud_sync'];
+    keys.forEach(k => localStorage.removeItem(k));
     
     signOut(auth).then(() => location.reload()); 
 };
@@ -65,7 +74,7 @@ window.actualizarUI_Pago = () => {
     else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
 };
 
-// --- AUTENTICACIÓN OPTIMISTA ---
+// --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN (CORREGIDO) ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
@@ -84,18 +93,43 @@ onAuthStateChanged(auth, async (user) => {
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
                 window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
             } else {
-                const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; localStorage.setItem('local_user_status', window.userAccessStatus);
-                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA'); const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
-                if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
-                const localCuentas = localStorage.getItem('mg_cuentas');
-                if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
-                    if (userData.macro_data) {
-                        if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
-                        if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
-                        if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
-                        if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                const userData = docSnap.data(); 
+                window.userAccessStatus = userData.status || 'prueba'; 
+                localStorage.setItem('local_user_status', window.userAccessStatus);
+                
+                // RADAR DE DATOS DE AHORRO MEJORADO
+                let isAhorroLocalEmpty = true;
+                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
+                try {
+                    if (localAhorro && localAhorro !== "null" && localAhorro !== "undefined") {
+                        const p = JSON.parse(localAhorro);
+                        if ((p.participants && p.participants.length > 0) || (p.goals && p.goals.length > 1)) {
+                            isAhorroLocalEmpty = false;
+                        }
                     }
+                } catch(e) {}
+
+                if (isAhorroLocalEmpty && userData.ahorro_data) {
+                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
                 }
+
+                // RADAR DE DATOS DE MACRO MEJORADO
+                let isMacroEmpty = true;
+                const localCuentas = localStorage.getItem('mg_cuentas');
+                try {
+                    if (localCuentas && localCuentas !== "null" && localCuentas !== "undefined") {
+                        const c = JSON.parse(localCuentas);
+                        if (c.length > 0) isMacroEmpty = false;
+                    }
+                } catch(e) {}
+
+                if (isMacroEmpty && userData.macro_data) {
+                    if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                    if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                    if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                    if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                }
+
                 window.actualizarUI_Pago(); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
 
                 if (window.userAccessStatus === 'pagado') { loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
