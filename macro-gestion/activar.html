@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="color-scheme" content="light">
+    <title>Activar Acceso - Ahorro Challenge</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc', surface: '#ffffff' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // IMPORTAMOS STORAGE PARA LAS FOTOS
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
+            authDomain: "ahorro-dinamico.firebaseapp.com",
+            projectId: "ahorro-dinamico",
+            storageBucket: "ahorro-dinamico.firebasestorage.app",
+            messagingSenderId: "906931960122",
+            appId: "1:906931960122:web:02b6d090d163c2c135f803"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        let currentUserEmail = "";
+
+        // UI Helpers
+        const showSection = (id) => {
+            ['loadingSection', 'uploadSection', 'pendingSection', 'successSection'].forEach(sec => {
+                document.getElementById(sec).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserEmail = user.email;
+                document.getElementById('userEmailDisplay').innerText = user.email;
+                
+                try {
+                    const userRef = doc(db, "usuarios_multimeta", user.email);
+                    const docSnap = await getDoc(userRef);
+                    
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        if (data.status === 'pagado') {
+                            showSection('successSection');
+                        } else if (data.status === 'pendiente') {
+                            showSection('pendingSection');
+                            if (data.mensaje_admin) {
+                                document.getElementById('adminMessagePending').innerText = "💬 Mensaje de soporte: " + data.mensaje_admin;
+                                document.getElementById('adminMessagePending').classList.remove('hidden');
+                            }
+                        } else {
+                            // Está en prueba, vencido, o rechazado
+                            showSection('uploadSection');
+                            if (data.mensaje_admin && data.status === 'rechazado') {
+                                document.getElementById('adminMessageAlert').innerText = "⚠️ " + data.mensaje_admin;
+                                document.getElementById('adminMessageAlert').classList.remove('hidden');
+                            }
+                        }
+                    } else {
+                        // Si no existe, lo mandamos a la app a que inicie
+                        window.location.href = 'index.html';
+                    }
+                } catch (error) {
+                    alert("Error de conexión. Intenta de nuevo.");
+                }
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // PREVISUALIZAR NOMBRE DEL ARCHIVO
+        window.handleFileSelect = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Limite de 3MB (3 * 1024 * 1024 bytes)
+            if (file.size > 3145728) {
+                alert("El archivo es muy pesado (Máximo 3MB). Por favor sacale una captura de pantalla y subí esa foto.");
+                event.target.value = ""; // Resetea el input
+                document.getElementById('fileNameDisplay').innerText = "Ningún archivo seleccionado";
+                document.getElementById('btnSubmitFile').classList.add('opacity-50', 'pointer-events-none');
+                return;
+            }
+
+            document.getElementById('fileNameDisplay').innerText = "📎 " + file.name;
+            document.getElementById('btnSubmitFile').classList.remove('opacity-50', 'pointer-events-none');
+        };
+
+        // SUBIR ARCHIVO A FIREBASE
+        window.subirComprobante = async () => {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Seleccioná un archivo primero.");
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitFile');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "Subiendo archivo... ⏳";
+            btn.classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                // 1. Subir foto a Storage en la carpeta 'comprobantes'
+                const fileExt = file.name.split('.').pop();
+                const fileName = `comprobante_${Date.now()}.${fileExt}`;
+                const storageRef = ref(storage, `comprobantes/${currentUserEmail}/${fileName}`);
+                
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                // 2. Actualizar estado en Firestore a 'pendiente' y guardar la URL
+                const userRef = doc(db, "usuarios_multimeta", currentUserEmail);
+                await updateDoc(userRef, {
+                    status: 'pendiente',
+                    comprobante_url: downloadURL,
+                    comprobante_fecha: new Date().toISOString(),
+                    mensaje_admin: "" // Borramos cualquier mensaje viejo de rechazo
+                });
+
+                // 3. Mostrar pantalla de pendiente
+                showSection('pendingSection');
+
+            } catch (error) {
+                console.error(error);
+                alert("Hubo un error al subir el archivo. Intentá de nuevo.");
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        };
+
+    </script>
+</head>
+<body class="bg-background text-slate-800 font-body min-h-screen flex flex-col">
+    
+    <header class="bg-surface sticky top-0 z-40 border-b border-slate-100 p-4 flex justify-between items-center shadow-sm">
+        <a href="index.html" class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            <span class="font-bold text-sm">Volver a la App</span>
+        </a>
+        <div class="text-xs font-bold text-slate-400 truncate max-w-[150px]" id="userEmailDisplay">Cargando...</div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <div id="loadingSection" class="text-center">
+            <svg class="animate-spin h-10 w-10 text-primary mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="text-slate-500 font-bold animate-pulse">Verificando cuenta...</p>
+        </div>
+
+        <div id="uploadSection" class="hidden w-full max-w-md">
+            
+            <div class="text-center mb-8">
+                <div class="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-3">
+                    Desbloqueá tu Potencial 🚀
+                </div>
+                <h1 class="text-3xl font-display font-black text-slate-900 tracking-tight mb-4">Acceso <span class="text-primary">Ilimitado</span></h1>
+                <p class="text-slate-600 text-sm leading-relaxed px-2 font-medium">
+                    Estás a un paso de dominar tus finanzas con la herramienta más viral. Organizá tus ahorros, creá retos con amigos y aprendé jugando.
+                </p>
+                <p class="text-slate-800 font-black text-sm mt-3 bg-slate-100 py-2 rounded-lg mx-8 border border-slate-200">
+                    Un solo pago. Acceso ilimitado.
+                </p>
+            </div>
+
+            <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+                <div id="adminMessageAlert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm">
+                    </div>
+
+                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Datos para Transferencia</h2>
+                
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-700 mb-6 font-medium shadow-inner">
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
+                        <span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900">Ueno Bank</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
+                        <span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900">Axel</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
+                        <span class="text-slate-400">CI/RUC:</span> <span class="font-black text-slate-900">1234567</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
+                        <span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900">000111222</span>
+                    </div>
+                    <div class="flex justify-between pt-1">
+                        <span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg">20.000 Gs</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Enviá tu comprobante</h3>
+                    
+                    <input type="file" id="fileUpload" accept="image/png, image/jpeg, application/pdf" class="hidden" onchange="handleFileSelect(event)">
+                    
+                    <button onclick="document.getElementById('fileUpload').click()" class="w-full flex flex-col items-center justify-center gap-2 py-6 bg-slate-50 text-slate-600 border-2 border-dashed border-slate-300 rounded-2xl hover:bg-slate-100 hover:border-primary hover:text-primary transition-all group">
+                        <svg class="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <span class="font-bold text-sm">Tocar para buscar archivo</span>
+                        <span class="text-[10px] text-slate-400 font-medium">Soporta PDF o Imagen (Max. 3MB)</span>
+                    </button>
+
+                    <p id="fileNameDisplay" class="text-center text-xs font-bold text-emerald-600 bg-emerald-50 py-2 rounded-lg truncate px-2 hidden empty:hidden"></p>
+                    
+                    <button id="btnSubmitFile" onclick="subirComprobante()" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30 opacity-50 pointer-events-none">
+                        Confirmar y Enviar
+                    </button>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-500 mb-3 font-medium">¿Preferís otro método de pago o necesitás ayuda?</p>
+                    <a href="https://wa.me/595992049430?text=Hola,%20quiero%20activar%20mi%20acceso%20ilimitado%20a%20AhorroChallenge" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold text-sm hover:bg-[#1ebe5d] transition-colors shadow-md">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.888-.653-1.488-1.46-1.661-1.759-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.347-.272.273-1.04 1.02-1.04 2.48s1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        Hablar con Soporte
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="pendingSection" class="hidden w-full max-w-sm text-center">
+            <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6 border-8 border-amber-100">
+                <svg class="w-10 h-10 text-amber-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 class="text-2xl font-display font-black text-slate-900 mb-3">Comprobante en Revisión</h2>
+            <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+                Hemos recibido tu archivo correctamente. Lo estamos verificando y en breve se activará tu acceso ilimitado.
+            </p>
+            
+            <div id="adminMessagePending" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm">
+                </div>
+
+            <p class="text-xs text-slate-400 font-medium mb-8">
+                Podés volver a la app. Cuando sea aprobado, se desbloqueará automáticamente.
+            </p>
+            <a href="index.html" class="inline-block w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">
+                Ir a mis Ahorros
+            </a>
+        </div>
+
+        <div id="successSection" class="hidden w-full max-w-sm text-center">
+            <div class="relative w-24 h-24 mx-auto mb-6">
+                <div class="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-20"></div>
+                <div class="relative w-full h-full bg-emerald-50 rounded-full flex items-center justify-center border-8 border-emerald-100">
+                    <svg class="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            </div>
+            <h2 class="text-3xl font-display font-black text-slate-900 mb-2">¡Felicitaciones!</h2>
+            <div class="inline-block bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-4">
+                Acceso Ilimitado Activo 👑
+            </div>
+            <p class="text-slate-600 text-sm mb-8 leading-relaxed font-medium">
+                Tu cuenta ya no tiene límites. Gracias por confiar en nosotros para potenciar tus finanzas personales.
+            </p>
+            <a href="index.html" class="inline-block w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">
+                Entrar a la App
+            </a>
+        </div>
+
+    </main>
+
+    <style>
+        #fileNameDisplay:not(:empty) { display: block; }
+    </style>
+</body>
+</html>
