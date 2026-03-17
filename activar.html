@@ -92,14 +92,13 @@
                 return;
             }
 
-            // Ocultar caja de subida y mostrar caja de "Archivo Subido"
             document.getElementById('estadoVacio').classList.add('hidden');
             document.getElementById('estadoLleno').classList.remove('hidden');
             document.getElementById('nombreArchivoUI').innerText = file.name;
         };
 
         window.eliminarArchivo = () => {
-            document.getElementById('fileUpload').value = ""; // Limpiamos el input invisible
+            document.getElementById('fileUpload').value = ""; 
             document.getElementById('estadoLleno').classList.add('hidden');
             document.getElementById('estadoVacio').classList.remove('hidden');
         };
@@ -117,10 +116,10 @@
             btn.innerHTML = "Enviando... ⏳";
             btn.classList.add('opacity-50', 'pointer-events-none');
             
-            // Ocultamos el botón de eliminar para que no lo toquen mientras sube
             document.getElementById('btnEliminarArchivo').classList.add('hidden');
 
             try {
+                // 1. Subir a Firebase Storage
                 const fileExt = file.name.split('.').pop();
                 const fileName = `comprobante_${Date.now()}.${fileExt}`;
                 const storageRef = ref(storage, `comprobantes/${currentUserEmail}/${fileName}`);
@@ -128,6 +127,7 @@
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
 
+                // 2. Guardar en Base de Datos
                 const userRef = doc(db, "usuarios_multimeta", currentUserEmail);
                 await updateDoc(userRef, {
                     status: 'pendiente',
@@ -137,6 +137,19 @@
                     mensaje_admin: ""
                 });
 
+                // 3. 🚀 DISPARAR ALERTA A TELEGRAM (Magia Pura) 🚀
+                const telegramToken = '8753413505:AAHK_h6bwEWgugMLz4LEBZsTOSnKV5Zx1PU';
+                const chatId = '-1003625405883';
+                const mensaje = `🚨 *¡NUEVO PAGO RECIBIDO!*\n\nEl usuario 📧 *${currentUserEmail}* acaba de subir un comprobante de pago.\n\n👉 Entrá a tu Panel Admin para revisarlo y darle acceso ilimitado.`;
+                
+                // Hacemos el envío en segundo plano sin trabar la página
+                fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text: mensaje, parse_mode: 'Markdown' })
+                }).catch(e => console.log("Telegram falló pero la app sigue normal."));
+
+                // 4. Mostrar éxito al cliente
                 showSection('pendingSection');
 
             } catch (error) {
