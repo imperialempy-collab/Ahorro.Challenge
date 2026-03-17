@@ -33,7 +33,7 @@ window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { 
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 window.logout = () => { 
-    localStorage.removeItem('local_user_status'); // Borramos el VIP al salir
+    localStorage.removeItem('local_user_status'); 
     signOut(auth).then(() => location.reload()); 
 };
 
@@ -74,13 +74,12 @@ window.sincronizarNube = async (manual = false) => {
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
             const realStatus = docSnap.data().status;
-            localStorage.setItem('local_user_status', realStatus); // Actualizamos el VIP local
+            localStorage.setItem('local_user_status', realStatus);
             window.userAccessStatus = realStatus;
 
-            // Si el admin lo bloqueó o rechazó, lo pateamos
             if (realStatus === 'vencido' || realStatus === 'rechazado') {
                 window.location.href = 'activar.html';
-                return; // Cortamos la sincronización
+                return;
             }
         }
 
@@ -121,7 +120,7 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         document.getElementById('sidebarUserEmail').innerText = user.email;
         
-        // --- 🚀 PASE VIP LOCAL (Cero Lecturas a Firebase si ya pagó) ---
+        // --- 🚀 PASE VIP LOCAL (Carga a la velocidad de la luz si ya pagó) ---
         const localStatus = localStorage.getItem('local_user_status');
         if (localStatus === 'pagado') {
             window.userAccessStatus = 'pagado';
@@ -130,7 +129,7 @@ onAuthStateChanged(auth, async (user) => {
             loginScreen.classList.add('hidden'); 
             appContent.classList.remove('hidden'); 
             window.initApp();
-            return; // SALIMOS ACÁ, NO LEEMOS FIREBASE
+            return; // SALIMOS ACÁ, NO ESPERAMOS A FIREBASE
         }
 
         // --- SI NO ES VIP LOCAL, COMPROBAMOS EN LA NUBE ---
@@ -144,9 +143,8 @@ onAuthStateChanged(auth, async (user) => {
             } else {
                 const userData = docSnap.data();
                 window.userAccessStatus = userData.status || 'prueba';
-                localStorage.setItem('local_user_status', window.userAccessStatus); // Guardamos el estado real localmente
+                localStorage.setItem('local_user_status', window.userAccessStatus);
                 
-                // Barrera Offline-First
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
                 if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
@@ -167,7 +165,6 @@ onAuthStateChanged(auth, async (user) => {
                 if (window.userAccessStatus === 'pagado') { 
                     loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
                 } else if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') {
-                    // Si está vencido o rechazado, lo mandamos directo a la página de activación
                     window.location.href = 'activar.html';
                 } else {
                     const start = new Date(userData.fechaInicio || new Date()); 
@@ -184,7 +181,7 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } catch (error) {
-            console.error("Error cargando de la nube. Iniciando Offline Seguro:", error);
+            console.error("Error cargando de la nube:", error);
             loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
         }
     } else {
@@ -237,7 +234,7 @@ window.promptManual = async (semNum) => {
 };
 
 window.updateStats = () => { let totalGeneral = 0; Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado)); const strokeVal = 113; if (statsView === 'COLECTIVO') { document.getElementById('statsTitle').innerText = "Gran Total Colectivo"; document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`; let totalObjetivoGlobal = 0; participants.forEach(p => { totalObjetivoGlobal += window.getGoalForUser(p).amount; }); const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral); } else { if(!activeParticipant) { document.getElementById('statsTitle').innerText = "Ahorro de -"; document.getElementById('metaLabel').innerText = "Sin meta"; document.getElementById('progressPercentage').innerText = "0%"; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal; document.getElementById('totalSavedCounter').innerText = "0 Gs."; return; } const userGoal = window.getGoalForUser(activeParticipant); const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0); document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`; const falta = userGoal.amount - miTotal; document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!"; const p = (miTotal / userGoal.amount) * 100; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal); } };
-window.renderGoals = () => { const container = document.getElementById('goalsList'); let html = ""; if (statsView === 'COLECTIVO') { html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`; goals.forEach(g => { let totalGoalSaved = 0; let peopleInGoal = 0; participants.forEach(p => { if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) { peopleInGoal++; const pagos = userProgress[p] || []; totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0); } }); if(peopleInGoal === 0) return; let targetTotal = g.amount * peopleInGoal; let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0; html += `<div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div><h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3><p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participants • Meta: ${formatPYG(g.amount)} c/u</p><div class="flex justify-between items-end mb-2"><span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span><span class="text-sm font-bold text-primary">${Math.round(progress)}%</span></div><div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div></div></div>`; }); html += `</div>`; container.innerHTML = html; } else { if (!activeParticipant) { container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`; return; } const userGoal = window.getGoalForUser(activeParticipant); for (let i = 1; i <= userGoal.weeks; i++) { const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i); const hechoPorMi = !!pago; const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks); html += `<div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div></div><div class="flex flex-col items-end gap-1 px-1">${hechoPorMi ? `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span></div>` : ''}</div><div class="flex gap-1"><button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${hechoPorMi ? 'LISTO' : 'MARCAR'}</button></div></div>`; } container.innerHTML = html; } };
+window.renderGoals = () => { const container = document.getElementById('goalsList'); let html = ""; if (statsView === 'COLECTIVO') { html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`; goals.forEach(g => { let totalGoalSaved = 0; let peopleInGoal = 0; participants.forEach(p => { if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) { peopleInGoal++; const pagos = userProgress[p] || []; totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0); } }); if(peopleInGoal === 0) return; let targetTotal = g.amount * peopleInGoal; let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0; html += `<div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div><h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3><p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participantes • Meta: ${formatPYG(g.amount)} c/u</p><div class="flex justify-between items-end mb-2"><span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span><span class="text-sm font-bold text-primary">${Math.round(progress)}%</span></div><div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div></div></div>`; }); html += `</div>`; container.innerHTML = html; } else { if (!activeParticipant) { container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`; return; } const userGoal = window.getGoalForUser(activeParticipant); for (let i = 1; i <= userGoal.weeks; i++) { const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i); const hechoPorMi = !!pago; const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks); html += `<div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div></div><div class="flex flex-col items-end gap-1 px-1">${hechoPorMi ? `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span></div>` : ''}</div><div class="flex gap-1"><button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${hechoPorMi ? 'LISTO' : 'MARCAR'}</button></div></div>`; } container.innerHTML = html; } };
 window.renderParticipants = () => { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = window.getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); };
 window.scrollToNext = () => { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = window.getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } };
 
