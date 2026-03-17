@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+// Agregamos las funciones de collection, addDoc, getDocs y arrayUnion para la Fase 1
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, serverTimestamp, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 window.ENABLE_MANUAL_SYNC = true; 
 
@@ -19,6 +20,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
+let currentShareCode = ""; // Guardará el código para enviarlo a WhatsApp
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
 window.mostrarAlerta = (mensaje) => { 
@@ -31,86 +33,18 @@ window.closeCustomAlert = () => { document.getElementById('customAlert').classLi
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
+// Utilidad para los inputs de dinero de los modales nuevos
+window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
+
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
-window.logout = () => { 
-    localStorage.removeItem('local_user_status'); 
-    signOut(auth).then(() => location.reload()); 
-};
+window.logout = () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => location.reload()); };
 
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
     if (!btnPagar) return;
-    if(window.userAccessStatus === 'pagado') { 
-        btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; 
-        btnPagar.onclick = null; 
-        btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
-        btnPagar.classList.replace('text-white', 'text-emerald-700'); 
-    } 
-    else if (window.userAccessStatus === 'pendiente') { 
-        btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; 
-        btnPagar.onclick = () => window.location.href = 'activar.html';
-        btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
-        btnPagar.classList.replace('text-white', 'text-amber-700'); 
-    } 
-    else { 
-        btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; 
-        btnPagar.onclick = () => window.location.href = 'activar.html'; 
-    }
-};
-
-// --- MOTOR DE SINCRONIZACIÓN Y SEGURIDAD DIFERIDA ---
-window.sincronizarNube = async (manual = false) => {
-    if (!auth.currentUser) return;
-    if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.mostrarAlerta("La actualización manual está desactivada temporalmente.");
-        return;
-    }
-
-    try {
-        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
-        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
-
-        // 1. SEGURIDAD A CABALLITO (Verificamos estado real)
-        const docSnap = await getDoc(userRef);
-        if (docSnap.exists()) {
-            const realStatus = docSnap.data().status;
-            localStorage.setItem('local_user_status', realStatus);
-            window.userAccessStatus = realStatus;
-
-            if (realStatus === 'vencido' || realStatus === 'rechazado') {
-                window.location.href = 'activar.html';
-                return;
-            }
-        }
-
-        // 2. GUARDAMOS DATOS NORMALMENTE
-        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
-        const payload = {
-            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
-            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
-            last_sync: new Date().toISOString(),
-            sync_count: increment(1)
-        };
-
-        await updateDoc(userRef, payload);
-
-        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
-        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
-        window.actualizarUI_Pago();
-        
-        if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
-    } catch (error) {
-        console.error("Error sincronizando:", error);
-        if (manual) window.mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos están seguros en tu celular.");
-        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
-    }
-};
-
-window.verificarAutoSync = () => {
-    if (typeof window.sincronizarNube !== 'function') return;
-    const lastSync = localStorage.getItem('last_cloud_sync');
-    const now = new Date().getTime();
-    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
+    if(window.userAccessStatus === 'pagado') { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); } 
+    else if (window.userAccessStatus === 'pendiente') { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = 'activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); } 
+    else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
 };
 
 // --- AUTENTICACIÓN OPTIMISTA (EL PASE VIP) ---
@@ -119,36 +53,22 @@ onAuthStateChanged(auth, async (user) => {
     
     if (user) {
         document.getElementById('sidebarUserEmail').innerText = user.email;
-        
-        // --- 🚀 PASE VIP LOCAL (Carga a la velocidad de la luz si ya pagó) ---
         const localStatus = localStorage.getItem('local_user_status');
         if (localStatus === 'pagado') {
-            window.userAccessStatus = 'pagado';
-            window.actualizarUI_Pago();
-            document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
-            loginScreen.classList.add('hidden'); 
-            appContent.classList.remove('hidden'); 
-            window.initApp();
-            return; // SALIMOS ACÁ, NO ESPERAMOS A FIREBASE
+            window.userAccessStatus = 'pagado'; window.actualizarUI_Pago(); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); return; 
         }
 
-        // --- SI NO ES VIP LOCAL, COMPROBAMOS EN LA NUBE ---
         const userRef = doc(db, "usuarios_multimeta", user.email);
         try {
             const docSnap = await getDoc(userRef);
-
             if (!docSnap.exists()) {
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
                 window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
             } else {
-                const userData = docSnap.data();
-                window.userAccessStatus = userData.status || 'prueba';
-                localStorage.setItem('local_user_status', window.userAccessStatus);
-                
-                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
-                const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
+                const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; localStorage.setItem('local_user_status', window.userAccessStatus);
+                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA'); const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
                 if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
-                
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
                     if (userData.macro_data) {
@@ -158,41 +78,221 @@ onAuthStateChanged(auth, async (user) => {
                         if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
                     }
                 }
+                window.actualizarUI_Pago(); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
 
-                window.actualizarUI_Pago();
-                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
-
-                if (window.userAccessStatus === 'pagado') { 
-                    loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
-                } else if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') {
-                    window.location.href = 'activar.html';
+                if (window.userAccessStatus === 'pagado') { loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
+                } else if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') { window.location.href = 'activar.html';
                 } else {
-                    const start = new Date(userData.fechaInicio || new Date()); 
-                    const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
-                    
-                    if (diffDays > 7 && window.userAccessStatus !== 'pendiente') {
-                        window.userAccessStatus = 'vencido'; 
-                        localStorage.setItem('local_user_status', 'vencido');
-                        window.location.href = 'activar.html';
+                    const start = new Date(userData.fechaInicio || new Date()); const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                    if (diffDays > 7 && window.userAccessStatus !== 'pendiente') { window.userAccessStatus = 'vencido'; localStorage.setItem('local_user_status', 'vencido'); window.location.href = 'activar.html';
                     } else {
                         if (window.userAccessStatus !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
                         loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
                     }
                 }
             }
-        } catch (error) {
-            console.error("Error cargando de la nube:", error);
-            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
-        }
-    } else {
-        loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden');
-    }
+        } catch (error) { console.error("Error nube:", error); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); }
+    } else { loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden'); }
 });
+
+window.sincronizarNube = async (manual = false) => {
+    if (!auth.currentUser) return;
+    if (manual && !window.ENABLE_MANUAL_SYNC) { window.mostrarAlerta("La actualización manual está desactivada."); return; }
+    try {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const realStatus = docSnap.data().status; localStorage.setItem('local_user_status', realStatus); window.userAccessStatus = realStatus;
+            if (realStatus === 'vencido' || realStatus === 'rechazado') { window.location.href = 'activar.html'; return; }
+        }
+        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+        const payload = {
+            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
+            last_sync: new Date().toISOString(), sync_count: increment(1)
+        };
+        await updateDoc(userRef, payload);
+        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors"); window.actualizarUI_Pago();
+        if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro.");
+    } catch (error) { console.error("Error nube:", error); if (manual) window.mostrarAlerta("❌ Error al guardar en la nube."); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors"); }
+};
+
+window.verificarAutoSync = () => { if (typeof window.sincronizarNube !== 'function') return; const lastSync = localStorage.getItem('last_cloud_sync'); const now = new Date().getTime(); if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); } };
 
 // UI EVENTOS GENERALES
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
-// --- LÓGICA DE AHORRO MULTIMETA ---
+// ============================================================================
+// --- FASE 1: LÓGICA DE RETOS MULTIJUGADOR (NUEVO BLOQUE) ---
+// ============================================================================
+
+window.openRetosModal = () => { document.getElementById('retosModal').classList.remove('hidden'); };
+window.closeRetosModal = () => { document.getElementById('retosModal').classList.add('hidden'); };
+
+window.openCreateRetoModal = () => { 
+    window.closeRetosModal();
+    // Limpiamos los campos
+    document.getElementById('crearRetoNombre').value = '';
+    document.getElementById('crearRetoMonto').value = '';
+    document.getElementById('crearRetoSemanas').value = '';
+    document.getElementById('crearRetoApodo').value = '';
+    document.getElementById('createRetoModal').classList.remove('hidden'); 
+};
+window.closeCreateRetoModal = () => { document.getElementById('createRetoModal').classList.add('hidden'); };
+
+window.openJoinRetoModal = () => { 
+    window.closeRetosModal();
+    document.getElementById('joinRetoCodigo').value = '';
+    document.getElementById('joinRetoApodo').value = '';
+    document.getElementById('joinRetoModal').classList.remove('hidden'); 
+};
+window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
+window.closeShareModal = () => { document.getElementById('shareRetoModal').classList.add('hidden'); };
+
+// 1. CREAR LA SALA EN FIREBASE
+window.crearRetoCloud = async () => {
+    if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
+
+    const nombre = document.getElementById('crearRetoNombre').value.trim();
+    const montoRaw = document.getElementById('crearRetoMonto').value.replace(/\D/g, '');
+    const semanasRaw = document.getElementById('crearRetoSemanas').value;
+    const tipo = document.getElementById('crearRetoTipo').value;
+    const apodo = document.getElementById('crearRetoApodo').value.trim();
+
+    if (!nombre || !montoRaw || !semanasRaw || !apodo) {
+        return alert("Por favor, completá todos los campos y tu Apodo.");
+    }
+
+    const monto = parseInt(montoRaw);
+    const semanas = parseInt(semanasRaw);
+    if (monto <= 0 || semanas <= 0) return alert("Los valores deben ser mayores a 0.");
+
+    const btn = document.getElementById('btnConfirmCrearReto');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Generando Sala... ⏳";
+    btn.disabled = true;
+
+    try {
+        // Generamos un código único tipo "RETO-AB12"
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
+        const codigoGenerado = `RETO-${rnd}`;
+
+        // El objeto jugador del creador
+        const jugadorInicial = {
+            email: auth.currentUser.email,
+            apodo: apodo,
+            pagado: 0,
+            progreso: []
+        };
+
+        // Creamos la sala en Firestore
+        await addDoc(collection(db, "retos_multijugador"), {
+            codigo: codigoGenerado,
+            nombre: nombre,
+            meta: monto,
+            semanas: semanas,
+            tipo: tipo,
+            creador: auth.currentUser.email,
+            participantes: [jugadorInicial],
+            createdAt: serverTimestamp()
+        });
+
+        // Éxito: Mostramos el código
+        window.closeCreateRetoModal();
+        currentShareCode = codigoGenerado;
+        document.getElementById('shareCodeDisplay').innerText = codigoGenerado;
+        document.getElementById('shareRetoModal').classList.remove('hidden');
+
+    } catch (error) {
+        console.error(error);
+        alert("Error al crear el reto. Revisá tu conexión.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+// 2. UNIRSE A LA SALA EN FIREBASE
+window.unirseRetoCloud = async () => {
+    if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
+
+    const codigoInput = document.getElementById('joinRetoCodigo').value.trim().toUpperCase();
+    const apodo = document.getElementById('joinRetoApodo').value.trim();
+
+    if (!codigoInput || !apodo) return alert("Necesitás el Código y un Apodo para unirte.");
+
+    const btn = document.getElementById('btnConfirmJoinReto');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Buscando... ⏳";
+    btn.disabled = true;
+
+    try {
+        // Buscamos la sala por el código
+        const q = query(collection(db, "retos_multijugador"), where("codigo", "==", codigoInput));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("No encontramos ningún reto con ese código. Revisalo bien.");
+            btn.innerHTML = originalText; btn.disabled = false;
+            return;
+        }
+
+        // Si la sala existe, obtenemos su ID
+        const salaDoc = querySnapshot.docs[0];
+        const salaId = salaDoc.id;
+        const salaData = salaDoc.data();
+
+        // Verificamos si el usuario ya está adentro
+        const yaEsta = salaData.participantes.some(p => p.email === auth.currentUser.email);
+        if (yaEsta) {
+            alert("¡Ya estás adentro de este reto!");
+            window.closeJoinRetoModal();
+            return;
+        }
+
+        // Agregamos al usuario a la lista de participantes
+        const nuevoJugador = {
+            email: auth.currentUser.email,
+            apodo: apodo,
+            pagado: 0,
+            progreso: []
+        };
+
+        const salaRef = doc(db, "retos_multijugador", salaId);
+        await updateDoc(salaRef, {
+            participantes: arrayUnion(nuevoJugador)
+        });
+
+        window.closeJoinRetoModal();
+        window.mostrarAlerta(`✅ ¡Te uniste con éxito a "${salaData.nombre}"!`);
+        // (En la Fase 2 haremos que aparezca visualmente en el menú lateral)
+
+    } catch (error) {
+        console.error(error);
+        alert("Error al intentar unirse.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+// 3. GENERAR MENSAJE PARA WHATSAPP
+window.compartirPorWhatsApp = () => {
+    // La URL inteligente (Deep Link) que leeremos en la Fase 2
+    const urlApp = `https://imperialempy-collab.github.io/Ahorro.Challenge/?reto=${currentShareCode}`;
+    const texto = `¡Te reto a ahorrar! 💰\n\nEstoy usando Ahorro Challenge y creé una sala privada. Entrá al link y sumate a mi tablero para competir:\n\n👉 ${urlApp}\n\nO ingresá este código en la app: *${currentShareCode}*`;
+    
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+};
+
+
+// ============================================================================
+// --- LÓGICA DE AHORRO LOCAL (INTACTA) ---
+// ============================================================================
+
 const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
 let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
 const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
