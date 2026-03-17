@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita bloquear el botón manual
 window.ENABLE_MANUAL_SYNC = true; 
@@ -48,7 +48,6 @@ window.sincronizarNube = async (manual = false) => {
     }
 
     try {
-        // Animación de subiendo (Amarillo)
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
 
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
@@ -61,21 +60,20 @@ window.sincronizarNube = async (manual = false) => {
                 historial: safeParse(localStorage.getItem('mg_historial')), 
                 ingreso: localStorage.getItem('mg_ingreso') || 0 
             },
-            last_sync: new Date().toISOString()
+            last_sync: new Date().toISOString(),
+            sync_count: increment(1) // CONTADOR DE CLICS PARA EL PANEL ADMIN
         };
 
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
         await updateDoc(userRef, payload);
 
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
-        // Volvemos a Verde
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
         
         if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
     } catch (error) {
         console.error("Error sincronizando:", error);
         if (manual) window.mostrarAlerta("❌ Hubo un error al guardar en la nube. Tus datos están seguros en tu celular.");
-        // Si falla, lo dejamos en rojo para que sepa que no se subió
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
     }
 };
@@ -108,7 +106,6 @@ onAuthStateChanged(auth, async (user) => {
                 window.userAccessStatus = userData.status || 'prueba';
                 
                 // --- BARRERA OFFLINE-FIRST ---
-                // Si el celular ya tiene datos de Ahorro, IGNORA a Firebase para no aplastar tu trabajo local.
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
                 
@@ -116,7 +113,6 @@ onAuthStateChanged(auth, async (user) => {
                     localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
                 }
                 
-                // Lo mismo para Macro Gestión
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
                     if (userData.macro_data) {
@@ -169,7 +165,6 @@ const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0
 window.save = () => { 
     try {
         localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
-        // 🔴 Pinta de rojo avisando que hay cambios sin subir a la nube
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
         if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync(); 
     } catch(e) { console.error(e); }
@@ -217,7 +212,7 @@ window.renderGoals = () => { const container = document.getElementById('goalsLis
 window.renderParticipants = () => { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = window.getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); };
 window.scrollToNext = () => { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = window.getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } };
 
-// --- NUEVO: AUTOGUARDADO AL INICIAR ---
+// --- AUTO-INICIO Y AUTO-GUARDADO ---
 window.initApp = () => { 
     window.load(); 
     window.updateViewButtons(); 
