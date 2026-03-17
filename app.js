@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita bloquear el botón manual
 window.ENABLE_MANUAL_SYNC = true; 
 
 const firebaseConfig = {
@@ -21,54 +20,84 @@ const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
 
-// --- UTILIDADES GLOBALES ---
-window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
+// --- UTILIDADES GLOBALES Y REDIRECCIONES ---
+window.mostrarAlerta = (mensaje) => { 
+    document.getElementById('customAlertMessage').innerText = mensaje; 
+    document.getElementById('customAlert').classList.remove('hidden'); 
+    const btnActivar = document.getElementById('btnAlertActivar');
+    if (btnActivar) { btnActivar.onclick = () => window.location.href = 'activar.html'; }
+};
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
-// --- LÓGICA DE AUTENTICACIÓN ---
-window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { document.getElementById('btnProbarGratis').classList.add('hidden'); window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta."); } else { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta("Error al entrar: " + error.message); } }); };
-window.logout = () => { signOut(auth).then(() => location.reload()); };
+window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
+window.logout = () => { 
+    localStorage.removeItem('local_user_status'); // Borramos el VIP al salir
+    signOut(auth).then(() => location.reload()); 
+};
 
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
     if (!btnPagar) return;
-    if(window.userAccessStatus === 'pagado') { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); } 
-    else if (window.userAccessStatus === 'pendiente') { btnPagar.innerHTML = 'Pago en revisión ⏳'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); } 
-    else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); }; }
+    if(window.userAccessStatus === 'pagado') { 
+        btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; 
+        btnPagar.onclick = null; 
+        btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
+        btnPagar.classList.replace('text-white', 'text-emerald-700'); 
+    } 
+    else if (window.userAccessStatus === 'pendiente') { 
+        btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; 
+        btnPagar.onclick = () => window.location.href = 'activar.html';
+        btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
+        btnPagar.classList.replace('text-white', 'text-amber-700'); 
+    } 
+    else { 
+        btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; 
+        btnPagar.onclick = () => window.location.href = 'activar.html'; 
+    }
 };
 
-// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE ---
+// --- MOTOR DE SINCRONIZACIÓN Y SEGURIDAD DIFERIDA ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.mostrarAlerta("La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día.");
+        window.mostrarAlerta("La actualización manual está desactivada temporalmente.");
         return;
     }
 
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
 
+        // 1. SEGURIDAD A CABALLITO (Verificamos estado real)
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const realStatus = docSnap.data().status;
+            localStorage.setItem('local_user_status', realStatus); // Actualizamos el VIP local
+            window.userAccessStatus = realStatus;
+
+            // Si el admin lo bloqueó o rechazó, lo pateamos
+            if (realStatus === 'vencido' || realStatus === 'rechazado') {
+                window.location.href = 'activar.html';
+                return; // Cortamos la sincronización
+            }
+        }
+
+        // 2. GUARDAMOS DATOS NORMALMENTE
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
-
         const payload = {
             ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
-            macro_data: { 
-                cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
-                gastos: safeParse(localStorage.getItem('mg_gastos')), 
-                historial: safeParse(localStorage.getItem('mg_historial')), 
-                ingreso: localStorage.getItem('mg_ingreso') || 0 
-            },
+            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
             last_sync: new Date().toISOString(),
-            sync_count: increment(1) // CONTADOR DE CLICS PARA EL PANEL ADMIN
+            sync_count: increment(1)
         };
 
-        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
         await updateDoc(userRef, payload);
 
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        window.actualizarUI_Pago();
         
         if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.");
     } catch (error) {
@@ -82,19 +111,30 @@ window.verificarAutoSync = () => {
     if (typeof window.sincronizarNube !== 'function') return;
     const lastSync = localStorage.getItem('last_cloud_sync');
     const now = new Date().getTime();
-    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24 horas (86400000 ms)
-        window.sincronizarNube(false);
-    }
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
 };
 
-// --- AUTENTICACIÓN OFFLINE-FIRST ---
+// --- AUTENTICACIÓN OPTIMISTA (EL PASE VIP) ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
     if (user) {
         document.getElementById('sidebarUserEmail').innerText = user.email;
-        const userRef = doc(db, "usuarios_multimeta", user.email);
         
+        // --- 🚀 PASE VIP LOCAL (Cero Lecturas a Firebase si ya pagó) ---
+        const localStatus = localStorage.getItem('local_user_status');
+        if (localStatus === 'pagado') {
+            window.userAccessStatus = 'pagado';
+            window.actualizarUI_Pago();
+            document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+            loginScreen.classList.add('hidden'); 
+            appContent.classList.remove('hidden'); 
+            window.initApp();
+            return; // SALIMOS ACÁ, NO LEEMOS FIREBASE
+        }
+
+        // --- SI NO ES VIP LOCAL, COMPROBAMOS EN LA NUBE ---
+        const userRef = doc(db, "usuarios_multimeta", user.email);
         try {
             const docSnap = await getDoc(userRef);
 
@@ -104,14 +144,12 @@ onAuthStateChanged(auth, async (user) => {
             } else {
                 const userData = docSnap.data();
                 window.userAccessStatus = userData.status || 'prueba';
+                localStorage.setItem('local_user_status', window.userAccessStatus); // Guardamos el estado real localmente
                 
-                // --- BARRERA OFFLINE-FIRST ---
+                // Barrera Offline-First
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
-                
-                if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
-                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
-                }
+                if (!hasLocalAhorro && userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
                 
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
@@ -128,14 +166,17 @@ onAuthStateChanged(auth, async (user) => {
 
                 if (window.userAccessStatus === 'pagado') { 
                     loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
-                } else if (window.userAccessStatus === 'vencido') {
-                    loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                } else if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') {
+                    // Si está vencido o rechazado, lo mandamos directo a la página de activación
+                    window.location.href = 'activar.html';
                 } else {
                     const start = new Date(userData.fechaInicio || new Date()); 
                     const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
                     
                     if (diffDays > 7 && window.userAccessStatus !== 'pendiente') {
-                        window.userAccessStatus = 'vencido'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.add('hidden'); document.getElementById('upgradeScreen').classList.remove('hidden');
+                        window.userAccessStatus = 'vencido'; 
+                        localStorage.setItem('local_user_status', 'vencido');
+                        window.location.href = 'activar.html';
                     } else {
                         if (window.userAccessStatus !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
                         loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
@@ -151,38 +192,16 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- UI EVENTOS GENERALES ---
+// UI EVENTOS GENERALES
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
-window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { window.mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso."); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
-window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
-window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.mostrarAlerta("Primero elegí la foto de tu transferencia."); window.mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
 
 // --- LÓGICA DE AHORRO MULTIMETA ---
 const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
 let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
 const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 
-window.save = () => { 
-    try {
-        localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
-        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
-        if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync(); 
-    } catch(e) { console.error(e); }
-};
-
-window.load = () => { 
-    try {
-        const saved = localStorage.getItem(DB_KEY); 
-        if (saved && saved !== "null" && saved !== "undefined") { 
-            const p = JSON.parse(saved); 
-            if(p) {
-                if (p.config && (!p.goals || p.goals.length === 0)) { goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; participantGoals = {}; (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); } else { goals = p.goals || goals; participantGoals = p.participantGoals || {}; } participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
-            }
-        } 
-    } catch(e) { console.error("Ignorando caché corrupto."); }
-    window.updateGoalDropdown(); 
-};
-
+window.save = () => { try { localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors"); if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync(); } catch(e) { console.error(e); } };
+window.load = () => { try { const saved = localStorage.getItem(DB_KEY); if (saved && saved !== "null" && saved !== "undefined") { const p = JSON.parse(saved); if(p) { if (p.config && (!p.goals || p.goals.length === 0)) { goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; participantGoals = {}; (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); } else { goals = p.goals || goals; participantGoals = p.participantGoals || {}; } participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; } } } catch(e) { console.error("Ignorando caché corrupto."); } window.updateGoalDropdown(); };
 window.openAddParticipantModal = () => { document.getElementById('newParticipantInput').value = ''; window.updateGoalDropdown(); document.getElementById('addParticipantModal').classList.remove('hidden'); setTimeout(() => document.getElementById('newParticipantInput').focus(), 100); };
 window.closeAddParticipantModal = () => { document.getElementById('addParticipantModal').classList.add('hidden'); };
 window.addParticipant = () => { const n = document.getElementById('newParticipantInput').value.trim().toUpperCase(); const goalId = document.getElementById('goalSelect').value; if (n && !participants.includes(n)) { participants.push(n); participantGoals[n] = goalId; userProgress[n] = []; window.generateSchedule(n); if (!activeParticipant) { activeParticipant = n; statsView = "INDIVIDUAL"; } window.save(); window.updateViewButtons(); window.renderParticipants(); window.renderGoals(); window.updateStats(); window.closeAddParticipantModal(); } else if (participants.includes(n)) { window.mostrarAlerta("Este participante ya existe."); } else { window.mostrarAlerta("Ingresá un nombre válido."); } };
@@ -205,14 +224,23 @@ window.deleteParticipant = async (n) => { const seguro = await window.mostrarCon
 window.setActiveParticipant = (n) => { activeParticipant = n; statsView = 'INDIVIDUAL'; window.save(); window.updateViewButtons(); window.renderParticipants(); window.renderGoals(); window.updateStats(); window.scrollToNext(); };
 window.setStatsView = (v) => { statsView = v; window.updateStats(); window.updateViewButtons(); window.renderGoals(); };
 window.updateViewButtons = () => { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; } };
-window.toggle = (semanaNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante"); const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum); if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); window.recalculateRemaining(activeParticipant); } else { const montoOriginal = userSchedules[activeParticipant][semanaNum - 1]; const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d }); } window.save(); window.renderGoals(); window.updateStats(); };
-window.promptManual = async (semNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante"); const previsto = userSchedules[activeParticipant][semNum - 1]; const val = await window.mostrarPrompt("Ingresá el monto real:", previsto, "number"); if (val !== null && val !== "") { const num = parseInt(val.toString().replace(/\D/g,'')); if (num > 0) { const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum); const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; } else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); } window.recalculateRemaining(activeParticipant); window.save(); window.renderGoals(); window.updateStats(); } } };
+
+window.toggle = (semanaNum) => { 
+    if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
+    if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante"); 
+    const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum); if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); window.recalculateRemaining(activeParticipant); } else { const montoOriginal = userSchedules[activeParticipant][semanaNum - 1]; const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d }); } window.save(); window.renderGoals(); window.updateStats(); 
+};
+window.promptManual = async (semNum) => { 
+    if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
+    if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante"); 
+    const previsto = userSchedules[activeParticipant][semNum - 1]; const val = await window.mostrarPrompt("Ingresá el monto real:", previsto, "number"); if (val !== null && val !== "") { const num = parseInt(val.toString().replace(/\D/g,'')); if (num > 0) { const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum); const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; } else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); } window.recalculateRemaining(activeParticipant); window.save(); window.renderGoals(); window.updateStats(); } } 
+};
+
 window.updateStats = () => { let totalGeneral = 0; Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado)); const strokeVal = 113; if (statsView === 'COLECTIVO') { document.getElementById('statsTitle').innerText = "Gran Total Colectivo"; document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`; let totalObjetivoGlobal = 0; participants.forEach(p => { totalObjetivoGlobal += window.getGoalForUser(p).amount; }); const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral); } else { if(!activeParticipant) { document.getElementById('statsTitle').innerText = "Ahorro de -"; document.getElementById('metaLabel').innerText = "Sin meta"; document.getElementById('progressPercentage').innerText = "0%"; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal; document.getElementById('totalSavedCounter').innerText = "0 Gs."; return; } const userGoal = window.getGoalForUser(activeParticipant); const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0); document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`; const falta = userGoal.amount - miTotal; document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!"; const p = (miTotal / userGoal.amount) * 100; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal); } };
-window.renderGoals = () => { const container = document.getElementById('goalsList'); let html = ""; if (statsView === 'COLECTIVO') { html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`; goals.forEach(g => { let totalGoalSaved = 0; let peopleInGoal = 0; participants.forEach(p => { if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) { peopleInGoal++; const pagos = userProgress[p] || []; totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0); } }); if(peopleInGoal === 0) return; let targetTotal = g.amount * peopleInGoal; let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0; html += `<div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div><h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3><p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participantes • Meta: ${formatPYG(g.amount)} c/u</p><div class="flex justify-between items-end mb-2"><span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span><span class="text-sm font-bold text-primary">${Math.round(progress)}%</span></div><div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div></div></div>`; }); html += `</div>`; container.innerHTML = html; } else { if (!activeParticipant) { container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`; return; } const userGoal = window.getGoalForUser(activeParticipant); for (let i = 1; i <= userGoal.weeks; i++) { const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i); const hechoPorMi = !!pago; const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks); html += `<div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div></div><div class="flex flex-col items-end gap-1 px-1">${hechoPorMi ? `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span></div>` : ''}</div><div class="flex gap-1"><button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${hechoPorMi ? 'LISTO' : 'MARCAR'}</button></div></div>`; } container.innerHTML = html; } };
+window.renderGoals = () => { const container = document.getElementById('goalsList'); let html = ""; if (statsView === 'COLECTIVO') { html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`; goals.forEach(g => { let totalGoalSaved = 0; let peopleInGoal = 0; participants.forEach(p => { if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) { peopleInGoal++; const pagos = userProgress[p] || []; totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0); } }); if(peopleInGoal === 0) return; let targetTotal = g.amount * peopleInGoal; let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0; html += `<div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div><h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3><p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participants • Meta: ${formatPYG(g.amount)} c/u</p><div class="flex justify-between items-end mb-2"><span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span><span class="text-sm font-bold text-primary">${Math.round(progress)}%</span></div><div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div></div></div>`; }); html += `</div>`; container.innerHTML = html; } else { if (!activeParticipant) { container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`; return; } const userGoal = window.getGoalForUser(activeParticipant); for (let i = 1; i <= userGoal.weeks; i++) { const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i); const hechoPorMi = !!pago; const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks); html += `<div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div></div><div class="flex flex-col items-end gap-1 px-1">${hechoPorMi ? `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span></div>` : ''}</div><div class="flex gap-1"><button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${hechoPorMi ? 'LISTO' : 'MARCAR'}</button></div></div>`; } container.innerHTML = html; } };
 window.renderParticipants = () => { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = window.getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); };
 window.scrollToNext = () => { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = window.getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } };
 
-// --- AUTO-INICIO Y AUTO-GUARDADO ---
 window.initApp = () => { 
     window.load(); 
     window.updateViewButtons(); 
