@@ -36,33 +36,21 @@ window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.t
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 
-// 🧹 ESCOBA DIGITAL CON GUARDADO AUTOMÁTICO ANTES DE SALIR (CORREGIDO)
 window.logout = async () => { 
     if (auth.currentUser) {
         try {
             const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
             const payload = {
                 ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
-                macro_data: { 
-                    cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
-                    gastos: safeParse(localStorage.getItem('mg_gastos')), 
-                    historial: safeParse(localStorage.getItem('mg_historial')), 
-                    ingreso: localStorage.getItem('mg_ingreso') || 0 
-                },
+                macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
                 last_sync: new Date().toISOString()
             };
             const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
-            // setDoc con merge bloquea la recarga hasta estar 100% seguros de que se guardó en la nube
             await setDoc(userRef, payload, { merge: true });
-        } catch (e) {
-            console.error("Error crítico al guardar antes de salir:", e);
-        }
+        } catch (e) { console.error("Error crítico al guardar antes de salir:", e); }
     }
-    
-    // Limpiamos minuciosamente el celular
     const keys = ['local_user_status', 'ahorro_dinamico_LAB_TEST_MULTIMETA', 'mg_cuentas', 'mg_gastos', 'mg_historial', 'mg_ingreso', 'last_cloud_sync'];
     keys.forEach(k => localStorage.removeItem(k));
-    
     signOut(auth).then(() => location.reload()); 
 };
 
@@ -74,7 +62,7 @@ window.actualizarUI_Pago = () => {
     else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
 };
 
-// --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN (CORREGIDO) ---
+// --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
@@ -93,36 +81,14 @@ onAuthStateChanged(auth, async (user) => {
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
                 window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
             } else {
-                const userData = docSnap.data(); 
-                window.userAccessStatus = userData.status || 'prueba'; 
-                localStorage.setItem('local_user_status', window.userAccessStatus);
+                const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; localStorage.setItem('local_user_status', window.userAccessStatus);
                 
-                // RADAR DE DATOS DE AHORRO MEJORADO
-                let isAhorroLocalEmpty = true;
-                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
-                try {
-                    if (localAhorro && localAhorro !== "null" && localAhorro !== "undefined") {
-                        const p = JSON.parse(localAhorro);
-                        if ((p.participants && p.participants.length > 0) || (p.goals && p.goals.length > 1)) {
-                            isAhorroLocalEmpty = false;
-                        }
-                    }
-                } catch(e) {}
+                let isAhorroLocalEmpty = true; const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
+                try { if (localAhorro && localAhorro !== "null" && localAhorro !== "undefined") { const p = JSON.parse(localAhorro); if ((p.participants && p.participants.length > 0) || (p.goals && p.goals.length > 1)) { isAhorroLocalEmpty = false; } } } catch(e) {}
+                if (isAhorroLocalEmpty && userData.ahorro_data) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
 
-                if (isAhorroLocalEmpty && userData.ahorro_data) {
-                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
-                }
-
-                // RADAR DE DATOS DE MACRO MEJORADO
-                let isMacroEmpty = true;
-                const localCuentas = localStorage.getItem('mg_cuentas');
-                try {
-                    if (localCuentas && localCuentas !== "null" && localCuentas !== "undefined") {
-                        const c = JSON.parse(localCuentas);
-                        if (c.length > 0) isMacroEmpty = false;
-                    }
-                } catch(e) {}
-
+                let isMacroEmpty = true; const localCuentas = localStorage.getItem('mg_cuentas');
+                try { if (localCuentas && localCuentas !== "null" && localCuentas !== "undefined") { const c = JSON.parse(localCuentas); if (c.length > 0) isMacroEmpty = false; } } catch(e) {}
                 if (isMacroEmpty && userData.macro_data) {
                     if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
                     if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
@@ -235,6 +201,7 @@ window.crearRetoCloud = async () => {
             progreso: []
         };
 
+        // NOTA: Agregamos participantes_emails para busquedas baratas y veloces
         await addDoc(collection(db, "retos_multijugador"), {
             codigo: codigoGenerado,
             nombre: nombre,
@@ -243,6 +210,7 @@ window.crearRetoCloud = async () => {
             tipo: tipo,
             creador: auth.currentUser.email,
             participantes: [jugadorInicial],
+            participantes_emails: [auth.currentUser.email], 
             createdAt: serverTimestamp()
         });
 
@@ -250,6 +218,9 @@ window.crearRetoCloud = async () => {
         currentShareCode = codigoGenerado;
         document.getElementById('shareCodeDisplay').innerText = codigoGenerado;
         document.getElementById('shareRetoModal').classList.remove('hidden');
+        
+        // Recargamos la lista lateral para que aparezca el nuevo reto
+        window.cargarRetosNube();
 
     } catch (error) {
         console.error(error);
@@ -302,12 +273,17 @@ window.unirseRetoCloud = async () => {
         };
 
         const salaRef = doc(db, "retos_multijugador", salaId);
+        // Actualizamos los datos del jugador y su email al index rápido
         await updateDoc(salaRef, {
-            participantes: arrayUnion(nuevoJugador)
+            participantes: arrayUnion(nuevoJugador),
+            participantes_emails: arrayUnion(auth.currentUser.email)
         });
 
         window.closeJoinRetoModal();
         window.mostrarAlerta(`✅ ¡Te uniste con éxito a "${salaData.nombre}"!`);
+        
+        // Recargamos la lista lateral
+        window.cargarRetosNube();
 
     } catch (error) {
         console.error(error);
@@ -322,6 +298,56 @@ window.compartirPorWhatsApp = () => {
     const urlApp = `https://imperialempy-collab.github.io/Ahorro.Challenge/?reto=${currentShareCode}`;
     const texto = `¡Te reto a ahorrar! 💰\n\nEstoy usando Ahorro Challenge y creé una sala privada. Entrá al link y sumate a mi tablero para competir:\n\n👉 ${urlApp}\n\nO ingresá este código en la app: *${currentShareCode}*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+};
+
+// Cargar lista de retos en la barra lateral
+window.cargarRetosNube = async () => {
+    const list = document.getElementById('retosNubeList');
+    if(!auth.currentUser) return;
+    
+    try {
+        // Búsqueda hiper-rápida (1 sola lectura por documento encontrado)
+        const q = query(collection(db, "retos_multijugador"), where("participantes_emails", "array-contains", auth.currentUser.email));
+        const snapshot = await getDocs(q);
+        
+        if(snapshot.empty) {
+            list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">No estás en ningún reto</p>`;
+            return;
+        }
+        
+        let html = "";
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            
+            // Construcción del Acordeón Visual para cada reto
+            html += `
+            <details class="group bg-slate-50 rounded-xl border border-slate-200 overflow-hidden cursor-pointer mb-2">
+                <summary class="p-3 text-sm font-bold text-slate-700 flex justify-between items-center list-none hover:bg-slate-100 transition-colors">
+                    <span class="truncate">${data.nombre}</span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="p-3 bg-white border-t border-slate-100 space-y-3">
+                    ${data.participantes.map(p => {
+                        const prog = data.meta > 0 ? (p.pagado / data.meta) * 100 : 0;
+                        return `
+                        <div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="font-bold text-slate-800">${p.apodo}</span>
+                                <span class="text-primary font-black">${formatPYG(p.pagado)}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${Math.min(prog, 100)}%"></div></div>
+                        </div>`;
+                    }).join('')}
+                    <button class="w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-blue-100 transition-colors" onclick="window.mostrarAlerta('La carga del Tablero en Vivo estará disponible pronto.')">Ver Tablero</button>
+                </div>
+            </details>`;
+        });
+        list.innerHTML = html;
+        
+    } catch(e) {
+        console.error("Error cargando retos", e);
+        list.innerHTML = `<p class="text-[11px] text-rose-400 italic text-center py-2">Error al cargar</p>`;
+    }
 };
 
 
@@ -374,13 +400,28 @@ window.renderGoals = () => { const container = document.getElementById('goalsLis
 window.renderParticipants = () => { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = window.getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); };
 window.scrollToNext = () => { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = window.getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } };
 
+// --- MOTOR DE INICIO CON LECTOR DE URL ---
 window.initApp = () => { 
     window.load(); 
     window.updateViewButtons(); 
     window.renderParticipants(); 
     window.renderGoals(); 
     window.updateStats(); 
+    
+    // Leemos retos en la nube
+    window.cargarRetosNube();
+    
     if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
+
+    // Lector inteligente de Links de WhatsApp
+    const urlParams = new URLSearchParams(window.location.search);
+    const retoCode = urlParams.get('reto');
+    if (retoCode) {
+        window.openJoinRetoModal();
+        document.getElementById('joinRetoCodigo').value = retoCode;
+        // Limpiamos la URL para que no moleste al recargar
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 };
 
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
