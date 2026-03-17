@@ -14,214 +14,15 @@
     <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#10b981">
     
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
-            authDomain: "ahorro-dinamico.firebaseapp.com",
-            projectId: "ahorro-dinamico",
-            storageBucket: "ahorro-dinamico.firebasestorage.app",
-            messagingSenderId: "906931960122",
-            appId: "1:906931960122:web:02b6d090d163c2c135f803"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app); 
-        const provider = new GoogleAuthProvider();
-
-        window.userAccessStatus = 'prueba';
-
-        window.mostrarAlerta = (mensaje) => {
-            document.getElementById('customAlertMessage').innerText = mensaje;
-            document.getElementById('customAlert').classList.remove('hidden');
-        };
-
-        window.closeCustomAlert = () => {
-            document.getElementById('customAlert').classList.add('hidden');
-        };
-
-        window.mostrarConfirm = (mensaje) => {
-            return new Promise((resolve) => {
-                document.getElementById('customConfirmMessage').innerText = mensaje;
-                const modal = document.getElementById('customConfirm');
-                const btnOk = document.getElementById('btnConfirmOk');
-                const btnCancel = document.getElementById('btnConfirmCancel');
-
-                const cleanUp = () => {
-                    modal.classList.add('hidden');
-                    btnOk.onclick = null;
-                    btnCancel.onclick = null;
-                };
-
-                btnOk.onclick = () => { cleanUp(); resolve(true); };
-                btnCancel.onclick = () => { cleanUp(); resolve(false); };
-
-                modal.classList.remove('hidden');
-            });
-        };
-
-        window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => {
-            return new Promise((resolve) => {
-                document.getElementById('customPromptMessage').innerText = mensaje;
-                const input = document.getElementById('customPromptInput');
-                
-                input.type = tipoInput === 'number' ? 'text' : tipoInput;
-                input.inputMode = tipoInput === 'number' ? 'numeric' : 'text';
-                
-                const formatNumber = (e) => {
-                    if (tipoInput === 'number') {
-                        let val = e.target.value.replace(/\D/g, '');
-                        e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
-                    }
-                };
-                
-                input.oninput = formatNumber;
-                
-                if (tipoInput === 'number' && valorPorDefecto !== '') {
-                    let val = valorPorDefecto.toString().replace(/\D/g, '');
-                    input.value = val ? new Intl.NumberFormat('es-PY').format(val) : '';
-                } else {
-                    input.value = valorPorDefecto;
-                }
-
-                const modal = document.getElementById('customPrompt');
-                const btnOk = document.getElementById('btnPromptOk');
-                const btnCancel = document.getElementById('btnPromptCancel');
-
-                const cleanUp = () => {
-                    modal.classList.add('hidden');
-                    btnOk.onclick = null;
-                    btnCancel.onclick = null;
-                };
-
-                btnOk.onclick = () => { cleanUp(); resolve(input.value); };
-                btnCancel.onclick = () => { cleanUp(); resolve(null); };
-
-                modal.classList.remove('hidden');
-                input.focus();
-            });
-        };
-        
-        window.login = () => {
-            signInWithPopup(auth, provider).catch(error => {
-                if (error.code === 'auth/user-disabled') {
-                    document.getElementById('btnProbarGratis').classList.add('hidden');
-                    mostrarAlerta("⚠️ Tu acceso se encuentra suspendido, comunicate al WhatsApp 0992-049430 para reactivar tu cuenta.");
-                } else {
-                    document.getElementById('btnProbarGratis').classList.remove('hidden');
-                    mostrarAlerta("Error al entrar: " + error.message);
-                }
-            });
-        };
-
-        window.logout = () => {
-            signOut(auth).then(() => location.reload());
-        };
-
-        window.actualizarUI_Pago = () => {
-            const btnPagar = document.getElementById('btnSidebarPagar');
-            if (!btnPagar) return;
-            if(window.userAccessStatus === 'pagado') {
-                btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>';
-                btnPagar.onclick = null;
-                btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50');
-                btnPagar.classList.replace('text-white', 'text-emerald-700');
-            } else if (window.userAccessStatus === 'pendiente') {
-                btnPagar.innerHTML = 'Pago en revisión ⏳';
-                btnPagar.onclick = null;
-                btnPagar.classList.replace('bg-slate-900', 'bg-amber-100');
-                btnPagar.classList.replace('text-white', 'text-amber-700');
-            } else {
-                btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
-                btnPagar.onclick = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
-            }
-        };
-
-        onAuthStateChanged(auth, async (user) => {
-            const loginScreen = document.getElementById('loginScreen');
-            const appContent = document.getElementById('appContent');
-            const loadingSpinner = document.getElementById('loadingSpinner');
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            const loginText = document.getElementById('loginText');
-
-            if (user) {
-                document.getElementById('sidebarUserEmail').innerText = user.email;
-                const userRef = doc(db, "usuarios_multimeta", user.email);
-                const docSnap = await getDoc(userRef);
-
-                if (!docSnap.exists()) {
-                    await setDoc(userRef, {
-                        email: user.email,
-                        status: 'prueba',
-                        fechaInicio: new Date().toISOString()
-                    });
-                    window.userAccessStatus = 'prueba';
-                    window.actualizarUI_Pago();
-                    loginScreen.classList.add('hidden');
-                    appContent.classList.remove('hidden');
-                    initApp(); 
-                } else {
-                    const userData = docSnap.data();
-                    window.userAccessStatus = userData.status;
-                    window.actualizarUI_Pago();
-
-                    if (userData.status === 'pagado') {
-                        loginScreen.classList.add('hidden');
-                        appContent.classList.remove('hidden');
-                        initApp();
-                    } else if (userData.status === 'prueba' || userData.status === 'pendiente') {
-                        const start = new Date(userData.fechaInicio);
-                        const now = new Date();
-                        const diffTime = Math.abs(now - start);
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                        if (diffDays > 7 && userData.status !== 'pendiente') {
-                            window.userAccessStatus = 'vencido';
-                            window.actualizarUI_Pago();
-                            loginScreen.classList.add('hidden');
-                            appContent.classList.add('hidden');
-                            document.getElementById('upgradeScreen').classList.remove('hidden');
-                        } else {
-                            if (userData.status !== 'pendiente') {
-                                document.getElementById('btnProbarGratis').classList.remove('hidden');
-                                mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`);
-                            }
-                            loginScreen.classList.add('hidden');
-                            document.getElementById('upgradeScreen').classList.add('hidden');
-                            appContent.classList.remove('hidden');
-                            initApp();
-                        }
-                    }
-                }
-            } else {
-                loginScreen.classList.remove('hidden');
-                appContent.classList.add('hidden');
-                if (loadingSpinner) loadingSpinner.classList.add('hidden');
-                if (googleLoginBtn) googleLoginBtn.classList.remove('hidden');
-                if (loginText) loginText.classList.remove('hidden');
-            }
-        });
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
-    <style>
-        body { background: radial-gradient(circle at top right, #f0fdf4, #f8fafc 50%), radial-gradient(circle at bottom left, #eff6ff, #f8fafc 50%); min-height: 100vh; }
-        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .badge-active { background: #10b981 !important; color: white !important; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); }
-        .sticky-header { position: sticky; top: 0; z-index: 50; padding-top: 1rem; padding-bottom: 1rem; }
-        .btn-view-active { border-color: #10b981 !important; color: #10b981 !important; font-weight: 700; }
-        .btn-view-inactive { border-color: #e2e8f0 !important; color: #94a3b8 !important; }
-        .hidden { display: none !important; }
-    </style>
+    
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="app.js"></script>
+
 </head>
 <body class="font-body text-slate-800">
 
@@ -270,7 +71,7 @@
                 <p id="sidebarUserEmail" class="text-xs text-slate-800 font-bold truncate max-w-[150px]">usuario@mail.com</p>
             </div>
             <div class="flex items-center gap-2">
-                <button class="relative p-1.5 bg-white rounded-full text-slate-400 shadow-sm border border-slate-200" title="Sincronización a la nube">
+                <button class="relative p-1.5 bg-white rounded-full text-slate-400 shadow-sm border border-slate-200" title="Sincronización">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
                     <span class="absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
                 </button>
@@ -281,31 +82,14 @@
         </div>
         
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
-            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
-                Ahorro Challenge
-            </a>
-            <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                Macro Gestión
-            </a>
-            <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                Gimnasio Financiero
-            </a>
-            
+            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>Ahorro Challenge</a>
+            <a href="macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>Macro Gestión</a>
+            <a href="arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Gimnasio Financiero</a>
             <hr class="border-slate-100 my-4">
-            
-            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">
-                Activar Acceso Ilimitado 👑
-            </button>
+            <button id="btnSidebarPagar" onclick="abrirPaywall()" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
         </div>
-        
         <div class="p-4 border-t border-slate-100 bg-slate-50">
-            <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                Cerrar Sesión
-            </button>
+            <button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Cerrar Sesión</button>
         </div>
     </div>
 
@@ -357,33 +141,15 @@
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col gap-3">
-                
                 <div class="relative flex items-center justify-center w-full">
-                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    </button>
-                    
-                    <div class="text-center">
-                        <h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1>
-                        <div class="flex gap-2 mt-1 justify-center">
-                            <button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button>
-                            <button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button>
-                        </div>
-                    </div>
+                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <div class="text-center"><h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1><div class="flex gap-2 mt-1 justify-center"><button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button><button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button></div></div>
                 </div>
-
                 <div class="flex justify-center gap-3">
-                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    </button>
-                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Compartir Reto">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                    </button>
+                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg></button>
+                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
+                    <button onclick="mostrarAlerta('El modo Reto Multijugador estará disponible próximamente.')" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Compartir Reto"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg></button>
                 </div>
-
                 <div class="flex items-center gap-2 md:gap-4 bg-white/50 p-2 md:p-3 rounded-2xl border border-white shadow-sm w-full">
                     <div class="relative w-10 h-10 md:w-12 md:h-12 shrink-0">
                         <svg class="w-full h-full transform -rotate-90">
@@ -398,7 +164,6 @@
                         <div class="text-[9px] md:text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -413,103 +178,11 @@
                         <div id="participantList" class="space-y-1"></div>
                     </div>
                 </aside>
-
                 <main class="lg:col-span-3">
                     <div id="goalsList" class="space-y-2"></div>
                 </main>
             </div>
         </div>
     </div>
-
-    <script>
-        // Lógica Visual del Menú
-        window.toggleSidebar = () => {
-            const sb = document.getElementById('sidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } 
-            else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); }
-        };
-
-        window.cerrarPaywall = () => {
-            if(window.userAccessStatus === 'vencido') {
-                mostrarAlerta("Debes activar tu cuenta para continuar editando tu progreso.");
-            } else {
-                document.getElementById('paywallScreen').classList.add('hidden');
-            }
-        };
-
-        window.mostrarNombreArchivo = () => {
-            const input = document.getElementById('comprobanteInput');
-            if(input.files.length > 0) {
-                document.getElementById('txtArchivo').innerText = input.files[0].name;
-            }
-        };
-
-        window.enviarComprobante = () => {
-            const input = document.getElementById('comprobanteInput');
-            if(input.files.length === 0) return mostrarAlerta("Primero elegí la foto de tu transferencia.");
-            mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve.");
-            window.userAccessStatus = 'pendiente';
-            if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago();
-            document.getElementById('paywallScreen').classList.add('hidden');
-        };
-
-        // --- LÓGICA DE AHORRO MULTIMETA (PURA LOCAL STORAGE) ---
-        const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
-        let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
-        const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
-        
-        function save() { 
-            localStorage.setItem(DB_KEY, JSON.stringify({ goals, participants, participantGoals, userReminders, activeParticipant, statsView, userProgress, userSchedules })); 
-        }
-
-        function load() { 
-            const saved = localStorage.getItem(DB_KEY); 
-            if (saved) { 
-                const p = JSON.parse(saved); 
-                if (p.config && (!p.goals || p.goals.length === 0)) { 
-                    goals = [{ id: 'default', name: 'Meta Principal', amount: p.config.meta, weeks: p.config.semanas }]; 
-                    participantGoals = {}; 
-                    (p.participants || []).forEach(part => { participantGoals[part] = 'default'; }); 
-                } else { 
-                    goals = p.goals || goals; 
-                    participantGoals = p.participantGoals || {}; 
-                } 
-                participants = p.participants || []; userReminders = p.userReminders || {}; activeParticipant = p.activeParticipant || ""; statsView = p.statsView || "COLECTIVO"; userProgress = p.userProgress || {}; userSchedules = p.userSchedules || {}; 
-            } 
-            updateGoalDropdown(); 
-        }
-        
-        window.openAddParticipantModal = () => { document.getElementById('newParticipantInput').value = ''; updateGoalDropdown(); document.getElementById('addParticipantModal').classList.remove('hidden'); setTimeout(() => document.getElementById('newParticipantInput').focus(), 100); };
-        window.closeAddParticipantModal = () => { document.getElementById('addParticipantModal').classList.add('hidden'); };
-        window.addParticipant = () => { const n = document.getElementById('newParticipantInput').value.trim().toUpperCase(); const goalId = document.getElementById('goalSelect').value; if (n && !participants.includes(n)) { participants.push(n); participantGoals[n] = goalId; userProgress[n] = []; generateSchedule(n); if (!activeParticipant) { activeParticipant = n; statsView = "INDIVIDUAL"; } save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); closeAddParticipantModal(); } else if (participants.includes(n)) { mostrarAlerta("Este participante ya existe."); } else { mostrarAlerta("Ingresá un nombre válido."); } };
-        window.openGoalsModal = () => { renderAdminGoals(); document.getElementById('goalsConfigModal').classList.remove('hidden'); };
-        window.closeGoalsModal = () => { document.getElementById('goalsConfigModal').classList.add('hidden'); };
-        function updateGoalDropdown() { const select = document.getElementById('goalSelect'); if (select) { select.innerHTML = goals.map(g => `<option value="${g.id}">${g.name} (${formatPYG(g.amount)})</option>`).join(''); } }
-        function renderAdminGoals() { const list = document.getElementById('goalsAdminList'); list.innerHTML = goals.map(g => { let count = 0; participants.forEach(p => { if(participantGoals[p] === g.id) count++; }); return `<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center"><div><h4 class="font-bold text-slate-800 text-sm">${g.name}</h4><p class="text-[10px] text-slate-500 uppercase">${g.weeks} sem • ${formatPYG(g.amount)} • ${count} usuarios</p></div><div class="flex gap-2"><button onclick="editGoal('${g.id}')" class="p-1.5 text-slate-400 hover:text-secondary"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="deleteGoal('${g.id}')" class="p-1.5 text-slate-400 hover:text-rose-500"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div></div>`; }).join(''); }
-        window.createNewGoal = async () => { const name = await mostrarPrompt("Nombre de la nueva meta:", "Nueva Meta", "text"); if (!name) return; const amount = await mostrarPrompt("Monto total a alcanzar:", "", "number"); if (!amount) return; const weeks = await mostrarPrompt("Cantidad de semanas:", "24", "number"); if (!weeks) return; const nAmount = parseInt(amount.toString().replace(/\D/g,'')); const nWeeks = parseInt(weeks.toString().replace(/\D/g,'')); if (nAmount > 0 && nWeeks > 0) { const newId = 'goal_' + Date.now(); goals.push({ id: newId, name: name, amount: nAmount, weeks: nWeeks }); save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats(); } };
-        window.editGoal = async (id) => { const goal = goals.find(g => g.id === id); if(!goal) return; const name = await mostrarPrompt("Editar Nombre:", goal.name, "text"); if (!name) return; const amount = await mostrarPrompt("Editar Monto total:", goal.amount, "number"); if (!amount) return; const weeks = await mostrarPrompt("Editar Semanas:", goal.weeks, "number"); if (!weeks) return; goal.name = name; goal.amount = parseInt(amount.toString().replace(/\D/g,'')); goal.weeks = parseInt(weeks.toString().replace(/\D/g,'')); participants.forEach(p => { if(participantGoals[p] === id) { generateSchedule(p); recalculateRemaining(p); } }); save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats(); };
-        window.deleteGoal = async (id) => { const inUse = participants.some(p => participantGoals[p] === id); if (inUse) return mostrarAlerta("Hay participantes usando esta meta."); if (goals.length === 1) return mostrarAlerta("Debe existir al menos una meta."); const seguro = await mostrarConfirm("¿Eliminar esta meta?"); if(seguro) { goals = goals.filter(g => g.id !== id); save(); renderAdminGoals(); updateGoalDropdown(); renderGoals(); updateStats(); } };
-        window.openReminderModal = () => { if (!activeParticipant) return mostrarAlerta("Seleccioná un participante."); const savedReminders = userReminders[activeParticipant] || { type: 'semanal', day: 'Lunes', date: '5', time: '10:00' }; document.getElementById('reminderType').value = savedReminders.type; document.getElementById('reminderDay').value = savedReminders.day; document.getElementById('reminderDate').value = savedReminders.date; document.getElementById('reminderTime').value = savedReminders.time; toggleReminderType(); document.getElementById('reminderModal').classList.remove('hidden'); };
-        window.closeReminderModal = () => { document.getElementById('reminderModal').classList.add('hidden'); };
-        window.toggleReminderType = () => { const type = document.getElementById('reminderType').value; if (type === 'semanal') { document.getElementById('weeklyOptions').classList.remove('hidden'); document.getElementById('monthlyOptions').classList.add('hidden'); } else { document.getElementById('weeklyOptions').classList.add('hidden'); document.getElementById('monthlyOptions').classList.remove('hidden'); } };
-        window.saveReminder = () => { const type = document.getElementById('reminderType').value; const day = document.getElementById('reminderDay').value; const date = document.getElementById('reminderDate').value; const time = document.getElementById('reminderTime').value; const userGoal = getGoalForUser(activeParticipant); const titulo = `🐷 Depósito de ${activeParticipant} 💰`; const descripcion = `¡Llegó el día! Te toca hacer el depósito para tu meta: ${userGoal.name}.\n\nEntrá a tu app para marcarlo como listo:\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`; let startDate = new Date(); const [hours, minutes] = time.split(':'); startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0); let gcalRecur = ''; let icalRecur = ''; if (type === 'semanal') { const diasICal = {'Lunes':'MO', 'Martes':'TU', 'Miércoles':'WE', 'Jueves':'TH', 'Viernes':'FR', 'Sábado':'SA', 'Domingo':'SU'}; const rday = diasICal[day]; icalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`; gcalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`; const dayMap = {'Domingo':0, 'Lunes':1, 'Martes':2, 'Miércoles':3, 'Jueves':4, 'Viernes':5, 'Sábado':6}; let distance = (dayMap[day] + 7 - startDate.getDay()) % 7; if (distance === 0) distance = 7; startDate.setDate(startDate.getDate() + distance); } else { icalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`; gcalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`; let targetDate = parseInt(date); if (startDate.getDate() >= targetDate) { startDate.setMonth(startDate.getMonth() + 1); } startDate.setDate(targetDate); } const formatICS = (d) => { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }; const startStr = formatICS(startDate); const endDate = new Date(startDate.getTime() + 60*60*1000); const endStr = formatICS(endDate); const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); if (isIOS) { const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${icalRecur}\nDESCRIPTION:${descripcion.replace(/\n/g, '\\n')}\nEND:VEVENT\nEND:VCALENDAR`; window.location.href = 'data:text/calendar;charset=utf8,' + encodeURIComponent(icsContent); } else { const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(descripcion)}&recur=${encodeURIComponent(gcalRecur)}`; window.open(gcalUrl, '_blank'); } userReminders[activeParticipant] = { type, day, date, time }; save(); closeReminderModal(); renderParticipants(); };
-        function getGoalForUser(nombreUser) { const goalId = participantGoals[nombreUser] || goals[0].id; return goals.find(g => g.id === goalId) || goals[0]; }
-        function calculateWeights(totalWeeks) { let weights = []; let currentWeight = 0; let habitWeeks = Math.floor(totalWeeks * 0.25); if (habitWeeks < 1) habitWeeks = 1; for (let i = 1; i <= totalWeeks; i++) { currentWeight += 1; if (i > habitWeeks && (i - habitWeeks - 1) % 4 === 0) { let jump = Math.floor(totalWeeks / 10); if (jump < 3) jump = 3; currentWeight += jump; } weights.push(currentWeight); } return weights; }
-        function generateSchedule(nombreUser) { const userGoal = getGoalForUser(nombreUser); let schedule = []; let weights = calculateWeights(userGoal.weeks); let totalWeight = weights.reduce((a, b) => a + b, 0); let baseUnit = userGoal.amount / totalWeight; let currentSum = 0; for (let i = 0; i < userGoal.weeks; i++) { if (i === userGoal.weeks - 1) { schedule.push(userGoal.amount - currentSum); } else { let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000; if (amount < 5000) amount = 5000; if (currentSum + amount >= userGoal.amount) { amount = Math.max(0, userGoal.amount - currentSum - 5000); } schedule.push(amount); currentSum += amount; } } userSchedules[nombreUser] = schedule; }
-        function recalculateRemaining(nombreUser) { const userGoal = getGoalForUser(nombreUser); const misPagos = userProgress[nombreUser] || []; const yaPagado = misPagos.reduce((acc, p) => acc + p.pagado, 0); const restoDinero = userGoal.amount - yaPagado; let newSchedule = [...userSchedules[nombreUser]]; let weights = calculateWeights(userGoal.weeks); let unpaidIndices = []; for (let i = 0; i < userGoal.weeks; i++) { const yaEstaPaga = misPagos.some(p => p.semana === (i + 1)); if (!yaEstaPaga) unpaidIndices.push(i); } if (unpaidIndices.length === 0) return; if (restoDinero <= 0) { unpaidIndices.forEach(i => newSchedule[i] = 0); userSchedules[nombreUser] = newSchedule; return; } let remainingWeightSum = unpaidIndices.reduce((sum, idx) => sum + weights[idx], 0); let newBaseUnit = restoDinero / remainingWeightSum; let currentSum = 0; for (let j = 0; j < unpaidIndices.length; j++) { let idx = unpaidIndices[j]; if (j === unpaidIndices.length - 1) { newSchedule[idx] = restoDinero - currentSum; } else { let amount = Math.round((newBaseUnit * weights[idx]) / 5000) * 5000; if (amount < 5000 && restoDinero > 5000) amount = 5000; if (currentSum + amount >= restoDinero) { amount = Math.max(0, restoDinero - currentSum - 5000); } newSchedule[idx] = amount; currentSum += amount; } } userSchedules[nombreUser] = newSchedule; }
-        window.deleteParticipant = async (n) => { const seguro = await mostrarConfirm(`¿Seguro querés eliminar a ${n} y todo su progreso?`); if (seguro) { participants = participants.filter(p => p !== n); if (userProgress[n]) delete userProgress[n]; if (userSchedules[n]) delete userSchedules[n]; if (participantGoals[n]) delete participantGoals[n]; if (userReminders[n]) delete userReminders[n]; if (activeParticipant === n) { activeParticipant = participants.length > 0 ? participants[0] : ""; } save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); } };
-        window.setActiveParticipant = (n) => { activeParticipant = n; statsView = 'INDIVIDUAL'; save(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); scrollToNext(); };
-        window.setStatsView = (v) => { statsView = v; updateStats(); updateViewButtons(); renderGoals(); };
-        function updateViewButtons() { const colBtn = document.getElementById('btnViewCol'); const indBtn = document.getElementById('btnViewInd'); if (statsView === 'COLECTIVO') { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; } else { colBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-inactive"; indBtn.className = "px-3 py-1 text-[10px] rounded-full border transition-all btn-view-active"; } }
-        window.toggle = (semanaNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semanaNum); if (pIdx > -1) { userProgress[activeParticipant].splice(pIdx, 1); recalculateRemaining(activeParticipant); } else { const montoOriginal = userSchedules[activeParticipant][semanaNum - 1]; const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); userProgress[activeParticipant].push({ semana: semanaNum, pagado: montoOriginal, fecha: d }); } save(); renderGoals(); updateStats(); };
-        window.promptManual = async (semNum) => { if (window.userAccessStatus === 'vencido') return document.getElementById('paywallScreen').classList.remove('hidden'); if (!activeParticipant) return mostrarAlerta("Seleccioná un participante"); const previsto = userSchedules[activeParticipant][semNum - 1]; const val = await mostrarPrompt("Ingresá el monto real:", previsto, "number"); if (val !== null && val !== "") { const num = parseInt(val.toString().replace(/\D/g,'')); if (num > 0) { const pIdx = userProgress[activeParticipant].findIndex(p => p.semana === semNum); const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' }); if (pIdx > -1) { userProgress[activeParticipant][pIdx].pagado = num; } else { userProgress[activeParticipant].push({ semana: semNum, pagado: num, fecha: d }); } recalculateRemaining(activeParticipant); save(); renderGoals(); updateStats(); } } };
-        function updateStats() { let totalGeneral = 0; Object.values(userProgress).forEach(pagos => pagos.forEach(p => totalGeneral += p.pagado)); const strokeVal = 113; if (statsView === 'COLECTIVO') { document.getElementById('statsTitle').innerText = "Gran Total Colectivo"; document.getElementById('metaLabel').innerText = `Gestor de Múltiples Metas`; let totalObjetivoGlobal = 0; participants.forEach(p => { totalObjetivoGlobal += getGoalForUser(p).amount; }); const p = totalObjetivoGlobal > 0 ? (totalGeneral / totalObjetivoGlobal) * 100 : 0; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(totalGeneral); } else { if(!activeParticipant) { document.getElementById('statsTitle').innerText = "Ahorro de -"; document.getElementById('metaLabel').innerText = "Sin meta"; document.getElementById('progressPercentage').innerText = "0%"; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal; document.getElementById('totalSavedCounter').innerText = "0 Gs."; return; } const userGoal = getGoalForUser(activeParticipant); const miTotal = (userProgress[activeParticipant] || []).reduce((acc, p) => acc + p.pagado, 0); document.getElementById('statsTitle').innerText = `Ahorro de ${activeParticipant} (${userGoal.name})`; const falta = userGoal.amount - miTotal; document.getElementById('metaLabel').innerText = falta > 0 ? `Faltan: ${formatPYG(falta)}` : "¡META LOGRADA!"; const p = (miTotal / userGoal.amount) * 100; document.getElementById('progressPercentage').innerText = Math.round(Math.min(p, 100)) + '%'; document.getElementById('globalProgressCircle').style.strokeDashoffset = strokeVal - (Math.min(p, 100) / 100 * strokeVal); document.getElementById('totalSavedCounter').innerText = formatPYG(miTotal); } }
-        function renderGoals() { const container = document.getElementById('goalsList'); let html = ""; if (statsView === 'COLECTIVO') { html += `<h2 class="text-sm font-bold text-slate-500 mb-4 uppercase tracking-wider pl-1">Resumen de Metas Activas</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4">`; goals.forEach(g => { let totalGoalSaved = 0; let peopleInGoal = 0; participants.forEach(p => { if (participantGoals[p] === g.id || (!participantGoals[p] && g.id === 'default')) { peopleInGoal++; const pagos = userProgress[p] || []; totalGoalSaved += pagos.reduce((acc, curr) => acc + curr.pagado, 0); } }); if(peopleInGoal === 0) return; let targetTotal = g.amount * peopleInGoal; let progress = targetTotal > 0 ? (totalGoalSaved / targetTotal) * 100 : 0; html += `<div class="glass-card rounded-xl p-5 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-[100px] -z-10"></div><h3 class="font-display font-bold text-slate-800 text-lg mb-1">${g.name}</h3><p class="text-[10px] font-bold text-slate-400 uppercase mb-4">${peopleInGoal} participantes • Meta: ${formatPYG(g.amount)} c/u</p><div class="flex justify-between items-end mb-2"><span class="text-2xl font-display font-bold text-slate-900">${formatPYG(totalGoalSaved)}</span><span class="text-sm font-bold text-primary">${Math.round(progress)}%</span></div><div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden"><div class="bg-primary h-2.5 rounded-full transition-all duration-1000" style="width: ${Math.min(progress, 100)}%"></div></div></div>`; }); html += `</div>`; container.innerHTML = html; } else { if (!activeParticipant) { container.innerHTML = `<div class="text-center p-10 text-slate-400 italic">No hay participantes. Agregá uno para ver su progreso.</div>`; return; } const userGoal = getGoalForUser(activeParticipant); for (let i = 1; i <= userGoal.weeks; i++) { const pago = (userProgress[activeParticipant] || []).find(up => up.semana === i); const hechoPorMi = !!pago; const montoMostrado = userSchedules[activeParticipant] ? userSchedules[activeParticipant][i-1] : (userGoal.amount / userGoal.weeks); html += `<div id="goal-${i}" class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hechoPorMi ? 'border-l-primary shadow-md' : 'border-l-slate-200'}"><div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 text-[10px] font-bold shrink-0">${i}</div><div class="flex-grow"><div class="text-sm font-bold text-slate-800">${hechoPorMi ? 'COMPLETADO' : formatPYG(montoMostrado)}</div><div class="text-[8px] uppercase text-slate-400 font-bold">Depósito ${i}</div></div><div class="flex flex-col items-end gap-1 px-1">${hechoPorMi ? `<div class="flex items-center gap-1 bg-white rounded-full pl-1 pr-2 py-0.5 border border-slate-100 shadow-sm"><div class="h-4 w-4 rounded-full bg-primary text-[7px] flex items-center justify-center text-white font-black">${activeParticipant[0]}</div><span class="text-[7px] font-bold text-slate-600 uppercase">${pago.fecha} • ${formatPYG(pago.pagado)}</span></div>` : ''}</div><div class="flex gap-1"><button onclick="promptManual(${i})" class="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button><button onclick="toggle(${i})" class="px-4 py-2 rounded-lg text-[10px] font-bold transition-all ${hechoPorMi ? 'bg-primary text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}">${hechoPorMi ? 'LISTO' : 'MARCAR'}</button></div></div>`; } container.innerHTML = html; } }
-        function renderParticipants() { const list = document.getElementById('participantList'); if (!participants.length) { list.innerHTML = `<p class="text-[11px] text-slate-400 italic text-center py-2">Agregá un nombre arriba</p>`; return; } list.innerHTML = participants.map(p => { const goal = getGoalForUser(p); const hasReminder = userReminders[p] ? '🔔' : ''; return `<div class="flex items-center bg-white/50 rounded-lg p-1 mb-1"><button onclick="setActiveParticipant('${p}')" class="flex-grow text-left px-3 py-1.5 rounded-md ${p === activeParticipant ? 'badge-active' : 'text-slate-500'}"><div class="text-xs font-bold">${p} ${hasReminder}</div><div class="text-[9px] opacity-80 uppercase">${goal.name}</div></button><button onclick="deleteParticipant('${p}')" class="px-2 text-slate-300 hover:text-rose-500 font-bold text-lg">×</button></div>`; }).join(''); }
-        function scrollToNext() { if (!activeParticipant) return; const nextIndex = (userProgress[activeParticipant]?.length || 0) + 1; const userGoal = getGoalForUser(activeParticipant); if (nextIndex <= userGoal.weeks) { setTimeout(() => { const el = document.getElementById(`goal-${nextIndex}`); if (el) window.scrollTo({top: el.offsetTop - 180, behavior: 'smooth'}); }, 300); } }
-        window.initApp = () => { load(); updateViewButtons(); renderParticipants(); renderGoals(); updateStats(); };
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
-    </script>
 </body>
 </html>
