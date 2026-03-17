@@ -36,8 +36,16 @@ window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.t
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 
-// 🧹 ESCOBA DIGITAL: Limpia toda la memoria al cerrar sesión
-window.logout = () => { 
+// 🧹 ESCOBA DIGITAL CON GUARDADO AUTOMÁTICO ANTES DE SALIR
+window.logout = async () => { 
+    if (auth.currentUser) {
+        try {
+            await window.sincronizarNube(false);
+        } catch (e) {
+            console.error("Error al guardar antes de salir:", e);
+        }
+    }
+    
     localStorage.removeItem('local_user_status'); 
     localStorage.removeItem('ahorro_dinamico_LAB_TEST_MULTIMETA'); 
     localStorage.removeItem('mg_cuentas'); 
@@ -45,6 +53,7 @@ window.logout = () => {
     localStorage.removeItem('mg_historial'); 
     localStorage.removeItem('mg_ingreso'); 
     localStorage.removeItem('last_cloud_sync'); 
+    
     signOut(auth).then(() => location.reload()); 
 };
 
