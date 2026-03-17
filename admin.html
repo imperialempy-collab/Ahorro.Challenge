@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Ventas - Ahorro Challenge</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc', surface: '#ffffff' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+    </script>
+    <style>
+        summary::-webkit-details-marker { display: none; }
+    </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -24,61 +31,113 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        const ADMIN_EMAILS = ["imperial.empy@gmail.com", "axelnm35@gmail.com"];
+
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // Función para cambiar a PAGADO (CORREGIDO A usuarios_multimeta)
-        window.marcarPagado = async (email) => {
-            if(confirm(`¿Estás seguro de marcar a ${email} como PAGADO para siempre?`)) {
-                await updateDoc(doc(db, "usuarios_multimeta", email), { status: "pagado" });
-                alert("¡Cuenta habilitada de por vida!");
-                cargarUsuarios();
+        window.cambiarEstado = async (email, nuevoEstado) => {
+            const mensajes = {
+                'pagado': `¿Habilitar acceso ILIMITADO a ${email}?`,
+                'vencido': `¿Suspender la cuenta de ${email}?`,
+                'prueba': `¿Reiniciar los 7 días de prueba de ${email}?`
+            };
+            
+            if(confirm(mensajes[nuevoEstado])) {
+                try {
+                    await updateDoc(doc(db, "usuarios_multimeta", email), { 
+                        status: nuevoEstado,
+                        ...(nuevoEstado === 'prueba' && { fechaInicio: new Date().toISOString() }) // Si es prueba, resetea la fecha
+                    });
+                    alert("✅ ¡Estado actualizado correctamente!");
+                    cargarUsuarios();
+                } catch (error) {
+                    alert("❌ Error al actualizar: " + error.message);
+                }
             }
         };
 
         async function cargarUsuarios() {
-            const tbody = document.getElementById('tablaUsuarios');
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando clientes...</td></tr>';
+            const tbodyPendientes = document.getElementById('tablaPendientes');
+            const tbodyTodos = document.getElementById('tablaTodos');
+            
+            tbodyPendientes.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando...</td></tr>';
+            tbodyTodos.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando...</td></tr>';
+            
             try {
-                // LECTURA DE DATOS (CORREGIDO A usuarios_multimeta)
                 const querySnapshot = await getDocs(collection(db, "usuarios_multimeta"));
-                let html = '';
+                let htmlPendientes = '';
+                let htmlTodos = '';
+                
+                let stats = { total: 0, pagados: 0, pendientes: 0, prueba: 0 };
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
+                    stats.total++;
+                    if(data.status === 'pagado') stats.pagados++;
+                    else if(data.status === 'pendiente') stats.pendientes++;
+                    else stats.prueba++;
+
                     const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
-                    
-                    // Calcular días transcurridos
                     const start = new Date(data.fechaInicio);
                     const now = new Date();
                     const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
                     
-                    let estadoHtml = data.status === 'pagado' 
-                        ? `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">PAGADO</span>`
-                        : `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">PRUEBA (Día ${diffDays}/7)</span>`;
+                    let estadoHtml = '';
+                    if (data.status === 'pagado') estadoHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGADO 👑</span>`;
+                    else if (data.status === 'pendiente') estadoHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR PAGO ⏳</span>`;
+                    else if (data.status === 'vencido') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">VENCIDO/SUSPENDIDO</span>`;
+                    else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA (Día ${diffDays})</span>`;
 
-                    let botonHtml = data.status === 'pagado'
-                        ? `<button disabled class="bg-slate-200 text-slate-400 px-3 py-1 rounded text-xs font-bold">HABILITADO</button>`
-                        : `<button onclick="marcarPagado('${data.email}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold shadow">MARCAR PAGADO</button>`;
+                    let botonesHtml = `
+                        <div class="flex justify-end gap-1">
+                            ${data.status !== 'pagado' ? `<button onclick="cambiarEstado('${data.email}', 'pagado')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Aprobar</button>` : ''}
+                            ${data.status === 'pagado' ? `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>` : ''}
+                            ${data.status !== 'prueba' && data.status !== 'pagado' ? `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Reset</button>` : ''}
+                        </div>
+                    `;
 
-                    html += `
-                        <tr class="border-b">
-                            <td class="p-3 font-medium text-slate-700">${data.email}</td>
-                            <td class="p-3 text-slate-500">${fecha}</td>
+                    const filaHtml = `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                            <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}</td>
+                            <td class="p-3 text-slate-500 text-xs">${fecha}</td>
                             <td class="p-3">${estadoHtml}</td>
-                            <td class="p-3 text-right">${botonHtml}</td>
+                            <td class="p-3">${botonesHtml}</td>
                         </tr>
                     `;
+
+                    if (data.status === 'pendiente') htmlPendientes += filaHtml;
+                    htmlTodos += filaHtml;
                 });
-                tbody.innerHTML = html || '<tr><td colspan="4" class="text-center p-4">Aún no hay usuarios probando la app</td></tr>';
+
+                tbodyPendientes.innerHTML = htmlPendientes || '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay comprobantes pendientes a revisión.</td></tr>';
+                tbodyTodos.innerHTML = htmlTodos || '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay usuarios registrados.</td></tr>';
+                
+                actualizarMetricas(stats);
+
             } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-red-500 p-4">Error: ${error.message}</td></tr>`;
+                tbodyTodos.innerHTML = `<tr><td colspan="4" class="text-center text-rose-500 p-4">Error: ${error.message}</td></tr>`;
             }
+        }
+
+        function actualizarMetricas(stats) {
+            document.getElementById('statTotal').innerText = stats.total;
+            document.getElementById('statPagados').innerText = stats.pagados;
+            document.getElementById('statPendientes').innerText = stats.pendientes;
+            
+            // Simulación Financiera
+            const ingresos = stats.pagados * 20000;
+            document.getElementById('statIngresos').innerText = new Intl.NumberFormat('es-PY').format(ingresos);
+            
+            // Costo estimado (Matemática: Usuarios * Uso Diario Promedio)
+            // Se asume costo operativo de 50 Gs por usuario registrado para mantener Firebase
+            const costoEstimado = stats.total * 50;
+            document.getElementById('statCostos').innerText = new Intl.NumberFormat('es-PY').format(costoEstimado);
         }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // SOLO VOS PODÉS ENTRAR ACÁ
-                if (user.email === "imperial.empy@gmail.com") {
+                if (ADMIN_EMAILS.includes(user.email)) {
                     document.getElementById('loginDiv').classList.add('hidden');
                     document.getElementById('adminDiv').classList.remove('hidden');
                     document.getElementById('adminEmail').innerText = user.email;
@@ -94,38 +153,106 @@
         });
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
-    <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl text-center max-w-sm w-full border border-slate-100">
-            <h1 class="text-2xl font-bold mb-2">Panel de Control</h1>
-            <p class="text-slate-500 text-sm mb-6">Iniciá sesión con tu correo de administrador</p>
-            <button onclick="login()" class="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
+<body class="bg-background text-slate-800 font-body min-h-screen">
+    
+    <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4 bg-slate-900/5 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full border border-slate-100">
+            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-display font-black mb-2">Panel de Control</h1>
+            <p class="text-slate-500 text-sm mb-6 font-medium">Iniciá sesión con tu correo de administrador</p>
+            <button onclick="login()" class="w-full px-6 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
         </div>
     </div>
 
-    <div id="adminDiv" class="hidden max-w-4xl mx-auto p-4 sm:p-6 mt-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 gap-4">
+    <div id="adminDiv" class="hidden max-w-5xl mx-auto p-4 sm:p-6 mt-4">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white p-5 rounded-3xl shadow-sm border border-slate-100 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">Sistema de Ventas</h1>
-                <p class="text-sm text-slate-500">Administrador: <span id="adminEmail" class="font-semibold text-primary"></span></p>
+                <h1 class="text-2xl font-display font-black text-slate-900 tracking-tight">Sistema de <span class="text-primary">Ventas</span></h1>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Administrador: <span id="adminEmail" class="font-bold text-slate-700"></span></p>
             </div>
-            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-colors">Cerrar Sesión</button>
+            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> Salir
+            </button>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden overflow-x-auto">
-            <table class="w-full text-left border-collapse min-w-[600px]">
-                <thead>
-                    <tr class="bg-slate-50 text-sm text-slate-500 border-b border-slate-200">
-                        <th class="p-4 font-semibold">Correo del Cliente</th>
-                        <th class="p-4 font-semibold">Inició Prueba</th>
-                        <th class="p-4 font-semibold">Estado de Cuenta</th>
-                        <th class="p-4 font-semibold text-right">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaUsuarios" class="text-sm">
-                    </tbody>
-            </table>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center">
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Usuarios</p>
+                <p class="text-3xl font-display font-black text-slate-800" id="statTotal">0</p>
+            </div>
+            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 shadow-sm flex flex-col justify-center">
+                <p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Pagados 👑</p>
+                <p class="text-3xl font-display font-black text-emerald-700" id="statPagados">0</p>
+            </div>
+            <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 shadow-sm flex flex-col justify-center">
+                <p class="text-[9px] font-bold text-amber-600 uppercase tracking-widest mb-1">Pendientes ⏳</p>
+                <p class="text-3xl font-display font-black text-amber-700" id="statPendientes">0</p>
+            </div>
+            <div class="col-span-2 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-center">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl -mr-8 -mt-8"></div>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 relative z-10">Simulador Financiero Mensual</p>
+                <div class="flex justify-between items-end relative z-10">
+                    <div>
+                        <p class="text-[10px] text-slate-500 mb-0.5">Ingresos (Gs)</p>
+                        <p class="text-2xl font-display font-black text-emerald-400 leading-none" id="statIngresos">0</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-500 mb-0.5">Costo Nube (Estimado)</p>
+                        <p class="text-lg font-display font-bold text-rose-400 leading-none">~ <span id="statCostos">0</span></p>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <details class="group bg-white rounded-3xl shadow-sm border border-amber-200 overflow-hidden mb-4" open>
+            <summary class="flex items-center justify-between p-5 cursor-pointer bg-amber-50/50 hover:bg-amber-50 transition-colors list-none">
+                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Requieren Aprobación (Pendientes)
+                </span>
+                <svg class="w-5 h-5 text-amber-500 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="border-t border-amber-100 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-amber-50/30 text-[10px] text-amber-600 uppercase tracking-widest border-b border-amber-100">
+                            <th class="p-4 font-bold">Correo del Cliente</th>
+                            <th class="p-4 font-bold">Fecha</th>
+                            <th class="p-4 font-bold">Estado</th>
+                            <th class="p-4 font-bold text-right">Acción Rápida</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPendientes"></tbody>
+                </table>
+            </div>
+        </details>
+
+        <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    Directorio Completo de Clientes
+                </span>
+                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="border-t border-slate-100 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-widest border-b border-slate-200">
+                            <th class="p-4 font-bold">Correo del Cliente</th>
+                            <th class="p-4 font-bold">Inicio</th>
+                            <th class="p-4 font-bold">Estado</th>
+                            <th class="p-4 font-bold text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaTodos"></tbody>
+                </table>
+            </div>
+        </details>
+
     </div>
 </body>
 </html>
