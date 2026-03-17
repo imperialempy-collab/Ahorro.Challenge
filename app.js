@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-// Agregamos las funciones de collection, addDoc, getDocs y arrayUnion para la Fase 1
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, serverTimestamp, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 window.ENABLE_MANUAL_SYNC = true; 
@@ -20,7 +19,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
-let currentShareCode = ""; // Guardará el código para enviarlo a WhatsApp
+let currentShareCode = ""; 
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
 window.mostrarAlerta = (mensaje) => { 
@@ -33,11 +32,21 @@ window.closeCustomAlert = () => { document.getElementById('customAlert').classLi
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
-// Utilidad para los inputs de dinero de los modales nuevos
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
-window.logout = () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => location.reload()); };
+
+// 🧹 ESCOBA DIGITAL: Limpia toda la memoria al cerrar sesión
+window.logout = () => { 
+    localStorage.removeItem('local_user_status'); 
+    localStorage.removeItem('ahorro_dinamico_LAB_TEST_MULTIMETA'); 
+    localStorage.removeItem('mg_cuentas'); 
+    localStorage.removeItem('mg_gastos'); 
+    localStorage.removeItem('mg_historial'); 
+    localStorage.removeItem('mg_ingreso'); 
+    localStorage.removeItem('last_cloud_sync'); 
+    signOut(auth).then(() => location.reload()); 
+};
 
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
@@ -47,7 +56,7 @@ window.actualizarUI_Pago = () => {
     else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
 };
 
-// --- AUTENTICACIÓN OPTIMISTA (EL PASE VIP) ---
+// --- AUTENTICACIÓN OPTIMISTA ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
@@ -121,11 +130,10 @@ window.sincronizarNube = async (manual = false) => {
 
 window.verificarAutoSync = () => { if (typeof window.sincronizarNube !== 'function') return; const lastSync = localStorage.getItem('last_cloud_sync'); const now = new Date().getTime(); if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); } };
 
-// UI EVENTOS GENERALES
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
 // ============================================================================
-// --- FASE 1: LÓGICA DE RETOS MULTIJUGADOR (NUEVO BLOQUE) ---
+// --- LÓGICA DE RETOS MULTIJUGADOR ---
 // ============================================================================
 
 window.openRetosModal = () => { document.getElementById('retosModal').classList.remove('hidden'); };
@@ -133,7 +141,6 @@ window.closeRetosModal = () => { document.getElementById('retosModal').classList
 
 window.openCreateRetoModal = () => { 
     window.closeRetosModal();
-    // Limpiamos los campos
     document.getElementById('crearRetoNombre').value = '';
     document.getElementById('crearRetoMonto').value = '';
     document.getElementById('crearRetoSemanas').value = '';
@@ -151,7 +158,6 @@ window.openJoinRetoModal = () => {
 window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 window.closeShareModal = () => { document.getElementById('shareRetoModal').classList.add('hidden'); };
 
-// 1. CREAR LA SALA EN FIREBASE
 window.crearRetoCloud = async () => {
     if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
 
@@ -175,12 +181,10 @@ window.crearRetoCloud = async () => {
     btn.disabled = true;
 
     try {
-        // Generamos un código único tipo "RETO-AB12"
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length));
         const codigoGenerado = `RETO-${rnd}`;
 
-        // El objeto jugador del creador
         const jugadorInicial = {
             email: auth.currentUser.email,
             apodo: apodo,
@@ -188,7 +192,6 @@ window.crearRetoCloud = async () => {
             progreso: []
         };
 
-        // Creamos la sala en Firestore
         await addDoc(collection(db, "retos_multijugador"), {
             codigo: codigoGenerado,
             nombre: nombre,
@@ -200,7 +203,6 @@ window.crearRetoCloud = async () => {
             createdAt: serverTimestamp()
         });
 
-        // Éxito: Mostramos el código
         window.closeCreateRetoModal();
         currentShareCode = codigoGenerado;
         document.getElementById('shareCodeDisplay').innerText = codigoGenerado;
@@ -215,7 +217,6 @@ window.crearRetoCloud = async () => {
     }
 };
 
-// 2. UNIRSE A LA SALA EN FIREBASE
 window.unirseRetoCloud = async () => {
     if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = 'activar.html'; 
 
@@ -230,7 +231,6 @@ window.unirseRetoCloud = async () => {
     btn.disabled = true;
 
     try {
-        // Buscamos la sala por el código
         const q = query(collection(db, "retos_multijugador"), where("codigo", "==", codigoInput));
         const querySnapshot = await getDocs(q);
 
@@ -240,12 +240,10 @@ window.unirseRetoCloud = async () => {
             return;
         }
 
-        // Si la sala existe, obtenemos su ID
         const salaDoc = querySnapshot.docs[0];
         const salaId = salaDoc.id;
         const salaData = salaDoc.data();
 
-        // Verificamos si el usuario ya está adentro
         const yaEsta = salaData.participantes.some(p => p.email === auth.currentUser.email);
         if (yaEsta) {
             alert("¡Ya estás adentro de este reto!");
@@ -253,7 +251,6 @@ window.unirseRetoCloud = async () => {
             return;
         }
 
-        // Agregamos al usuario a la lista de participantes
         const nuevoJugador = {
             email: auth.currentUser.email,
             apodo: apodo,
@@ -268,7 +265,6 @@ window.unirseRetoCloud = async () => {
 
         window.closeJoinRetoModal();
         window.mostrarAlerta(`✅ ¡Te uniste con éxito a "${salaData.nombre}"!`);
-        // (En la Fase 2 haremos que aparezca visualmente en el menú lateral)
 
     } catch (error) {
         console.error(error);
@@ -279,12 +275,9 @@ window.unirseRetoCloud = async () => {
     }
 };
 
-// 3. GENERAR MENSAJE PARA WHATSAPP
 window.compartirPorWhatsApp = () => {
-    // La URL inteligente (Deep Link) que leeremos en la Fase 2
     const urlApp = `https://imperialempy-collab.github.io/Ahorro.Challenge/?reto=${currentShareCode}`;
     const texto = `¡Te reto a ahorrar! 💰\n\nEstoy usando Ahorro Challenge y creé una sala privada. Entrá al link y sumate a mi tablero para competir:\n\n👉 ${urlApp}\n\nO ingresá este código en la app: *${currentShareCode}*`;
-    
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 };
 
