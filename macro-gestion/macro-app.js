@@ -1,6 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
+window.ENABLE_MANUAL_SYNC = true;
 
 const firebaseConfig = {
     apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
@@ -17,6 +20,14 @@ const db = getFirestore(app);
 
 window.userAccessStatus = localStorage.getItem('mg_access_status') || 'prueba';
 window.logout = () => { signOut(auth).then(() => { window.location.href = '../index.html'; }); };
+
+// UI GENERALES Y ALERTAS
+window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
+window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { window.interactuarApp('alert', 'Acceso Restringido', 'Debes activar tu cuenta para continuar editando tu progreso.'); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
+window.abrirPaywall = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
+window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
+window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.interactuarApp('alert', 'Falta comprobante', "Primero elegí la foto de tu transferencia."); window.interactuarApp('alert', '¡Enviado!', "¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
+window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
@@ -37,51 +48,109 @@ window.actualizarUI_Pago = () => {
     }
 };
 
-async function checkFirebaseAccess(user) {
-    document.getElementById('sidebarUserEmail').innerText = user.email; 
-    if (window.userAccessStatus === 'pagado') return window.actualizarUI_Pago(); 
+// --- MOTOR DE SINCRONIZACIÓN EN LA NUBE (MACRO GESTIÓN) ---
+window.sincronizarNube = async (manual = false) => {
+    if (!auth.currentUser) return;
+    if (manual && !window.ENABLE_MANUAL_SYNC) {
+        window.interactuarApp('alert', 'Actualización Manual', 'La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día.');
+        return;
+    }
 
-    const lastCheck = localStorage.getItem('mg_last_check');
+    try {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+
+        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+
+        const payload = {
+            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+            macro_data: { 
+                cuentas: safeParse(localStorage.getItem('mg_cuentas')), 
+                gastos: safeParse(localStorage.getItem('mg_gastos')), 
+                historial: safeParse(localStorage.getItem('mg_historial')), 
+                ingreso: localStorage.getItem('mg_ingreso') || 0 
+            },
+            last_sync: new Date().toISOString()
+        };
+
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+        await updateDoc(userRef, payload);
+
+        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        
+        if (manual) window.interactuarApp('alert', 'Nube Sincronizada', '✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.');
+    } catch (error) {
+        console.error("Error sincronizando:", error);
+        if (manual) window.interactuarApp('alert', 'Error', '❌ Hubo un error al guardar en la nube. Tus datos se guardaron localmente en tu celular.');
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+    }
+};
+
+window.verificarAutoSync = () => {
+    if (typeof window.sincronizarNube !== 'function') return;
+    const lastSync = localStorage.getItem('last_cloud_sync');
     const now = new Date().getTime();
-    const daysSinceCheck = lastCheck ? (now - parseInt(lastCheck)) / (1000 * 60 * 60 * 24) : 999;
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { // 24hs
+        window.sincronizarNube(false);
+    }
+};
 
-    if (daysSinceCheck > 15) {
+// --- AUTENTICACIÓN OFFLINE-FIRST ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) { 
+        document.getElementById('sidebarUserEmail').innerText = user.email;
+        const userRef = doc(db, "usuarios_multimeta", user.email);
+        
         try {
-            const userRef = doc(db, "usuarios_multimeta", user.email);
             const docSnap = await getDoc(userRef);
             if (docSnap.exists()) {
                 const userData = docSnap.data();
-                if (userData.status === 'pagado') {
-                    window.userAccessStatus = 'pagado';
-                } else {
-                    const start = new Date(userData.fechaInicio);
-                    const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
-                    window.userAccessStatus = diffDays > 7 ? 'vencido' : 'prueba';
-                }
-                localStorage.setItem('mg_access_status', window.userAccessStatus);
-                localStorage.setItem('mg_last_check', now.toString());
-                window.actualizarUI_Pago();
-            }
-        } catch (e) { console.error("Revisión silenciosa falló, usando caché."); }
-    } else {
-        window.actualizarUI_Pago();
-    }
-}
+                window.userAccessStatus = userData.status || 'prueba';
+                
+                // BARRERA OFFLINE-FIRST: Solo descargamos si el celular está vacío
+                const localCuentas = localStorage.getItem('mg_cuentas');
+                const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
 
-onAuthStateChanged(auth, (user) => {
-    if (user) { checkFirebaseAccess(user); } 
-    else { window.userAccessStatus = 'vencido'; window.location.href = '../index.html'; }
+                if (!hasLocalMacro) {
+                    if (userData.macro_data) {
+                        if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                        if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                        if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                        if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                    }
+                }
+                
+                // Verificamos ahorro también por las dudas
+                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
+                if (!localAhorro || localAhorro === "null" || localAhorro === "undefined") {
+                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
+                        localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
+                    }
+                }
+
+                localStorage.setItem('mg_access_status', window.userAccessStatus);
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+                
+            } else {
+                // Nuevo usuario
+                await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
+            }
+        } catch(e) {
+            console.error("Modo local forzado (Sin internet o error).", e);
+        }
+        
+        window.actualizarUI_Pago();
+        window.renderizarSelectorIconos(); 
+        window.renderizarApp();
+        window.verificarAutoSync(); // Disparamos el chequeo al cargar
+        
+    } else { 
+        window.userAccessStatus = 'vencido'; window.location.href = '../index.html'; 
+    }
 });
 
-// UI GENERALES
-window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
-window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { window.interactuarApp('alert', 'Acceso Restringido', 'Debes activar tu cuenta para continuar editando tu progreso.'); } else { document.getElementById('paywallScreen').classList.add('hidden'); } };
-window.abrirPaywall = () => { document.getElementById('paywallScreen').classList.remove('hidden'); window.toggleSidebar(); };
-window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
-window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.interactuarApp('alert', 'Falta comprobante', "Primero elegí la foto de tu transferencia."); window.interactuarApp('alert', '¡Enviado!', "¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
-window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
-// MACRO GESTION LOGIC
+// MACRO GESTION LOGIC (Intacta)
 const descripcionesReportes = { flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste. La gráfica te muestra cómo tu sueldo se va consumiendo día a día." }, burnrate: { tit: "⏱️ Velocidad de Quema", desc: "Es una carrera entre tu Dinero y el Calendario.\n\nCompara qué porcentaje de tu Ingreso ya te gastaste, frente a qué porcentaje del mes ya pasó. Si gastaste mucho y apenas estamos a mitad de mes, la aguja irá a ROJO y deberás frenar." }, asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en el ⚙️.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." }, agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma de todo el dinero que gastaste al ir actualizando los saldos de tus cuentas a mano.\n\nIMPORTANTE: Esta suma NO incluye los Gastos Fijos que vas tildando arriba. Es pura y exclusivamente tu gasto variable y hormiga." }, tradicional: { tit: "📊 Reporte Tradicional", desc: "Los porcentajes reflejan cuánto representa cada gasto frente al Ingreso Promedio que configuraste manualmente en el ⚙️." } };
 window.infoReporte = (clave) => { window.interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc); };
 
@@ -101,10 +170,18 @@ let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [ { id: 1, nombr
 let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [ { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" }, { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" } ];
 let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
 
-window.guardarDatos = () => { localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); localStorage.setItem('mg_gastos', JSON.stringify(gastos)); localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos)); window.renderizarApp(); };
+window.guardarDatos = () => { 
+    localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); 
+    localStorage.setItem('mg_gastos', JSON.stringify(gastos)); 
+    localStorage.setItem('mg_historial', JSON.stringify(historialMovimientos)); 
+    document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+    window.verificarAutoSync();
+    window.renderizarApp(); 
+};
+
 window.registrarMovimiento = (accion, detalle, monto = 0) => { const f = new Date(); const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`; historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto }); };
 
-window.configurarIngreso = async () => { const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0; const res = await window.interactuarApp('prompt', 'Configurar Ingreso Base', 'Ingresá tu sueldo o ingreso mensual promedio para calcular tu Ratio de Asfixia.', actual, true); if(res) { localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, ''))); window.renderizarReportes(); } };
+window.configurarIngreso = async () => { const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0; const res = await window.interactuarApp('prompt', 'Configurar Ingreso Base', 'Ingresá tu sueldo o ingreso mensual promedio para calcular tu Ratio de Asfixia.', actual, true); if(res) { localStorage.setItem('mg_ingreso', parseInt(res.replace(/\./g, ''))); window.renderizarReportes(); window.guardarDatos(); } };
 
 window.dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => { if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`; let flujoActual = ingresoBase - totalGastado; let puntos = [flujoActual]; let saldoTemp = flujoActual; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historial.filter(h => h.fecha.includes(mesStr)); for(let i = 0; i < historialMes.length; i++) { if(puntos.length >= 6) break; let h = historialMes[i]; if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) { saldoTemp = saldoTemp + Math.abs(h.monto); puntos.unshift(saldoTemp); } } while(puntos.length < 6) { puntos.unshift(ingresoBase); } let max = ingresoBase; let min = 0; let pathD = "M0 25 "; let xStep = 100 / 5; puntos.forEach((p, index) => { let x = index * xStep; let pNorm = Math.max(0, Math.min(p, max)); let y = 25 - ((pNorm - min) / (max - min)) * 20; pathD += `L${x} ${y} `; }); let colorLinea = flujoActual < (ingresoBase * 0.2) ? "text-rose-500" : "text-primary"; return `<svg class="w-full h-8 ${colorLinea}" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor"><path d="${pathD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathD} L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/></svg>`; };
 
@@ -154,4 +231,4 @@ window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gast
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
 
-window.onload = () => { window.renderizarSelectorIconos(); window.renderizarApp(); };
+// No usamos window.onload para no pisarnos, lo inicializa el onAuthStateChanged
