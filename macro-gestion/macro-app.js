@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ⚠️ GESTOR DE COSTOS: Cambiar a false si se necesita reducir escrituras en Firebase.
 window.ENABLE_MANUAL_SYNC = true;
@@ -69,7 +69,8 @@ window.sincronizarNube = async (manual = false) => {
                 historial: safeParse(localStorage.getItem('mg_historial')), 
                 ingreso: localStorage.getItem('mg_ingreso') || 0 
             },
-            last_sync: new Date().toISOString()
+            last_sync: new Date().toISOString(),
+            sync_count: increment(1) // CONTADOR DE CLICS PARA EL PANEL ADMIN
         };
 
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
@@ -107,7 +108,7 @@ onAuthStateChanged(auth, async (user) => {
                 const userData = docSnap.data();
                 window.userAccessStatus = userData.status || 'prueba';
                 
-                // BARRERA OFFLINE-FIRST: Solo descargamos si el celular está vacío
+                // BARRERA OFFLINE-FIRST
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
 
@@ -120,7 +121,6 @@ onAuthStateChanged(auth, async (user) => {
                     }
                 }
                 
-                // Verificamos ahorro también por las dudas
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
                 if (!localAhorro || localAhorro === "null" || localAhorro === "undefined") {
                     if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
@@ -132,7 +132,6 @@ onAuthStateChanged(auth, async (user) => {
                 document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
                 
             } else {
-                // Nuevo usuario
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
             }
         } catch(e) {
@@ -230,5 +229,3 @@ window.cambiarMontoGasto = async (id) => { const gasto = gastos.find(g => g.id =
 window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gasto.pagado = !gasto.pagado; gasto.fechaPago = gasto.pagado ? window.obtenerFechaHoy() : ""; if(gasto.pagado) { window.registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto); } else { window.registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto); } window.guardarDatos(); };
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
-
-// No usamos window.onload para no pisarnos, lo inicializa el onAuthStateChanged
