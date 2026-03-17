@@ -17,7 +17,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        // IMPORTAMOS STORAGE PARA LAS FOTOS
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
@@ -36,7 +35,6 @@
 
         let currentUserEmail = "";
 
-        // UI Helpers
         const showSection = (id) => {
             ['loadingSection', 'uploadSection', 'pendingSection', 'successSection'].forEach(sec => {
                 document.getElementById(sec).classList.add('hidden');
@@ -65,7 +63,6 @@
                                 document.getElementById('adminMessagePending').classList.remove('hidden');
                             }
                         } else {
-                            // Está en prueba, vencido, o rechazado
                             showSection('uploadSection');
                             if (data.mensaje_admin && data.status === 'rechazado') {
                                 document.getElementById('adminMessageAlert').innerText = "⚠️ " + data.mensaje_admin;
@@ -73,7 +70,6 @@
                             }
                         }
                     } else {
-                        // Si no existe, lo mandamos a la app a que inicie
                         window.location.href = 'index.html';
                     }
                 } catch (error) {
@@ -84,25 +80,52 @@
             }
         });
 
-        // PREVISUALIZAR NOMBRE DEL ARCHIVO
         window.handleFileSelect = (event) => {
             const file = event.target.files[0];
+            const btnSubmit = document.getElementById('btnSubmitFile');
+            const boxUpload = document.getElementById('boxUpload');
+            const estadoVacio = document.getElementById('estadoVacio');
+            const estadoLleno = document.getElementById('estadoLleno');
+            
             if (!file) return;
 
-            // Limite de 3MB (3 * 1024 * 1024 bytes)
             if (file.size > 3145728) {
                 alert("El archivo es muy pesado (Máximo 3MB). Por favor sacale una captura de pantalla y subí esa foto.");
-                event.target.value = ""; // Resetea el input
-                document.getElementById('fileNameDisplay').innerText = "Ningún archivo seleccionado";
-                document.getElementById('btnSubmitFile').classList.add('opacity-50', 'pointer-events-none');
+                event.target.value = ""; 
+                
+                // Resetear UI si falla
+                estadoVacio.classList.remove('hidden');
+                estadoLleno.classList.add('hidden');
+                boxUpload.classList.replace('border-emerald-500', 'border-slate-300');
+                boxUpload.classList.replace('bg-emerald-50', 'bg-slate-50');
+                boxUpload.classList.add('border-dashed');
+                boxUpload.classList.remove('border-solid');
+                
+                btnSubmit.classList.add('opacity-50', 'pointer-events-none');
+                btnSubmit.classList.remove('animate-pulse');
+                btnSubmit.innerHTML = "Confirmar y Enviar";
                 return;
             }
 
-            document.getElementById('fileNameDisplay').innerText = "📎 " + file.name;
-            document.getElementById('btnSubmitFile').classList.remove('opacity-50', 'pointer-events-none');
+            // --- MAGIA UX: Transformar el cuadro y el botón ---
+            
+            // 1. Mostrar estado lleno en el cuadro
+            estadoVacio.classList.add('hidden');
+            estadoLleno.classList.remove('hidden');
+            document.getElementById('nombreArchivoUI').innerText = file.name;
+            
+            // 2. Pintar cuadro de verde sólido
+            boxUpload.classList.replace('border-slate-300', 'border-emerald-500');
+            boxUpload.classList.replace('bg-slate-50', 'bg-emerald-50');
+            boxUpload.classList.remove('border-dashed');
+            boxUpload.classList.add('border-solid');
+
+            // 3. Encender botón de envío
+            btnSubmit.classList.remove('opacity-50', 'pointer-events-none');
+            btnSubmit.innerHTML = "2. ¡Enviar Comprobante Ahora! 🚀";
+            btnSubmit.classList.add('animate-pulse'); // Llama la atención para que no se olviden de clickear
         };
 
-        // SUBIR ARCHIVO A FIREBASE
         window.subirComprobante = async () => {
             const fileInput = document.getElementById('fileUpload');
             const file = fileInput.files[0];
@@ -114,10 +137,10 @@
             const btn = document.getElementById('btnSubmitFile');
             const originalText = btn.innerHTML;
             btn.innerHTML = "Subiendo archivo... ⏳";
+            btn.classList.remove('animate-pulse');
             btn.classList.add('opacity-50', 'pointer-events-none');
 
             try {
-                // 1. Subir foto a Storage en la carpeta 'comprobantes'
                 const fileExt = file.name.split('.').pop();
                 const fileName = `comprobante_${Date.now()}.${fileExt}`;
                 const storageRef = ref(storage, `comprobantes/${currentUserEmail}/${fileName}`);
@@ -125,16 +148,15 @@
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
 
-                // 2. Actualizar estado en Firestore a 'pendiente' y guardar la URL
                 const userRef = doc(db, "usuarios_multimeta", currentUserEmail);
                 await updateDoc(userRef, {
                     status: 'pendiente',
                     comprobante_url: downloadURL,
+                    comprobante_ruta: storageRef.fullPath, // Guardamos la ruta exacta para borrarlo fácil desde el Admin
                     comprobante_fecha: new Date().toISOString(),
-                    mensaje_admin: "" // Borramos cualquier mensaje viejo de rechazo
+                    mensaje_admin: ""
                 });
 
-                // 3. Mostrar pantalla de pendiente
                 showSection('pendingSection');
 
             } catch (error) {
@@ -142,6 +164,7 @@
                 alert("Hubo un error al subir el archivo. Intentá de nuevo.");
                 btn.innerHTML = originalText;
                 btn.classList.remove('opacity-50', 'pointer-events-none');
+                btn.classList.add('animate-pulse');
             }
         };
 
@@ -165,7 +188,6 @@
         </div>
 
         <div id="uploadSection" class="hidden w-full max-w-md">
-            
             <div class="text-center mb-8">
                 <div class="inline-block bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-3">
                     Desbloqueá tu Potencial 🚀
@@ -180,27 +202,16 @@
             </div>
 
             <div class="glass-card rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-                <div id="adminMessageAlert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm">
-                    </div>
+                <div id="adminMessageAlert" class="hidden mb-6 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm"></div>
 
                 <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Datos para Transferencia</h2>
                 
                 <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-700 mb-6 font-medium shadow-inner">
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
-                        <span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900">Ueno Bank</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
-                        <span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900">Axel</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
-                        <span class="text-slate-400">CI/RUC:</span> <span class="font-black text-slate-900">1234567</span>
-                    </div>
-                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2">
-                        <span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900">000111222</span>
-                    </div>
-                    <div class="flex justify-between pt-1">
-                        <span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg">20.000 Gs</span>
-                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900">Ueno Bank</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900">Axel</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">CI/RUC:</span> <span class="font-black text-slate-900">1234567</span></div>
+                    <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900">000111222</span></div>
+                    <div class="flex justify-between pt-1"><span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg">20.000 Gs</span></div>
                 </div>
 
                 <div class="space-y-4">
@@ -208,13 +219,22 @@
                     
                     <input type="file" id="fileUpload" accept="image/png, image/jpeg, application/pdf" class="hidden" onchange="handleFileSelect(event)">
                     
-                    <button onclick="document.getElementById('fileUpload').click()" class="w-full flex flex-col items-center justify-center gap-2 py-6 bg-slate-50 text-slate-600 border-2 border-dashed border-slate-300 rounded-2xl hover:bg-slate-100 hover:border-primary hover:text-primary transition-all group">
-                        <svg class="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                        <span class="font-bold text-sm">Tocar para buscar archivo</span>
-                        <span class="text-[10px] text-slate-400 font-medium">Soporta PDF o Imagen (Max. 3MB)</span>
-                    </button>
+                    <button id="boxUpload" onclick="document.getElementById('fileUpload').click()" class="w-full relative overflow-hidden py-6 bg-slate-50 text-slate-600 border-2 border-dashed border-slate-300 rounded-2xl hover:bg-slate-100 transition-all group">
+                        
+                        <div id="estadoVacio" class="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                            <svg class="w-8 h-8 text-slate-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <span class="font-bold text-sm text-slate-700">1. Tocar para buscar archivo</span>
+                            <span class="text-[10px] text-slate-400 font-medium">Soporta PDF o Imagen (Max. 3MB)</span>
+                        </div>
 
-                    <p id="fileNameDisplay" class="text-center text-xs font-bold text-emerald-600 bg-emerald-50 py-2 rounded-lg truncate px-2 hidden empty:hidden"></p>
+                        <div id="estadoLleno" class="hidden flex flex-col items-center justify-center gap-2 pointer-events-none px-4 w-full">
+                            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-1 shadow-sm">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="font-bold text-sm text-emerald-700 w-full truncate text-center" id="nombreArchivoUI">archivo.jpg</span>
+                            <span class="text-[10px] text-slate-500 font-medium underline">Tocar para cambiar de foto</span>
+                        </div>
+                    </button>
                     
                     <button id="btnSubmitFile" onclick="subirComprobante()" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30 opacity-50 pointer-events-none">
                         Confirmar y Enviar
@@ -240,8 +260,7 @@
                 Hemos recibido tu archivo correctamente. Lo estamos verificando y en breve se activará tu acceso ilimitado.
             </p>
             
-            <div id="adminMessagePending" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm">
-                </div>
+            <div id="adminMessagePending" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-bold p-4 rounded-xl text-center shadow-sm"></div>
 
             <p class="text-xs text-slate-400 font-medium mb-8">
                 Podés volver a la app. Cuando sea aprobado, se desbloqueará automáticamente.
@@ -271,9 +290,5 @@
         </div>
 
     </main>
-
-    <style>
-        #fileNameDisplay:not(:empty) { display: block; }
-    </style>
 </body>
 </html>
