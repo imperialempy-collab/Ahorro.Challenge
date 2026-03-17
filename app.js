@@ -43,14 +43,13 @@ window.actualizarUI_Pago = () => {
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.mostrarAlerta("La actualización manual está desactivada. Tus datos se respaldarán automáticamente una vez al día para optimizar la red.");
+        window.mostrarAlerta("La actualización manual está desactivada temporalmente. Tus datos se respaldarán automáticamente una vez al día para optimizar la red.");
         return;
     }
 
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
 
-        // Escudo Anti-Null: Parsea con cuidado
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
 
         const payload = {
@@ -104,15 +103,26 @@ onAuthStateChanged(auth, async (user) => {
                 const userData = docSnap.data();
                 window.userAccessStatus = userData.status || 'prueba';
                 
-                // DESCARGA DESDE LA NUBE AL CELULAR (CON ESCUDO ANTI-CRASH)
-                if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
-                    localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
+                // --- BARRERA OFFLINE-FIRST ---
+                // Leemos si el celular ya tiene datos
+                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
+                const hasLocalAhorro = localAhorro && localAhorro !== "null" && localAhorro !== "undefined" && localAhorro.length > 10;
+                
+                // Si el celular NO tiene datos, y Firebase SÍ tiene, descargamos. Si el celular ya tiene, ignoramos Firebase.
+                if (!hasLocalAhorro) {
+                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { 
+                        localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); 
+                    }
                 }
-                if (userData.macro_data) {
-                    if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
-                    if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
-                    if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
-                    if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                
+                const localCuentas = localStorage.getItem('mg_cuentas');
+                if (!localCuentas || localCuentas === "null" || localCuentas === "undefined") {
+                    if (userData.macro_data) {
+                        if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                        if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                        if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                        if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                    }
                 }
 
                 window.actualizarUI_Pago();
@@ -149,7 +159,7 @@ window.cerrarPaywall = () => { if(window.userAccessStatus === 'vencido') { windo
 window.mostrarNombreArchivo = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length > 0) { document.getElementById('txtArchivo').innerText = input.files[0].name; } };
 window.enviarComprobante = () => { const input = document.getElementById('comprobanteInput'); if(input.files.length === 0) return window.mostrarAlerta("Primero elegí la foto de tu transferencia."); window.mostrarAlerta("¡Comprobante subido! Tu cuenta pasará a revisión y será activada en breve."); window.userAccessStatus = 'pendiente'; if (typeof window.actualizarUI_Pago === 'function') window.actualizarUI_Pago(); document.getElementById('paywallScreen').classList.add('hidden'); };
 
-// --- LÓGICA DE AHORRO MULTIMETA (LOCAL STORAGE) ---
+// --- LÓGICA DE AHORRO MULTIMETA ---
 const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
 let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; let statsView = "COLECTIVO"; let userProgress = {}; let userSchedules = {}; 
 const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
