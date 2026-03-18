@@ -24,10 +24,12 @@ window.userAccessStatus = 'prueba';
 window.mostrarAlerta = (mensaje) => { 
     document.getElementById('customAlertMessage').innerText = mensaje; 
     document.getElementById('customAlert').classList.remove('hidden'); 
-    const btnActivar = document.getElementById('btnAlertActivar');
-    if (btnActivar) { btnActivar.onclick = () => window.location.href = 'activar.html'; }
 };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
+
+window.mostrarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.remove('hidden'); };
+window.ocultarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.add('hidden'); };
+
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { return new Promise((resolve) => { document.getElementById('customPromptMessage').innerText = mensaje; const input = document.getElementById('customPromptInput'); input.type = tipoInput === 'number' ? 'text' : tipoInput; input.inputMode = tipoInput === 'number' ? 'numeric' : 'text'; const formatNumber = (e) => { if (tipoInput === 'number') { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } }; input.oninput = formatNumber; if (tipoInput === 'number' && valorPorDefecto !== '') { let val = valorPorDefecto.toString().replace(/\D/g, ''); input.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; } else { input.value = valorPorDefecto; } const modal = document.getElementById('customPrompt'); const btnOk = document.getElementById('btnPromptOk'); const btnCancel = document.getElementById('btnPromptCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(input.value); }; btnCancel.onclick = () => { cleanUp(); resolve(null); }; modal.classList.remove('hidden'); input.focus(); }); };
 
@@ -62,7 +64,7 @@ window.logout = async () => {
     signOut(auth).then(() => location.reload()); 
 };
 
-// --- CONTROL DE UI Y BOTÓN PARTNER (BLINDADO) ---
+// --- CONTROL DE UI Y BOTÓN PARTNER (Fuerza visual) ---
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
     const btnPartner = document.getElementById('btnSidebarPartner');
@@ -108,26 +110,36 @@ window.actualizarUI_Pago = () => {
 // --- LÓGICA DEL PORTAL PARTNER ---
 window.abrirPortalPartner = async () => {
     window.toggleSidebar();
-    document.getElementById('customAlertMessage').innerText = "Cargando tu billetera...";
-    document.getElementById('customAlert').classList.remove('hidden');
+    window.mostrarLoaderSilencioso();
 
     try {
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
         const docSnap = await getDoc(userRef);
         
+        window.ocultarLoaderSilencioso();
+        
         if (docSnap.exists()) {
             const data = docSnap.data();
-            window.closeCustomAlert();
             
             if (data.partner_perfil) {
+                // Ya aceptó reglas y guardó datos
                 window.cargarDashboardPartner(data);
             } else {
-                document.getElementById('registroPartnerModal').classList.remove('hidden');
+                // Primer ingreso: Mostrar Términos y Condiciones
+                document.getElementById('reglasPartnerModal').classList.remove('hidden');
             }
         }
     } catch(e) {
+        window.ocultarLoaderSilencioso();
         window.mostrarAlerta("Error de conexión al cargar tu portal.");
     }
+};
+
+window.cerrarReglasPartner = () => { document.getElementById('reglasPartnerModal').classList.add('hidden'); };
+
+window.aceptarReglasYRegistrar = () => {
+    window.cerrarReglasPartner();
+    document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
 window.cerrarRegistroPartner = () => { document.getElementById('registroPartnerModal').classList.add('hidden'); };
@@ -159,10 +171,10 @@ window.guardarPerfilPartner = async () => {
         });
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner();
+        window.abrirPortalPartner(); // Recarga el flujo, ahora lo mandará al Dashboard
     } catch(e) {
         window.mostrarAlerta("Error al guardar tu perfil.");
-        btn.innerHTML = "Convertirme en Partner"; btn.disabled = false;
+        btn.innerHTML = "Guardar Mis Datos"; btn.disabled = false;
     }
 };
 
@@ -180,13 +192,15 @@ window.cargarDashboardPartner = async (userData) => {
     document.getElementById('partnerBarraProgreso').style.width = `${porc}%`;
     
     if (saldo >= metaCobro) {
-        document.getElementById('partnerMetaTexto').innerHTML = `<span class="text-emerald-600 font-bold">¡Meta lograda! Transferencia en proceso.</span>`;
+        document.getElementById('partnerMetaTexto').innerHTML = `<span class="text-emerald-400 font-bold">¡Meta lograda! Pago en proceso.</span>`;
+        document.getElementById('partnerMetaTexto').classList.remove('text-white');
     } else {
-        document.getElementById('partnerMetaTexto').innerText = `Te faltan ${formatGs(metaCobro - saldo)} para tu próximo cobro.`;
+        document.getElementById('partnerMetaTexto').innerText = `Te faltan ${formatGs(metaCobro - saldo)}`;
+        document.getElementById('partnerMetaTexto').classList.add('text-white');
     }
 
     const listUI = document.getElementById('listaReferidosUI');
-    listUI.innerHTML = '<div class="text-center py-4"><span class="animate-pulse text-slate-400">Buscando referidos...</span></div>';
+    listUI.innerHTML = '<div class="text-center py-6"><span class="animate-pulse text-slate-400 text-xs">Buscando referidos...</span></div>';
     document.getElementById('dashboardPartnerModal').classList.remove('hidden');
 
     try {
@@ -194,7 +208,7 @@ window.cargarDashboardPartner = async (userData) => {
         const snap = await getDocs(q);
         
         if (snap.empty) {
-            listUI.innerHTML = `<div class="text-center p-4 bg-slate-50 rounded-xl border border-slate-100"><p class="text-xs text-slate-400 font-bold">Aún no tenés referidos.</p><p class="text-[10px] text-slate-400 mt-1">¡Compartí tu link para empezar a ganar!</p></div>`;
+            listUI.innerHTML = `<div class="text-center py-6 px-4"><p class="text-xs text-slate-500 font-bold">Aún no tenés referidos.</p><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">¡Compartí tu link en WhatsApp para empezar a ganar dinero!</p></div>`;
             return;
         }
 
@@ -204,22 +218,22 @@ window.cargarDashboardPartner = async (userData) => {
             let estadoHtml = "";
             
             if (refData.status === 'pagado') {
-                estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">✅ Pagado (+5.000)</span>`;
+                estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black shadow-sm">✅ Pagado (+5k)</span>`;
             } else if (refData.status === 'pendiente') {
-                estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⏳ Pendiente</span>`;
+                estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-black shadow-sm">⏳ Verificando</span>`;
             } else {
                 const start = new Date(refData.fechaInicio || new Date());
                 const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
                 const quedan = Math.max(7 - diffDays, 0);
                 if (quedan > 0) {
-                    estadoHtml = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⏳ Prueba (${quedan} días)</span>`;
+                    estadoHtml = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-lg font-black shadow-sm">⏳ Prueba (${quedan} días)</span>`;
                 } else {
-                    estadoHtml = `<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⚠️ Vencido</span>`;
+                    estadoHtml = `<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-1 rounded-lg font-black shadow-sm">⚠️ Vencido</span>`;
                 }
             }
 
             html += `
-            <div class="flex justify-between items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl mb-2 border border-slate-100">
                 <div class="truncate pr-2">
                     <p class="text-xs font-bold text-slate-800 truncate">${refData.email.split('@')[0]}</p>
                     <p class="text-[9px] text-slate-400 truncate">${refData.email}</p>
@@ -230,7 +244,7 @@ window.cargarDashboardPartner = async (userData) => {
         listUI.innerHTML = html;
 
     } catch(e) {
-        listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-2">Error al cargar referidos</div>`;
+        listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error de conexión al cargar lista.</div>`;
     }
 };
 
