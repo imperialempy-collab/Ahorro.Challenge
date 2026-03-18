@@ -34,12 +34,51 @@
         const storage = getStorage(app);
 
         let currentUserEmail = "";
+        let codigoReferido = "";
+        let montoEsperado = 30000;
 
         const showSection = (id) => {
             ['loadingSection', 'uploadSection', 'pendingSection', 'successSection'].forEach(sec => {
                 document.getElementById(sec).classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
+        };
+
+        // --- SISTEMA DE PRECIOS Y DESCUENTOS ---
+        window.aplicarDescuentoVisual = (codigo) => {
+            codigoReferido = codigo.toUpperCase();
+            montoEsperado = 25000;
+            
+            // Tachamos el precio viejo
+            const precioNormal = document.getElementById('precioNormal');
+            precioNormal.classList.remove('text-primary', 'text-lg');
+            precioNormal.classList.add('line-through', 'text-slate-400', 'text-sm');
+            
+            // Mostramos el precio nuevo y el mensaje de regalo
+            document.getElementById('precioDescuento').classList.remove('hidden');
+            document.getElementById('mensajeRegalo').innerText = `🎁 ¡Regalo de ${codigoReferido} aplicado!`;
+            document.getElementById('mensajeRegalo').classList.remove('hidden');
+            
+            // Escondemos la cajita manual porque ya aplicó un código
+            document.getElementById('cajaCodigoDescuento').classList.add('hidden');
+            
+            // Guardamos el código por si recarga la página
+            localStorage.setItem('partner_code_saved', codigoReferido);
+        };
+
+        window.validarCodigoManual = () => {
+            const input = document.getElementById('inputCodigoAmigo').value.trim();
+            if(!input) return alert("Ingresá un código primero.");
+            window.aplicarDescuentoVisual(input);
+        };
+
+        window.onload = () => {
+            // Buscamos si vino con Link Inteligente o si ya lo guardó antes
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref') || localStorage.getItem('partner_code_saved');
+            if (refCode) {
+                window.aplicarDescuentoVisual(refCode);
+            }
         };
 
         onAuthStateChanged(auth, async (user) => {
@@ -83,15 +122,12 @@
         // CONTROL DE UX PARA SUBIR ARCHIVOS
         window.handleFileSelect = (event) => {
             const file = event.target.files[0];
-            
             if (!file) return;
-
-            if (file.size > 3145728) { // 3 MB
+            if (file.size > 3145728) {
                 alert("El archivo es muy pesado (Máximo 3MB). Por favor sacale una captura de pantalla y subí esa foto.");
                 window.eliminarArchivo();
                 return;
             }
-
             document.getElementById('estadoVacio').classList.add('hidden');
             document.getElementById('estadoLleno').classList.remove('hidden');
             document.getElementById('nombreArchivoUI').innerText = file.name;
@@ -115,7 +151,6 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = "Enviando... ⏳";
             btn.classList.add('opacity-50', 'pointer-events-none');
-            
             document.getElementById('btnEliminarArchivo').classList.add('hidden');
 
             try {
@@ -123,33 +158,36 @@
                 const fileExt = file.name.split('.').pop();
                 const fileName = `comprobante_${Date.now()}.${fileExt}`;
                 const storageRef = ref(storage, `comprobantes/${currentUserEmail}/${fileName}`);
-                
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
 
-                // 2. Guardar en Base de Datos
+                // 2. Guardar en Base de Datos con la etiqueta del Partner
                 const userRef = doc(db, "usuarios_multimeta", currentUserEmail);
                 await updateDoc(userRef, {
                     status: 'pendiente',
                     comprobante_url: downloadURL,
                     comprobante_ruta: storageRef.fullPath,
                     comprobante_fecha: new Date().toISOString(),
-                    mensaje_admin: ""
+                    mensaje_admin: "",
+                    monto_esperado: montoEsperado,
+                    referido_por: codigoReferido || ""
                 });
 
-                // 3. 🚀 DISPARAR ALERTA A TELEGRAM (Magia Pura) 🚀
+                // 3. Alerta a Telegram detallada
                 const telegramToken = '8753413505:AAHK_h6bwEWgugMLz4LEBZsTOSnKV5Zx1PU';
                 const chatId = '-1003625405883';
-                const mensaje = `🚨 *¡NUEVO PAGO RECIBIDO!*\n\nEl usuario 📧 *${currentUserEmail}* acaba de subir un comprobante de pago.\n\n👉 Entrá a tu Panel Admin para revisarlo y darle acceso ilimitado.`;
+                const formatMonto = new Intl.NumberFormat('es-PY').format(montoEsperado);
+                const textoPartner = codigoReferido ? `🤝 Referido por: *${codigoReferido}*` : `🌱 Venta Orgánica (Sin Partner)`;
                 
-                // Hacemos el envío en segundo plano sin trabar la página
+                const mensaje = `🚨 *¡NUEVO PAGO RECIBIDO!*\n\nEl usuario 📧 *${currentUserEmail}* subió un comprobante.\n\n💰 Monto esperado: *${formatMonto} Gs*\n${textoPartner}\n\n👉 Entrá a tu Panel Admin para revisarlo.`;
+                
                 fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: chatId, text: mensaje, parse_mode: 'Markdown' })
-                }).catch(e => console.log("Telegram falló pero la app sigue normal."));
+                }).catch(e => console.log("Telegram silent fail."));
 
-                // 4. Mostrar éxito al cliente
+                // 4. Éxito
                 showSection('pendingSection');
 
             } catch (error) {
@@ -187,10 +225,10 @@
                 </div>
                 <h1 class="text-3xl font-display font-black text-slate-900 tracking-tight mb-4">Acceso <span class="text-primary">Ilimitado</span></h1>
                 <p class="text-slate-600 text-sm leading-relaxed px-2 font-medium">
-                    Estás a un paso de dominar tus finanzas con la herramienta más viral. Organizá tus ahorros, creá retos con amigos y aprendé jugando.
+                    Estás a un paso de dominar tus finanzas con la herramienta más viral. Organizá tus ahorros y dominá tu economía.
                 </p>
-                <p class="text-slate-800 font-black text-sm mt-3 bg-slate-100 py-2 rounded-lg mx-8 border border-slate-200">
-                    Un solo pago. Acceso ilimitado.
+                <p class="text-slate-800 font-black text-sm mt-3 bg-slate-100 py-2 rounded-lg mx-8 border border-slate-200 shadow-sm">
+                    Un solo pago. Acceso de por vida.
                 </p>
             </div>
 
@@ -199,12 +237,28 @@
 
                 <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Datos para Transferencia</h2>
                 
-                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-700 mb-6 font-medium shadow-inner">
+                <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-slate-700 mb-5 font-medium shadow-inner">
                     <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Banco:</span> <span class="font-black text-slate-900 text-right">Ueno Bank (SIPAP)</span></div>
                     <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Titular:</span> <span class="font-black text-slate-900 text-right">Axel Nuñez</span></div>
                     <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">CI / Alias:</span> <span class="font-black text-slate-900 text-right">4290008</span></div>
                     <div class="flex justify-between border-b border-slate-200 pb-2 mb-2"><span class="text-slate-400">Cuenta N°:</span> <span class="font-black text-slate-900 text-right">61969822</span></div>
-                    <div class="flex justify-between pt-1"><span class="text-slate-400">Monto:</span> <span class="font-black text-primary text-lg text-right">20.000 Gs</span></div>
+                    
+                    <div class="flex justify-between pt-1 items-center">
+                        <span class="text-slate-400">Monto:</span> 
+                        <div class="text-right">
+                            <span id="precioNormal" class="font-black text-primary text-lg transition-all">30.000 Gs</span>
+                            <span id="precioDescuento" class="font-black text-emerald-500 text-xl hidden block">25.000 Gs</span>
+                        </div>
+                    </div>
+                    <div id="mensajeRegalo" class="text-[10px] font-bold text-emerald-600 text-right hidden mt-1"></div>
+                </div>
+
+                <div id="cajaCodigoDescuento" class="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 shadow-sm">
+                    <p class="text-xs font-bold text-blue-600 mb-2 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg> ¿Tenés Código de Afiliado?</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="inputCodigoAmigo" placeholder="Ej: JUAN123" class="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold tracking-wider">
+                        <button onclick="validarCodigoManual()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors whitespace-nowrap">Aplicar</button>
+                    </div>
                 </div>
 
                 <div class="space-y-4">
@@ -243,7 +297,7 @@
 
                 <div class="mt-8 pt-6 border-t border-slate-100 text-center">
                     <p class="text-xs text-slate-500 mb-3 font-medium">¿Preferís otro método de pago o necesitás ayuda?</p>
-                    <a href="https://wa.me/595992049430?text=Hola,%20quiero%20activar%20mi%20acceso%20ilimitado%20a%20AhorroChallenge" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold text-sm hover:bg-[#1ebe5d] transition-colors shadow-md">
+                    <a href="https://wa.me/595992049430?text=Hola,%20necesito%20ayuda%20para%20activar%20mi%20acceso%20a%20Ahorro%20Challenge" target="_blank" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-full font-bold text-sm hover:bg-[#1ebe5d] transition-colors shadow-md">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.888-.653-1.488-1.46-1.661-1.759-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.347-.272.273-1.04 1.02-1.04 2.48s1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                         Hablar con Soporte
                     </a>
