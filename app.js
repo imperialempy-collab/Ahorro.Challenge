@@ -62,28 +62,52 @@ window.logout = async () => {
     signOut(auth).then(() => location.reload()); 
 };
 
-// --- CONTROL DE UI Y BOTÓN PARTNER ---
+// --- CONTROL DE UI Y BOTÓN PARTNER (BLINDADO) ---
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
     const btnPartner = document.getElementById('btnSidebarPartner');
     
     if(window.userAccessStatus === 'pagado') { 
-        if (btnPagar) { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); }
-        if (btnPartner) btnPartner.classList.remove('hidden'); // Solo los VIP ven el portal Partner
+        if (btnPagar) { 
+            btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; 
+            btnPagar.onclick = null; 
+            btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
+            btnPagar.classList.replace('text-white', 'text-emerald-700'); 
+        }
+        if (btnPartner) {
+            btnPartner.classList.remove('hidden'); 
+            btnPartner.classList.add('flex'); // Lo muestra forzado
+        }
     } 
     else if (window.userAccessStatus === 'pendiente') { 
-        if (btnPagar) { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = 'activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); }
-        if (btnPartner) btnPartner.classList.add('hidden');
+        if (btnPagar) { 
+            btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; 
+            btnPagar.onclick = () => window.location.href = 'activar.html'; 
+            btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
+            btnPagar.classList.replace('text-white', 'text-amber-700'); 
+        }
+        if (btnPartner) { 
+            btnPartner.classList.add('hidden'); 
+            btnPartner.classList.remove('flex'); 
+        }
     } 
     else { 
-        if (btnPagar) { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
-        if (btnPartner) btnPartner.classList.add('hidden');
+        if (btnPagar) { 
+            btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; 
+            btnPagar.onclick = () => window.location.href = 'activar.html'; 
+            btnPagar.classList.replace('bg-emerald-50', 'bg-slate-900'); 
+            btnPagar.classList.replace('text-emerald-700', 'text-white');
+        }
+        if (btnPartner) { 
+            btnPartner.classList.add('hidden'); 
+            btnPartner.classList.remove('flex'); 
+        }
     }
 };
 
 // --- LÓGICA DEL PORTAL PARTNER ---
 window.abrirPortalPartner = async () => {
-    window.toggleSidebar(); // Cierra el menú lateral
+    window.toggleSidebar();
     document.getElementById('customAlertMessage').innerText = "Cargando tu billetera...";
     document.getElementById('customAlert').classList.remove('hidden');
 
@@ -96,10 +120,8 @@ window.abrirPortalPartner = async () => {
             window.closeCustomAlert();
             
             if (data.partner_perfil) {
-                // Ya está registrado, le abrimos el dashboard
                 window.cargarDashboardPartner(data);
             } else {
-                // Primera vez, abrimos el formulario de banco
                 document.getElementById('registroPartnerModal').classList.remove('hidden');
             }
         }
@@ -123,7 +145,6 @@ window.guardarPerfilPartner = async () => {
     btn.innerHTML = "Generando Perfil... ⏳"; btn.disabled = true;
 
     try {
-        // Genera código único: Ej. "AXEL1234"
         const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
         const rnd = Math.floor(1000 + Math.random() * 9000);
         const codigo = `${baseCode}${rnd}`;
@@ -138,7 +159,7 @@ window.guardarPerfilPartner = async () => {
         });
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner(); // Vuelve a entrar pero al dashboard
+        window.abrirPortalPartner();
     } catch(e) {
         window.mostrarAlerta("Error al guardar tu perfil.");
         btn.innerHTML = "Convertirme en Partner"; btn.disabled = false;
@@ -153,7 +174,6 @@ window.cargarDashboardPartner = async (userData) => {
     document.getElementById('partnerSaldoUI').innerText = formatGs(userData.partner_saldo || 0);
     document.getElementById('partnerHistoricoUI').innerText = formatGs(userData.partner_historico || 0);
 
-    // Calcular progreso a 20.000 (Meta de Retiro)
     const saldo = userData.partner_saldo || 0;
     const metaCobro = 20000;
     const porc = Math.min((saldo / metaCobro) * 100, 100);
@@ -165,7 +185,6 @@ window.cargarDashboardPartner = async (userData) => {
         document.getElementById('partnerMetaTexto').innerText = `Te faltan ${formatGs(metaCobro - saldo)} para tu próximo cobro.`;
     }
 
-    // --- CARGAR LISTA DE REFERIDOS ---
     const listUI = document.getElementById('listaReferidosUI');
     listUI.innerHTML = '<div class="text-center py-4"><span class="animate-pulse text-slate-400">Buscando referidos...</span></div>';
     document.getElementById('dashboardPartnerModal').classList.remove('hidden');
@@ -184,7 +203,6 @@ window.cargarDashboardPartner = async (userData) => {
             const refData = doc.data();
             let estadoHtml = "";
             
-            // Calculadora inteligente de estados
             if (refData.status === 'pagado') {
                 estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">✅ Pagado (+5.000)</span>`;
             } else if (refData.status === 'pendiente') {
