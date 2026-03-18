@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 window.ENABLE_MANUAL_SYNC = true; 
 
@@ -35,7 +35,6 @@ window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.t
 
 window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
 
-// 🧹 ESCOBA DIGITAL CON GUARDADO AUTOMÁTICO
 window.logout = async () => { 
     if (auth.currentUser) {
         try {
@@ -63,13 +62,167 @@ window.logout = async () => {
     signOut(auth).then(() => location.reload()); 
 };
 
+// --- CONTROL DE UI Y BOTÓN PARTNER ---
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
-    if (!btnPagar) return;
-    if(window.userAccessStatus === 'pagado') { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); } 
-    else if (window.userAccessStatus === 'pendiente') { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = 'activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); } 
-    else { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
+    const btnPartner = document.getElementById('btnSidebarPartner');
+    
+    if(window.userAccessStatus === 'pagado') { 
+        if (btnPagar) { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); }
+        if (btnPartner) btnPartner.classList.remove('hidden'); // Solo los VIP ven el portal Partner
+    } 
+    else if (window.userAccessStatus === 'pendiente') { 
+        if (btnPagar) { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = 'activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); }
+        if (btnPartner) btnPartner.classList.add('hidden');
+    } 
+    else { 
+        if (btnPagar) { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = 'activar.html'; }
+        if (btnPartner) btnPartner.classList.add('hidden');
+    }
 };
+
+// --- LÓGICA DEL PORTAL PARTNER ---
+window.abrirPortalPartner = async () => {
+    window.toggleSidebar(); // Cierra el menú lateral
+    document.getElementById('customAlertMessage').innerText = "Cargando tu billetera...";
+    document.getElementById('customAlert').classList.remove('hidden');
+
+    try {
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+        const docSnap = await getDoc(userRef);
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            window.closeCustomAlert();
+            
+            if (data.partner_perfil) {
+                // Ya está registrado, le abrimos el dashboard
+                window.cargarDashboardPartner(data);
+            } else {
+                // Primera vez, abrimos el formulario de banco
+                document.getElementById('registroPartnerModal').classList.remove('hidden');
+            }
+        }
+    } catch(e) {
+        window.mostrarAlerta("Error de conexión al cargar tu portal.");
+    }
+};
+
+window.cerrarRegistroPartner = () => { document.getElementById('registroPartnerModal').classList.add('hidden'); };
+window.cerrarDashboardPartner = () => { document.getElementById('dashboardPartnerModal').classList.add('hidden'); };
+
+window.guardarPerfilPartner = async () => {
+    const nombre = document.getElementById('partnerNombre').value.trim();
+    const banco = document.getElementById('partnerBanco').value.trim();
+    const ci = document.getElementById('partnerCI').value.trim();
+    const cuenta = document.getElementById('partnerCuenta').value.trim();
+
+    if(!nombre || !banco || !ci || !cuenta) return window.mostrarAlerta("Completá todos tus datos bancarios para poder pagarte.");
+
+    const btn = document.getElementById('btnGuardarPartner');
+    btn.innerHTML = "Generando Perfil... ⏳"; btn.disabled = true;
+
+    try {
+        // Genera código único: Ej. "AXEL1234"
+        const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
+        const rnd = Math.floor(1000 + Math.random() * 9000);
+        const codigo = `${baseCode}${rnd}`;
+
+        const perfil = { nombre, banco, ci, cuenta, codigo };
+
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+        await updateDoc(userRef, {
+            partner_perfil: perfil,
+            partner_saldo: 0,
+            partner_historico: 0
+        });
+
+        window.cerrarRegistroPartner();
+        window.abrirPortalPartner(); // Vuelve a entrar pero al dashboard
+    } catch(e) {
+        window.mostrarAlerta("Error al guardar tu perfil.");
+        btn.innerHTML = "Convertirme en Partner"; btn.disabled = false;
+    }
+};
+
+window.cargarDashboardPartner = async (userData) => {
+    const perfil = userData.partner_perfil;
+    const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
+    
+    document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
+    document.getElementById('partnerSaldoUI').innerText = formatGs(userData.partner_saldo || 0);
+    document.getElementById('partnerHistoricoUI').innerText = formatGs(userData.partner_historico || 0);
+
+    // Calcular progreso a 20.000 (Meta de Retiro)
+    const saldo = userData.partner_saldo || 0;
+    const metaCobro = 20000;
+    const porc = Math.min((saldo / metaCobro) * 100, 100);
+    document.getElementById('partnerBarraProgreso').style.width = `${porc}%`;
+    
+    if (saldo >= metaCobro) {
+        document.getElementById('partnerMetaTexto').innerHTML = `<span class="text-emerald-600 font-bold">¡Meta lograda! Transferencia en proceso.</span>`;
+    } else {
+        document.getElementById('partnerMetaTexto').innerText = `Te faltan ${formatGs(metaCobro - saldo)} para tu próximo cobro.`;
+    }
+
+    // --- CARGAR LISTA DE REFERIDOS ---
+    const listUI = document.getElementById('listaReferidosUI');
+    listUI.innerHTML = '<div class="text-center py-4"><span class="animate-pulse text-slate-400">Buscando referidos...</span></div>';
+    document.getElementById('dashboardPartnerModal').classList.remove('hidden');
+
+    try {
+        const q = query(collection(db, "usuarios_multimeta"), where("referido_por", "==", perfil.codigo));
+        const snap = await getDocs(q);
+        
+        if (snap.empty) {
+            listUI.innerHTML = `<div class="text-center p-4 bg-slate-50 rounded-xl border border-slate-100"><p class="text-xs text-slate-400 font-bold">Aún no tenés referidos.</p><p class="text-[10px] text-slate-400 mt-1">¡Compartí tu link para empezar a ganar!</p></div>`;
+            return;
+        }
+
+        let html = "";
+        snap.forEach(doc => {
+            const refData = doc.data();
+            let estadoHtml = "";
+            
+            // Calculadora inteligente de estados
+            if (refData.status === 'pagado') {
+                estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">✅ Pagado (+5.000)</span>`;
+            } else if (refData.status === 'pendiente') {
+                estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⏳ Pendiente</span>`;
+            } else {
+                const start = new Date(refData.fechaInicio || new Date());
+                const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
+                const quedan = Math.max(7 - diffDays, 0);
+                if (quedan > 0) {
+                    estadoHtml = `<span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⏳ Prueba (${quedan} días)</span>`;
+                } else {
+                    estadoHtml = `<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold shadow-sm">⚠️ Vencido</span>`;
+                }
+            }
+
+            html += `
+            <div class="flex justify-between items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                <div class="truncate pr-2">
+                    <p class="text-xs font-bold text-slate-800 truncate">${refData.email.split('@')[0]}</p>
+                    <p class="text-[9px] text-slate-400 truncate">${refData.email}</p>
+                </div>
+                <div class="shrink-0 text-right">${estadoHtml}</div>
+            </div>`;
+        });
+        listUI.innerHTML = html;
+
+    } catch(e) {
+        listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-2">Error al cargar referidos</div>`;
+    }
+};
+
+window.compartirLinkPartner = () => {
+    const codigo = document.getElementById('partnerCodigoUI').innerText;
+    const urlApp = `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
+    const texto = `¡Te regalo un descuento exclusivo! 🎁\n\nDescargá la app que uso para organizar mi dinero y activá tu cuenta con un descuento especial usando mi link:\n\n👉 ${urlApp}\n\nO ingresá este código al pagar: *${codigo}*`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+};
+
 
 // --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN ---
 onAuthStateChanged(auth, async (user) => {
@@ -90,9 +243,7 @@ onAuthStateChanged(auth, async (user) => {
                 await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
                 window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
             } else {
-                const userData = docSnap.data(); 
-                window.userAccessStatus = userData.status || 'prueba'; 
-                localStorage.setItem('local_user_status', window.userAccessStatus);
+                const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; localStorage.setItem('local_user_status', window.userAccessStatus);
                 
                 let isAhorroLocalEmpty = true;
                 const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
