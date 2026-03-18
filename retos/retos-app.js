@@ -19,41 +19,80 @@ window.userAccessStatus = 'prueba';
 let retosDisponibles = [];
 let retoActivoId = null;
 let docDataActual = null;
-let unsubscribeReto = null; // El cable a la base de datos
+let unsubscribeReto = null; 
 
-// Utilidades UI
+// --- UTILIDADES GLOBALES Y MODALES ---
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
-// Logout
+window.mostrarAlerta = (mensaje) => { 
+    document.getElementById('customAlertMessage').innerText = mensaje; 
+    document.getElementById('customAlert').classList.remove('hidden'); 
+};
+window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
+
+window.mostrarConfirm = (mensaje) => { 
+    return new Promise((resolve) => { 
+        document.getElementById('customConfirmMessage').innerText = mensaje; 
+        const modal = document.getElementById('customConfirm'); 
+        const btnOk = document.getElementById('btnConfirmOk'); 
+        const btnCancel = document.getElementById('btnConfirmCancel'); 
+        const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; 
+        btnOk.onclick = () => { cleanUp(); resolve(true); }; 
+        btnCancel.onclick = () => { cleanUp(); resolve(false); }; 
+        modal.classList.remove('hidden'); 
+    }); 
+};
+
+// --- CONTROL DE ACCESO (VIP) ---
+window.actualizarUI_Pago = () => {
+    const btnPagar = document.getElementById('btnSidebarPagar');
+    if (!btnPagar) return;
+    if(window.userAccessStatus === 'pagado') { 
+        btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; 
+        btnPagar.onclick = null; 
+        btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
+        btnPagar.classList.replace('text-white', 'text-emerald-700'); 
+    } 
+    else if (window.userAccessStatus === 'pendiente') { 
+        btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; 
+        btnPagar.onclick = () => window.location.href = '../activar.html'; 
+        btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
+        btnPagar.classList.replace('text-white', 'text-amber-700'); 
+    } 
+    else { 
+        btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; 
+        btnPagar.onclick = () => window.location.href = '../activar.html'; 
+    }
+};
+
 window.logout = async () => { 
     localStorage.removeItem('local_user_status'); 
     signOut(auth).then(() => { window.location.href = '../index.html'; }); 
 };
 
-// Autenticación Optimista
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent');
-    
     if (user) {
         document.getElementById('sidebarUserEmail').innerText = user.email;
         const localStatus = localStorage.getItem('local_user_status');
         
         if (localStatus === 'pagado') {
             window.userAccessStatus = 'pagado';
+            window.actualizarUI_Pago();
             loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
             window.initRetos(); 
             return; 
         }
 
-        // Chequeo Nube si no es VIP
         const userRef = doc(db, "usuarios_multimeta", user.email);
         try {
             const docSnap = await getDoc(userRef);
             if (docSnap.exists()) {
                 const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; 
                 localStorage.setItem('local_user_status', window.userAccessStatus);
+                window.actualizarUI_Pago();
                 
                 if (window.userAccessStatus === 'pagado' || window.userAccessStatus === 'prueba') {
                     loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
@@ -74,25 +113,22 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Modales
+// Modales UI
 window.openCreateRetoModal = () => { document.getElementById('crearRetoNombre').value=''; document.getElementById('crearRetoMonto').value=''; document.getElementById('crearRetoSemanas').value=''; document.getElementById('crearRetoApodo').value=''; document.getElementById('createRetoModal').classList.remove('hidden'); };
 window.closeCreateRetoModal = () => { document.getElementById('createRetoModal').classList.add('hidden'); };
 window.openJoinRetoModal = () => { document.getElementById('joinRetoCodigo').value=''; document.getElementById('joinRetoApodo').value=''; document.getElementById('joinRetoModal').classList.remove('hidden'); };
 window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 
 // =======================================================
-// EL MOTOR ANTI-VAMPIRO (Ahorro de lecturas en Firebase)
+// EL MOTOR ANTI-VAMPIRO
 // =======================================================
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'visible') {
-        // El usuario volvió a la app. Reconectamos el cable si había un reto abierto.
         if (retoActivoId) window.conectarTableroEnVivo(retoActivoId);
     } else {
-        // El usuario bloqueó el celular o cambió de app. Cortamos el cable de Firebase.
         if (unsubscribeReto) {
             unsubscribeReto();
             unsubscribeReto = null;
-            console.log("Cable de Firebase desconectado (ahorrando dinero).");
         }
     }
 });
@@ -102,10 +138,7 @@ document.addEventListener("visibilitychange", () => {
 // =======================================================
 
 window.initRetos = async () => {
-    // 1. Cargamos la lista lateral
     await window.cargarMisRetos();
-
-    // 2. Lector de Enlaces (Deep Linking)
     const urlParams = new URLSearchParams(window.location.search);
     const retoCode = urlParams.get('reto');
     if (retoCode) {
@@ -140,30 +173,27 @@ window.cargarMisRetos = async () => {
         `).join('');
 
     } catch(e) {
-        console.error("Error", e);
         list.innerHTML = `<p class="text-[11px] text-rose-500 italic text-center py-2">Error al cargar</p>`;
     }
 };
 
 window.conectarTableroEnVivo = (id) => {
-    // Si ya estábamos escuchando otro, lo desconectamos
     if (unsubscribeReto) { unsubscribeReto(); unsubscribeReto = null; }
     
     retoActivoId = id;
-    window.cargarMisRetos(); // Para pintar el borde azul en el menú lateral
+    window.cargarMisRetos(); 
     
     document.getElementById('estadoTableroVacio').classList.add('hidden');
     document.getElementById('tableroActivo').classList.remove('hidden');
     document.getElementById('arenaProgresoContent').innerHTML = `<div class="text-center py-10"><svg class="animate-spin h-8 w-8 mx-auto text-blue-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`;
 
-    // 📡 ENCHUFAMOS EL CABLE EN TIEMPO REAL
     const retoRef = doc(db, "retos_multijugador", id);
     unsubscribeReto = onSnapshot(retoRef, (docSnap) => {
         if (docSnap.exists()) {
             docDataActual = docSnap.data();
             window.renderizarTablero();
         } else {
-            alert("Este reto fue eliminado por el creador.");
+            window.mostrarAlerta("Este reto fue eliminado por el creador.");
             window.location.reload();
         }
     });
@@ -173,29 +203,27 @@ window.renderizarTablero = () => {
     if(!docDataActual) return;
     const d = docDataActual;
 
-    // --- ENCABEZADOS ---
     document.getElementById('uiRetoNombre').innerText = d.nombre;
     document.getElementById('uiRetoTipo').innerText = d.tipo === 'competencia' ? '🏁 Carrera' : '🤝 Equipo';
     document.getElementById('uiRetoCodigo').innerText = d.codigo;
     document.getElementById('uiRetoSemanas').innerText = d.semanas;
 
-    // --- PROGRESO GLOBAL (Cabecera Flotante) ---
     let granTotalPlata = d.participantes.reduce((acc, curr) => acc + curr.pagado, 0);
     let granMeta = d.tipo === 'competencia' ? (d.meta * d.participantes.length) : d.meta;
     let porcentajeGlobal = granMeta > 0 ? (granTotalPlata / granMeta) * 100 : 0;
     
-    document.getElementById('statsTitle').innerHTML = `${d.nombre} <span class="animate-ping inline-flex h-1.5 w-1.5 rounded-full bg-blue-400 opacity-75 ml-1"></span>`;
+    // El punto que titila con texto "EN VIVO"
+    document.getElementById('statsTitle').innerHTML = `${d.nombre} <span class="flex items-center gap-1 ml-2 px-1.5 py-0.5 rounded text-[8px] bg-rose-100 text-rose-600 font-black tracking-widest"><span class="animate-ping inline-flex h-1.5 w-1.5 rounded-full bg-rose-500 opacity-75"></span> EN VIVO</span>`;
     document.getElementById('totalSavedCounter').innerText = window.formatoGs(granTotalPlata);
     document.getElementById('progressPercentage').innerText = Math.round(Math.min(porcentajeGlobal, 100)) + '%';
     document.getElementById('globalProgressCircle').style.strokeDashoffset = 113 - (Math.min(porcentajeGlobal, 100) / 100 * 113);
 
-    // --- LA ARENA (Ordenada de mayor a menor para ver quién gana) ---
     let partesOrdenados = [...d.participantes].sort((a,b) => b.pagado - a.pagado);
-    let metaIndividual = d.tipo === 'competencia' ? d.meta : (d.meta / d.participantes.length); // Si es colaborativo, dividimos el peso visual
+    let metaIndividual = d.tipo === 'competencia' ? d.meta : (d.meta / d.participantes.length);
 
     let htmlArena = partesOrdenados.map((p, index) => {
         let soyYo = p.email === auth.currentUser.email;
-        let esGanador = index === 0 && p.pagado > 0;
+        let esGanador = index === 0 && p.pagado > 0 && p.pagado >= metaIndividual;
         let miPorc = metaIndividual > 0 ? (p.pagado / metaIndividual) * 100 : 0;
         
         return `
@@ -203,7 +231,7 @@ window.renderizarTablero = () => {
             ${esGanador ? '<div class="absolute -top-2 -right-2 text-xl filter drop-shadow-md">👑</div>' : ''}
             <div class="flex justify-between items-end mb-1.5">
                 <span class="text-xs font-black ${soyYo ? 'text-blue-700' : 'text-slate-700'}">${p.apodo} ${soyYo ? '(Vos)' : ''}</span>
-                <span class="text-sm font-black ${soyYo ? 'text-blue-600' : 'text-slate-900'}">${window.formatoGs(p.pagado)}</span>
+                <span class="text-sm font-black ${soyYo ? 'text-blue-600' : 'text-slate-900'}">${window.formatoGs(p.pagado)} <span class="text-[10px] text-slate-500 font-bold ml-1">${Math.round(miPorc)}%</span></span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden shadow-inner">
                 <div class="h-2 rounded-full transition-all duration-1000 ${soyYo ? 'bg-blue-500' : 'bg-slate-400'}" style="width: ${Math.min(miPorc, 100)}%"></div>
@@ -212,12 +240,10 @@ window.renderizarTablero = () => {
     }).join('');
     document.getElementById('arenaProgresoContent').innerHTML = htmlArena;
 
-    // --- MIS CUOTAS ---
     let miJugador = d.participantes.find(p => p.email === auth.currentUser.email);
     let miFaltante = metaIndividual - miJugador.pagado;
     document.getElementById('uiFaltanteMiParte').innerText = miFaltante > 0 ? `Faltan: ${window.formatoGs(miFaltante)}` : '¡META ALCANZADA! 🎉';
 
-    // Generamos el cronograma con tu lógica original
     let schedule = window.generateSchedule(metaIndividual, d.semanas);
     let htmlCuotas = "";
     
@@ -243,49 +269,38 @@ window.renderizarTablero = () => {
     document.getElementById('misCuotasList').innerHTML = htmlCuotas;
 };
 
-// Lógica original de pesos adaptada para variables
 window.calculateWeights = (totalWeeks) => { let weights = []; let currentWeight = 0; let habitWeeks = Math.floor(totalWeeks * 0.25); if (habitWeeks < 1) habitWeeks = 1; for (let i = 1; i <= totalWeeks; i++) { currentWeight += 1; if (i > habitWeeks && (i - habitWeeks - 1) % 4 === 0) { let jump = Math.floor(totalWeeks / 10); if (jump < 3) jump = 3; currentWeight += jump; } weights.push(currentWeight); } return weights; };
 window.generateSchedule = (metaMonto, metaSemanas) => { let schedule = []; let weights = window.calculateWeights(metaSemanas); let totalWeight = weights.reduce((a, b) => a + b, 0); let baseUnit = metaMonto / totalWeight; let currentSum = 0; for (let i = 0; i < metaSemanas; i++) { if (i === metaSemanas - 1) { schedule.push(metaMonto - currentSum); } else { let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000; if (amount < 5000) amount = 5000; if (currentSum + amount >= metaMonto) { amount = Math.max(0, metaMonto - currentSum - 5000); } schedule.push(amount); currentSum += amount; } } return schedule; };
 
-// Registrar Pago en la Nube
 window.togglePago = async (semanaNum, montoEsperado) => {
     if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = '../activar.html'; 
     if (!retoActivoId || !docDataActual) return;
 
     try {
         const retoRef = doc(db, 'retos_multijugador', retoActivoId);
-        
-        // Copiamos la lista de participantes
         let parts = [...docDataActual.participantes];
         let miIdx = parts.findIndex(p => p.email === auth.currentUser.email);
         let miJug = parts[miIdx];
 
-        // Buscamos si la semana ya estaba pagada
         const pIdx = miJug.progreso.findIndex(p => p.semana === semanaNum);
         if (pIdx > -1) {
-            // Estaba pagada, la destildamos
             miJug.progreso.splice(pIdx, 1);
         } else {
-            // La tildamos (acá podrías hacer que un prompt pregunte si puso más/menos plata, pero lo hacemos directo por velocidad)
             const d = new Date().toLocaleDateString('es-PY', { day: 'numeric', month: 'short' });
             miJug.progreso.push({ semana: semanaNum, pagado: montoEsperado, fecha: d });
         }
 
-        // Recalculamos mi total
         miJug.pagado = miJug.progreso.reduce((acc, curr) => acc + curr.pagado, 0);
         parts[miIdx] = miJug;
 
-        // Disparamos a la nube (El onSnapshot se va a encargar de actualizar la pantalla solo)
         await updateDoc(retoRef, { participantes: parts });
-
     } catch(e) {
-        console.error(e);
-        alert("Error al sincronizar tu pago. Revisá tu conexión.");
+        window.mostrarAlerta("Error al sincronizar tu pago. Revisá tu conexión.");
     }
 };
 
 window.abandonarReto = async () => {
-    const seguro = confirm("¿Seguro querés salir de este reto? Perderás todo el progreso en la arena y no podrás recuperarlo.");
+    const seguro = await window.mostrarConfirm("¿Seguro querés salir de este reto? Perderás todo el progreso en la arena y no podrás recuperarlo.");
     if (!seguro) return;
 
     try {
@@ -293,7 +308,6 @@ window.abandonarReto = async () => {
         let parts = [...docDataActual.participantes];
         let emails = [...docDataActual.participantes_emails];
         
-        // Me filtro a mí mismo de las listas
         parts = parts.filter(p => p.email !== auth.currentUser.email);
         emails = emails.filter(e => e !== auth.currentUser.email);
 
@@ -302,22 +316,21 @@ window.abandonarReto = async () => {
             participantes_emails: emails
         });
 
-        // Limpieza de pantalla
         if (unsubscribeReto) { unsubscribeReto(); unsubscribeReto = null; }
         retoActivoId = null;
         document.getElementById('tableroActivo').classList.add('hidden');
         document.getElementById('estadoTableroVacio').classList.remove('hidden');
-        window.initRetos(); // Recargamos lista lateral
+        window.initRetos(); 
         
     } catch(e) {
-        alert("Error al salir del reto.");
+        window.mostrarAlerta("Error al salir del reto.");
     }
 };
 
 window.crearRetoCloud = async () => {
     if (window.userAccessStatus === 'vencido') return window.location.href = '../activar.html'; 
     const nombre = document.getElementById('crearRetoNombre').value.trim(); const montoRaw = document.getElementById('crearRetoMonto').value.replace(/\D/g, ''); const semanasRaw = document.getElementById('crearRetoSemanas').value; const tipo = document.getElementById('crearRetoTipo').value; const apodo = document.getElementById('crearRetoApodo').value.trim();
-    if (!nombre || !montoRaw || !semanasRaw || !apodo) return alert("Completá todos los campos.");
+    if (!nombre || !montoRaw || !semanasRaw || !apodo) return window.mostrarAlerta("Completá todos los campos.");
     const monto = parseInt(montoRaw); const semanas = parseInt(semanasRaw);
     document.getElementById('btnConfirmCrearReto').innerHTML = "Generando Sala... ⏳";
     
@@ -325,24 +338,24 @@ window.crearRetoCloud = async () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length)); const cod = `RETO-${rnd}`;
         const jug = { email: auth.currentUser.email, apodo: apodo, pagado: 0, progreso: [] };
         await addDoc(collection(db, "retos_multijugador"), { codigo: cod, nombre: nombre, meta: monto, semanas: semanas, tipo: tipo, creador: auth.currentUser.email, participantes: [jug], participantes_emails: [auth.currentUser.email], createdAt: serverTimestamp() });
-        window.closeCreateRetoModal(); window.initRetos(); alert(`Sala creada: ${cod}`);
-    } catch (e) { alert("Error al crear reto."); } finally { document.getElementById('btnConfirmCrearReto').innerHTML = "Crear Sala"; }
+        window.closeCreateRetoModal(); window.initRetos(); window.mostrarAlerta(`✅ Sala creada con éxito.\nCódigo: ${cod}`);
+    } catch (e) { window.mostrarAlerta("Error al crear reto."); } finally { document.getElementById('btnConfirmCrearReto').innerHTML = "Crear Sala"; }
 };
 
 window.unirseRetoCloud = async () => {
     if (window.userAccessStatus === 'vencido') return window.location.href = '../activar.html'; 
     const codigoInput = document.getElementById('joinRetoCodigo').value.trim().toUpperCase(); const apodo = document.getElementById('joinRetoApodo').value.trim();
-    if (!codigoInput || !apodo) return alert("Faltan datos.");
+    if (!codigoInput || !apodo) return window.mostrarAlerta("Faltan datos.");
     document.getElementById('btnConfirmJoinReto').innerHTML = "Buscando... ⏳";
     
     try {
         const q = query(collection(db, "retos_multijugador"), where("codigo", "==", codigoInput)); const snap = await getDocs(q);
-        if (snap.empty) return alert("Código no encontrado.");
+        if (snap.empty) { window.mostrarAlerta("Código no encontrado."); document.getElementById('btnConfirmJoinReto').innerHTML = "Validar y Unirme"; return; }
         const docSnap = snap.docs[0]; const data = docSnap.data();
-        if (data.participantes.some(p => p.email === auth.currentUser.email)) { alert("Ya estás en este reto."); window.closeJoinRetoModal(); return; }
+        if (data.participantes.some(p => p.email === auth.currentUser.email)) { window.mostrarAlerta("Ya estás en este reto."); window.closeJoinRetoModal(); return; }
         await updateDoc(doc(db, "retos_multijugador", docSnap.id), { participantes: arrayUnion({ email: auth.currentUser.email, apodo: apodo, pagado: 0, progreso: [] }), participantes_emails: arrayUnion(auth.currentUser.email) });
         window.closeJoinRetoModal(); window.initRetos();
-    } catch (e) { alert("Error al unirse."); } finally { document.getElementById('btnConfirmJoinReto').innerHTML = "Validar y Unirme"; }
+    } catch (e) { window.mostrarAlerta("Error al unirse."); } finally { document.getElementById('btnConfirmJoinReto').innerHTML = "Validar y Unirme"; }
 };
 
 window.compartirTablero = () => {
