@@ -8,7 +8,9 @@
     
     <link rel="manifest" href="../manifest.json">
     <link rel="apple-touch-icon" href="../icon.png">
-    <meta name="theme-color" content="#3b82f6"> <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="theme-color" content="#3b82f6">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
@@ -19,7 +21,8 @@
 </head>
 <body class="font-body text-slate-800 bg-slate-50">
 
-    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="../icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-blue-500">Multijugador</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="space-y-2"><button id="btnAlertActivar" class="hidden w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div></div>
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="../icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-blue-500">Multijugador</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed whitespace-pre-line"></p><div class="space-y-2"><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div></div>
+    
     <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Retos en Equipo</h3><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors shadow-md">Aceptar</button></div></div></div>
 
     <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden transition-opacity" onclick="toggleSidebar()"></div>
@@ -67,7 +70,7 @@
                         <div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-blue-600" id="progressPercentage">0%</div>
                     </div>
                     <div class="flex-grow">
-                        <div class="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-1" id="statsTitle">Seleccioná un Reto <span class="animate-ping inline-flex h-1.5 w-1.5 rounded-full bg-rose-400 opacity-75"></span></div>
+                        <div class="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-1" id="statsTitle">Seleccioná un Reto</div>
                         <div class="text-lg font-black font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
                         <div class="text-[9px] font-bold text-blue-500" id="metaLabel">Progreso Global del Grupo</div>
                     </div>
@@ -148,7 +151,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Semanas</label><input type="number" id="crearRetoSemanas" placeholder="Ej: 24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
                     <div>
-                        <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="alert('Carrera Individual: Cada uno ahorra su propia meta.\nEquipo: Juntan plata entre todos a una bolsa común.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
+                        <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="window.mostrarAlerta('Carrera Individual: Gana el primero que junte el monto total por su cuenta.\n\nEquipo: Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
                         <select id="crearRetoTipo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-xs"><option value="competencia">Carrera</option><option value="colaborativo">Equipo</option></select>
                     </div>
                 </div>
@@ -164,7 +167,7 @@
             <h3 class="text-xl font-display font-black text-slate-900 mb-6 mt-2">Unirse a un Reto</h3>
             <div class="space-y-4 mb-6">
                 <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block text-center">Pegá el código de invitación</label><input type="text" id="joinRetoCodigo" placeholder="Ej: RETO-ABC12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-black text-xl uppercase tracking-widest"></div>
-                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="joinRetoApodo" placeholder="Ej: Pepe_Gamer" class="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 font-black"></div>
+                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="joinRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 font-black"></div>
             </div>
             <button onclick="unirseRetoCloud()" id="btnConfirmJoinReto" class="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-lg hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/30">Validar y Unirme</button>
         </div>
