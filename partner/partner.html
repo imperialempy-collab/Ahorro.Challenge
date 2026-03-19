@@ -61,57 +61,67 @@
             </div>
         </div>
 
-        <div class="max-w-md mx-auto px-4 pb-12 mt-6 space-y-6">
+        <div class="max-w-md mx-auto px-4 pb-12 mt-6">
             
             <div class="bg-gradient-to-tr from-slate-900 to-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden border border-slate-700">
                 <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-                <div class="relative z-10">
-                    <div class="flex justify-between items-start mb-8">
-                        <div>
-                            <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Incentivos Disponibles</p>
-                            <h2 class="text-4xl font-display font-black text-white tracking-tight" id="partnerSaldoUI">0 Gs.</h2>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[8px] text-emerald-400 uppercase tracking-widest font-bold mb-1">Histórico</p>
-                            <p class="text-sm font-black text-emerald-500" id="partnerHistoricoUI">0 Gs.</p>
-                        </div>
+                <div class="relative z-10 flex flex-col justify-between min-h-[120px]">
+                    <div class="mb-4 text-center">
+                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Incentivos Disponibles</p>
+                        <h2 class="text-5xl font-display font-black text-white tracking-tight" id="partnerSaldoUI">0 Gs.</h2>
                     </div>
                     <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-2">
-                            <span>Progreso a 20.000 Gs</span>
-                            <span id="partnerMetaTexto" class="text-white">Faltan 20.000 Gs</span>
-                        </div>
-                        <div class="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden border border-slate-600/50">
-                            <div id="partnerBarraProgreso" class="bg-emerald-400 h-2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style="width: 0%"></div>
+                        <div class="w-full bg-slate-700/50 rounded-full h-2 overflow-hidden border border-slate-600/50 mt-2">
+                            <div id="partnerBarraProgreso" class="bg-primary h-2 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.5)]" style="width: 0%"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex justify-between items-center">
+            <p id="partnerMensajeMotivacional" class="text-center text-sm font-bold mt-4 h-5 transition-all"></p>
+
+            <div class="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between mt-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-50 text-primary rounded-full flex items-center justify-center border border-emerald-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Histórico cobrado</p>
+                        <p class="text-lg font-black text-slate-800" id="partnerHistoricoUI">0 Gs.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex justify-between items-center mt-4">
                 <div class="truncate pr-4">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Datos de Recepción (SIPAP)</p>
                     <p class="text-sm font-black text-slate-800 truncate" id="bancoActualUI">Cargando...</p>
                     <p class="text-[10px] font-bold text-slate-500 truncate" id="cuentaActualUI">---</p>
                 </div>
-                <button onclick="abrirEdicionPartner()" class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500 hover:text-primary border border-slate-200 transition-colors shadow-sm shrink-0" title="Editar mis datos">✏️</button>
+                <button onclick="abrirEdicionPartner()" class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500 hover:text-primary border border-slate-200 transition-colors shadow-sm shrink-0" title="Editar mis datos">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                </button>
             </div>
 
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 mt-4">
                 <p class="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 text-center">Tu Enlace de Afiliado</p>
                 <div class="bg-slate-50 border border-slate-200 px-4 py-4 rounded-xl text-2xl font-black text-slate-800 tracking-widest text-center shadow-inner mb-4 select-all" id="partnerCodigoUI">---</div>
                 
                 <div class="grid grid-cols-2 gap-2 mb-3">
-                    <button onclick="copiarDato('codigo')" class="py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors">📄 Copiar Código</button>
-                    <button onclick="copiarDato('link')" class="py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors">🔗 Copiar Link</button>
+                    <button onclick="copiarDato('codigo')" class="py-3 bg-slate-50 border border-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copiar Código
+                    </button>
+                    <button onclick="copiarDato('link')" class="py-3 bg-slate-50 border border-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-100 hover:text-primary transition-colors flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg> Copiar Link
+                    </button>
                 </div>
-                <button onclick="compartirWhatsApp()" class="w-full py-4 bg-[#25D366] text-white rounded-xl flex items-center justify-center gap-2 font-black text-sm uppercase tracking-wider hover:bg-[#1ebe5d] shadow-md transition-colors">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.888-.653-1.488-1.46-1.661-1.759-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.347-.272.273-1.04 1.02-1.04 2.48s1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    Enviar por WhatsApp
+                <button onclick="compartirWhatsApp()" class="w-full py-4 bg-slate-900 text-white rounded-xl flex items-center justify-center gap-2 font-black text-sm uppercase tracking-wider hover:bg-slate-800 shadow-md transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                    Compartir Invitación
                 </button>
             </div>
 
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 mt-4">
                 <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-slate-100 pb-2">Historial de Invitados</h4>
                 <div id="listaReferidosUI" class="space-y-2">
                     <div class="text-center py-4"><span class="animate-pulse text-slate-400 text-xs">Cargando...</span></div>
