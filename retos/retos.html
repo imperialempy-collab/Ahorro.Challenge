@@ -8,7 +8,7 @@
     
     <link rel="manifest" href="../manifest.json">
     <link rel="apple-touch-icon" href="../icon.png">
-    <meta name="theme-color" content="#3b82f6">
+    <meta name="theme-color" content="#10b981">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
 </head>
 <body class="font-body text-slate-800 bg-slate-50">
 
-    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="../icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-blue-500">Multijugador</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed whitespace-pre-line"></p><div class="space-y-2"><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div></div>
+    <div id="customAlert" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><img src="../icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Multijugador</span></h3><p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed whitespace-pre-line"></p><div class="space-y-2"><button onclick="closeCustomAlert()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Entendido</button></div></div></div>
     
     <div id="customConfirm" class="fixed inset-0 z-[200] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Retos en Equipo</h3><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors shadow-md">Aceptar</button></div></div></div>
 
@@ -33,7 +33,7 @@
         </div>
         <div class="flex-grow p-4 space-y-2 overflow-y-auto">
             <a href="../index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>Ahorro Challenge</a>
-            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-blue-50 text-blue-600 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Retos en Equipo</a>
+            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Retos en Equipo</a>
             <a href="../macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>Macro Gestión</a>
             <a href="../arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Gimnasio Financiero</a>
             <hr class="border-slate-100 my-4">
@@ -44,10 +44,10 @@
 
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4 bg-background">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
-            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
-            <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Retos <span class="text-blue-500">Challenge</span></h1>
+            <div class="w-20 h-20 bg-emerald-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-sm"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+            <h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Retos <span class="text-primary">Challenge</span></h1>
             <p id="loginText" class="hidden text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para unirte a la arena</p>
-            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4"><svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+            <div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4"><svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
             <button id="googleLoginBtn" onclick="window.location.href='../index.html'" class="hidden w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-md">Ir al Inicio</button>
         </div>
     </div>
@@ -56,8 +56,8 @@
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col gap-3">
                 <div class="relative flex items-center justify-center w-full">
-                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-blue-500 transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
-                    <div class="text-center"><h1 class="text-xl font-display font-black text-slate-900 tracking-wide uppercase">Retos <span class="text-blue-500">en Equipo</span></h1></div>
+                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <div class="text-center"><h1 class="text-xl font-display font-black text-slate-900 tracking-wide uppercase">Retos <span class="text-primary">en Equipo</span></h1></div>
                     <button onclick="window.location.href='../index.html'" class="absolute right-0 p-2 -mr-2 text-slate-400 hover:text-rose-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 </div>
                 
@@ -65,14 +65,14 @@
                     <div class="relative w-10 h-10 shrink-0">
                         <svg class="w-full h-full transform -rotate-90">
                             <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
-                            <circle id="globalProgressCircle" cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="113" stroke-dashoffset="113" class="text-blue-500 transition-all duration-700" />
+                            <circle id="globalProgressCircle" cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="113" stroke-dashoffset="113" class="text-primary transition-all duration-700" />
                         </svg>
-                        <div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-blue-600" id="progressPercentage">0%</div>
+                        <div class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-emerald-600" id="progressPercentage">0%</div>
                     </div>
                     <div class="flex-grow">
                         <div class="text-[9px] font-bold uppercase text-slate-400 flex items-center gap-1" id="statsTitle">Seleccioná un Reto</div>
                         <div class="text-lg font-black font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
-                        <div class="text-[9px] font-bold text-blue-500" id="metaLabel">Progreso Global del Grupo</div>
+                        <div class="text-[9px] font-bold text-primary" id="metaLabel">Progreso Global del Grupo</div>
                     </div>
                 </div>
             </div>
@@ -84,13 +84,13 @@
                 <aside class="space-y-4">
                     <div class="glass-card rounded-2xl p-4 shadow-sm border border-white">
                         <div class="flex flex-col gap-2 mb-4">
-                            <button onclick="openCreateRetoModal()" class="w-full py-2.5 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm border border-blue-200 flex justify-center items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>Crear Sala</button>
+                            <button onclick="openCreateRetoModal()" class="w-full py-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-bold hover:bg-emerald-100 transition-colors text-sm border border-emerald-200 flex justify-center items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>Crear Sala</button>
                             <button onclick="openJoinRetoModal()" class="w-full py-2.5 bg-white text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-colors text-sm border border-slate-200 flex justify-center items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>Unirme con Código</button>
                         </div>
                         
                         <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 pl-1 border-b border-slate-100 pb-2">Tus Tableros Activos</h2>
                         <div id="listaMisRetos" class="space-y-2">
-                            <div class="text-center py-6 text-slate-400"><svg class="animate-spin h-5 w-5 mx-auto mb-2 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-[11px] font-medium">Buscando salas...</span></div>
+                            <div class="text-center py-6 text-slate-400"><svg class="animate-spin h-5 w-5 mx-auto mb-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-[11px] font-medium">Buscando salas...</span></div>
                         </div>
                     </div>
                 </aside>
@@ -105,14 +105,14 @@
 
                     <div id="tableroActivo" class="hidden space-y-6">
                         
-                        <div class="bg-white rounded-2xl p-5 shadow-lg border border-blue-100 relative overflow-hidden">
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
+                        <div class="bg-white rounded-2xl p-5 shadow-lg border border-emerald-100 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10"></div>
                             
                             <div class="flex justify-between items-start mb-6">
                                 <div>
                                     <h3 class="font-display font-black text-slate-900 text-xl mb-1 flex items-center gap-2">
                                         <span id="uiRetoNombre">Nombre del Reto</span>
-                                        <span id="uiRetoTipo" class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Tipo</span>
+                                        <span id="uiRetoTipo" class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Tipo</span>
                                     </h3>
                                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Código: <span id="uiRetoCodigo" class="text-slate-600 font-black">ABC</span> • <span id="uiRetoSemanas">0</span> Semanas</p>
                                 </div>
@@ -122,17 +122,15 @@
                                 </div>
                             </div>
 
-                            <div id="arenaProgresoContent" class="space-y-4">
-                                </div>
+                            <div id="arenaProgresoContent" class="space-y-4"></div>
                         </div>
 
                         <div>
                             <div class="flex justify-between items-end mb-3 px-1">
                                 <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Mis Depósitos</h2>
-                                <p class="text-[10px] font-bold text-blue-500" id="uiFaltanteMiParte">Faltan: 0 Gs</p>
+                                <p class="text-[10px] font-bold text-primary" id="uiFaltanteMiParte">Faltan: 0 Gs</p>
                             </div>
-                            <div id="misCuotasList" class="space-y-2">
-                                </div>
+                            <div id="misCuotasList" class="space-y-2"></div>
                         </div>
 
                     </div>
@@ -146,18 +144,18 @@
             <button onclick="closeCreateRetoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
             <h3 class="text-xl font-display font-black text-slate-900 mb-6 mt-2">Configurar Reto</h3>
             <div class="space-y-4 mb-6">
-                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Nombre del Reto</label><input type="text" id="crearRetoNombre" placeholder="Ej: Viaje a Brasil" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
-                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Monto Meta (Gs)</label><input type="text" id="crearRetoMonto" inputmode="numeric" oninput="window.formatoEnVivo(event)" placeholder="Ej: 5.000.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-black text-lg"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Nombre del Reto</label><input type="text" id="crearRetoNombre" placeholder="Ej: Viaje a Brasil" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Monto Meta (Gs)</label><input type="text" id="crearRetoMonto" inputmode="numeric" oninput="window.formatoEnVivo(event)" placeholder="Ej: 5.000.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-black text-lg"></div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Semanas</label><input type="number" id="crearRetoSemanas" placeholder="Ej: 24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
+                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Semanas</label><input type="number" id="crearRetoSemanas" placeholder="Ej: 24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold"></div>
                     <div>
                         <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="window.mostrarAlerta('Carrera Individual: Gana el primero que junte el monto total por su cuenta.\n\nEquipo: Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
-                        <select id="crearRetoTipo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-xs"><option value="competencia">Carrera</option><option value="colaborativo">Equipo</option></select>
+                        <select id="crearRetoTipo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold text-xs"><option value="competencia">Carrera</option><option value="colaborativo">Equipo</option></select>
                     </div>
                 </div>
-                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="crearRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 font-black"></div>
+                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-primary uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="crearRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-500 font-black"></div>
             </div>
-            <button onclick="crearRetoCloud()" id="btnConfirmCrearReto" class="w-full py-4 bg-blue-500 text-white rounded-xl font-black text-lg hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/30">Crear Sala</button>
+            <button onclick="crearRetoCloud()" id="btnConfirmCrearReto" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">Crear Sala</button>
         </div>
     </div>
 
@@ -166,8 +164,8 @@
             <button onclick="closeJoinRetoModal()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg></button>
             <h3 class="text-xl font-display font-black text-slate-900 mb-6 mt-2">Unirse a un Reto</h3>
             <div class="space-y-4 mb-6">
-                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block text-center">Pegá el código de invitación</label><input type="text" id="joinRetoCodigo" placeholder="Ej: RETO-ABC12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-center text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-black text-xl uppercase tracking-widest"></div>
-                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="joinRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 font-black"></div>
+                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block text-center">Pegá el código de invitación</label><input type="text" id="joinRetoCodigo" placeholder="Ej: RETO-ABC12" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-center text-slate-700 outline-none focus:ring-2 focus:ring-primary font-black text-xl uppercase tracking-widest"></div>
+                <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-primary uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="joinRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-500 font-black"></div>
             </div>
             <button onclick="unirseRetoCloud()" id="btnConfirmJoinReto" class="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-lg hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/30">Validar y Unirme</button>
         </div>
