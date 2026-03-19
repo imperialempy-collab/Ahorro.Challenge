@@ -31,7 +31,6 @@ onAuthStateChanged(auth, async (user) => {
         const localStatus = localStorage.getItem('local_user_status');
         
         if (localStatus !== 'pagado') {
-            // Seguridad: Solo los pagados pueden ser Partners
             window.location.href = '../activar.html';
             return;
         }
@@ -87,7 +86,6 @@ window.cerrarRegistroPartner = () => {
     if(window.currentPartnerPerfil) {
         document.getElementById('registroPartnerModal').classList.add('hidden'); 
     } else {
-        // Si cierra sin registrar, vuelve al inicio
         window.location.href = '../index.html';
     }
 };
@@ -114,7 +112,7 @@ window.guardarPerfilPartner = async () => {
             const registroHistorico = { ...perfilViejo, fecha_cambio: new Date().toISOString() };
             const perfilNuevo = { nombre, banco, ci, cuenta, codigo: perfilViejo.codigo };
             await updateDoc(userRef, { partner_perfil: perfilNuevo, partner_historial_cuentas: arrayUnion(registroHistorico) });
-            userData.partner_perfil = perfilNuevo; // Actualizo en memoria
+            userData.partner_perfil = perfilNuevo; 
         } else {
             const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
             const rnd = Math.floor(1000 + Math.random() * 9000);
@@ -139,24 +137,39 @@ async function cargarDashboardPartner(userData) {
     window.currentPartnerPerfil = perfil; 
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
+    // UI BÁSICA
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
-    document.getElementById('partnerSaldoUI').innerText = formatGs(userData.partner_saldo || 0);
-    document.getElementById('partnerHistoricoUI').innerText = formatGs(userData.partner_historico || 0);
-    
     document.getElementById('bancoActualUI').innerText = `${perfil.banco} • ${perfil.nombre}`;
     document.getElementById('cuentaActualUI').innerText = `Cuenta: ${perfil.cuenta} | CI/Alias: ${perfil.ci}`;
+    document.getElementById('partnerHistoricoUI').innerText = formatGs(userData.partner_historico || 0);
 
+    // LÓGICA DE SALDO Y BARRA DE PROGRESO
     const saldo = userData.partner_saldo || 0;
+    document.getElementById('partnerSaldoUI').innerText = formatGs(saldo);
+    
     const metaCobro = 20000;
     const porc = Math.min((saldo / metaCobro) * 100, 100);
     document.getElementById('partnerBarraProgreso').style.width = `${porc}%`;
     
-    if (saldo >= metaCobro) {
-        document.getElementById('partnerMetaTexto').innerHTML = `<span class="text-emerald-400 font-bold">¡Meta lograda! Pago en proceso.</span>`;
-    } else {
-        document.getElementById('partnerMetaTexto').innerText = `Faltan ${formatGs(metaCobro - saldo)}`;
+    // TEXTO MOTIVACIONAL DINÁMICO
+    const txtMotivacional = document.getElementById('partnerMensajeMotivacional');
+    if (saldo === 0) {
+        txtMotivacional.innerText = "";
+    } else if (saldo >= 5000 && saldo < 10000) {
+        txtMotivacional.innerText = "¡Buen inicio! 🚀";
+        txtMotivacional.className = "text-center text-sm font-bold text-slate-500 mt-4 h-5 transition-all";
+    } else if (saldo >= 10000 && saldo < 15000) {
+        txtMotivacional.innerText = "Estás cerca de tu próxima acreditación 👀";
+        txtMotivacional.className = "text-center text-sm font-bold text-amber-500 mt-4 h-5 transition-all";
+    } else if (saldo >= 15000 && saldo < 20000) {
+        txtMotivacional.innerText = "¡Un pasito más y lo lograste! 🔥";
+        txtMotivacional.className = "text-center text-sm font-bold text-orange-500 mt-4 h-5 transition-all";
+    } else if (saldo >= 20000) {
+        txtMotivacional.innerText = "¡Felicidades! Recibirás tu incentivo a la brevedad posible 💸";
+        txtMotivacional.className = "text-center text-sm font-bold text-primary mt-4 h-5 transition-all";
     }
 
+    // CARGAR LISTA DE INVITADOS
     const listUI = document.getElementById('listaReferidosUI');
     listUI.innerHTML = '<div class="text-center py-6"><span class="animate-pulse text-slate-400 text-xs">Buscando invitados...</span></div>';
 
@@ -165,7 +178,7 @@ async function cargarDashboardPartner(userData) {
         const snap = await getDocs(q);
         
         if (snap.empty) {
-            listUI.innerHTML = `<div class="text-center py-6 px-4"><p class="text-xs text-slate-500 font-bold">Aún no tenés invitados registrados.</p><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">¡Compartí tu link para empezar a sumar!</p></div>`;
+            listUI.innerHTML = `<div class="text-center py-6 px-4"><p class="text-xs text-slate-500 font-bold">Aún no tenés invitados registrados.</p><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Compartí tu link para empezar a sumar.</p></div>`;
             return;
         }
 
@@ -201,19 +214,14 @@ async function cargarDashboardPartner(userData) {
         listUI.innerHTML = html;
 
     } catch(e) {
-        listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error de conexión al cargar lista.</div>`;
+        listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error al cargar historial.</div>`;
     }
 }
 
-// Botones de Acción Limpios
+// BOTONES DE ACCIÓN (Sin WhatsApp verde)
 window.copiarDato = (tipo) => {
     const codigo = document.getElementById('partnerCodigoUI').innerText;
-    let texto = "";
-    if (tipo === 'codigo') {
-        texto = codigo;
-    } else {
-        texto = `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
-    }
+    let texto = (tipo === 'codigo') ? codigo : `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
     
     navigator.clipboard.writeText(texto).then(() => {
         window.mostrarAlerta("¡Copiado al portapapeles! 📄");
