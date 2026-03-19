@@ -55,8 +55,8 @@
             
             <hr class="border-slate-100 my-4">
             
-            <button id="btnSidebarPartner" onclick="abrirPortalPartner()" class="hidden w-full p-3 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors items-center gap-3 mb-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>Programa Partner</button>
-            <button id="btnSidebarPagar" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
+            <button id="btnSidebarPartner" onclick="window.location.href='partner/partner.html'" class="hidden w-full p-3 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors items-center gap-3 mb-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>Programa Partner</button>
+            <button id="btnSidebarPagar" onclick="window.location.href='activar.html'" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
         </div>
         
         <div class="p-4 border-t border-slate-100 bg-slate-50"><button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Cerrar Sesión</button></div>
@@ -70,111 +70,6 @@
     <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3><div class="space-y-4 mb-6"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label><input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label><select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></select></div></div><div class="flex gap-3"><button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button></div></div></div>
     <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col"><div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3><button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>Nueva Meta</button><div id="goalsAdminList" class="space-y-3 mb-6"></div><button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">Aceptar</button></div></div>
     <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3><button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tipo de Aviso</label><select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="semanal">Semanal (Día de la semana)</option><option value="mensual">Mensual (Día del mes)</option></select></div><div id="weeklyOptions"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día de la semana</label><select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="Lunes">Todos los Lunes</option><option value="Martes">Todos los Martes</option><option value="Miércoles">Todos los Miércoles</option><option value="Jueves">Todos los Jueves</option><option value="Viernes">Todos los Viernes</option><option value="Sábado">Todos los Sábados</option><option value="Domingo">Todos los Domingos</option></select></div><div id="monthlyOptions" class="hidden"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día del Mes</label><input type="number" id="reminderDate" placeholder="Ej: 5" min="1" max="31" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Hora</label><input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>Abrir Calendario</button></div></div></div>
-
-
-    <div id="reglasPartnerModal" class="fixed inset-0 z-[260] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border border-slate-100">
-            <h3 class="text-2xl font-display font-black text-slate-900 mb-2">Condiciones del Programa</h3>
-            <p class="text-sm text-slate-500 mb-6 font-medium">Leé atentamente cómo funciona el pago de incentivos antes de registrarte.</p>
-            <div class="space-y-4 mb-8">
-                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</div><p class="text-sm text-slate-700 font-medium">Recibirás <b class="text-emerald-600">5.000 Gs</b> en tu cuenta virtual por cada usuario referido que adquiera y pague su Acceso Ilimitado.</p></div>
-                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</div><p class="text-sm text-slate-700 font-medium">El dinero acumulado se te transferirá por SIPAP automáticamente cada vez que alcances los <b class="text-slate-900">20.000 Gs</b> en tu panel.</p></div>
-                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">!</div><p class="text-sm text-slate-700 font-medium">Sos el único responsable de proveer datos bancarios correctos. <b class="text-rose-600">No nos hacemos responsables por transferencias perdidas o rebotadas debido a errores en tus datos.</b></p></div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="cerrarReglasPartner()" class="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button onclick="aceptarReglasYRegistrar()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-lg hover:bg-slate-800 transition-colors shadow-md">Acepto las condiciones</button>
-            </div>
-        </div>
-    </div>
-
-
-    <div id="registroPartnerModal" class="fixed inset-0 z-[260] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 max-h-[90vh] overflow-y-auto relative">
-            <button onclick="cerrarRegistroPartner()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-            <div class="text-center mb-6 mt-2">
-                <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-sm"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-                <h3 class="text-2xl font-display font-black text-slate-900" id="tituloRegistroPartner">Perfil de Cobro</h3>
-                <p class="text-[11px] text-slate-500 font-medium mt-2 px-4 leading-relaxed">Cargá la cuenta bancaria donde querés recibir tus incentivos ganados.</p>
-            </div>
-            <div class="space-y-4 mb-6">
-                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Nombre y Apellido</label><input type="text" id="partnerNombre" placeholder="Ej: Juan Pérez" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Banco / Billetera</label><input type="text" id="partnerBanco" placeholder="Ej: Ueno Bank" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
-                    <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Cédula o Alias</label><input type="text" id="partnerCI" placeholder="Ej: 4123456" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold"></div>
-                </div>
-                <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Número de Cuenta</label><input type="text" id="partnerCuenta" placeholder="Ej: 123456789" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg"></div>
-            </div>
-            <button onclick="guardarPerfilPartner()" id="btnGuardarPartner" class="w-full py-4 bg-blue-600 text-white rounded-xl font-black text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">Guardar Mis Datos</button>
-        </div>
-    </div>
-
-    <div id="dashboardPartnerModal" class="fixed inset-0 z-[250] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm">
-        <div class="bg-slate-50 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 h-[90vh] flex flex-col relative overflow-hidden">
-            
-            <div class="p-6 pb-4 bg-white border-b border-slate-100 flex justify-between items-start shrink-0">
-                <div>
-                    <h3 class="text-xl font-display font-black text-slate-900">Panel de Recompensas</h3>
-                    <p class="text-xs text-slate-500 font-medium">Invitá amigos y generá ingresos.</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="abrirEdicionPartner()" class="text-slate-400 hover:text-blue-500 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm transition-colors" title="Editar Datos Bancarios">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
-                    <button onclick="cerrarDashboardPartner()" class="text-slate-400 hover:text-rose-500 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-            </div>
-
-            <div class="p-4 overflow-y-auto flex-grow space-y-4">
-                <div class="bg-slate-900 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full -z-0"></div>
-                    <div class="relative z-10 mb-5">
-                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Incentivo para próximo cobro</p>
-                        <h4 class="text-4xl font-display font-black text-white" id="partnerSaldoUI">0 Gs.</h4>
-                    </div>
-                    <div class="relative z-10">
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-2">
-                            <span>Progreso a 20.000 Gs</span>
-                            <span id="partnerMetaTexto" class="text-white">Faltan 20.000 Gs</span>
-                        </div>
-                        <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                            <div id="partnerBarraProgreso" class="bg-emerald-400 h-2.5 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(52,211,153,0.5)]" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-slate-200 rounded-xl p-4 flex justify-between items-center shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 border border-slate-100"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"></path></svg></div>
-                        <div>
-                            <p class="text-[9px] text-slate-400 uppercase tracking-widest font-bold">Histórico Total Transferido</p>
-                            <p class="text-base font-black text-slate-800" id="partnerHistoricoUI">0 Gs.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm">
-                    <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3">Tu Código de Afiliado</p>
-                    <div class="flex flex-col gap-3">
-                        <div class="bg-blue-50 border border-blue-200 px-4 py-3 rounded-xl text-2xl font-black text-blue-900 tracking-widest text-center shadow-inner" id="partnerCodigoUI">CARGANDO</div>
-                        <button onclick="compartirLinkPartner()" class="w-full py-4 bg-[#25D366] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#1ebe5d] shadow-md transition-colors">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.305-.888-.653-1.488-1.46-1.661-1.759-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.347-.272.273-1.04 1.02-1.04 2.48s1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            Compartir Link por WhatsApp
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest m-3 mb-2">Historial de Invitados</h4>
-                    <div id="listaReferidosUI" class="space-y-1 p-2">
-                        </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
     <div id="appContent" class="hidden">
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
