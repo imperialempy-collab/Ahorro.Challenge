@@ -460,6 +460,13 @@ window.initApp = () => {
     window.renderGoals(); 
     window.updateStats(); 
     if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
+
+    // MAGIA DE REDIRECCIÓN: Abre el portal partner al volver de otra sección
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open') === 'partner') {
+        window.abrirPortalPartner();
+        window.history.replaceState({}, document.title, window.location.pathname); // Limpia la URL
+    }
 };
 
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
