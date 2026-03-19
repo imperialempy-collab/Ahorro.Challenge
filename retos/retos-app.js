@@ -29,6 +29,30 @@ window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessag
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 
+// --- NAVEGACIÓN Y BOTONES ---
+window.abrirPortalPartner = () => {
+    // Redirige al inicio y le pasa la orden de abrir el portal
+    window.location.href = '../index.html?open=partner';
+};
+
+window.actualizarUI_Pago = () => {
+    const btnPagar = document.getElementById('btnSidebarPagar');
+    const btnPartner = document.getElementById('btnSidebarPartner');
+    
+    if(window.userAccessStatus === 'pagado') { 
+        if (btnPagar) { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); }
+        if (btnPartner) { btnPartner.classList.remove('hidden'); btnPartner.classList.add('flex'); }
+    } 
+    else if (window.userAccessStatus === 'pendiente') { 
+        if (btnPagar) { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = '../activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); }
+        if (btnPartner) { btnPartner.classList.add('hidden'); btnPartner.classList.remove('flex'); }
+    } 
+    else { 
+        if (btnPagar) { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = '../activar.html'; btnPagar.classList.replace('bg-emerald-50', 'bg-slate-900'); btnPagar.classList.replace('text-emerald-700', 'text-white'); }
+        if (btnPartner) { btnPartner.classList.add('hidden'); btnPartner.classList.remove('flex'); }
+    }
+};
+
 window.logout = async () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => { window.location.href = '../index.html'; }); };
 
 onAuthStateChanged(auth, async (user) => {
@@ -39,6 +63,7 @@ onAuthStateChanged(auth, async (user) => {
         
         if (localStatus === 'pagado') {
             window.userAccessStatus = 'pagado';
+            window.actualizarUI_Pago(); // Agregado para activar botón Partner
             loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
             window.initRetos(); 
             return; 
@@ -50,6 +75,7 @@ onAuthStateChanged(auth, async (user) => {
             if (docSnap.exists()) {
                 const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; 
                 localStorage.setItem('local_user_status', window.userAccessStatus);
+                window.actualizarUI_Pago(); // Agregado para activar botón Partner
                 
                 if (window.userAccessStatus === 'pagado' || window.userAccessStatus === 'prueba') {
                     loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
