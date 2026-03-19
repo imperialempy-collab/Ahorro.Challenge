@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 window.ENABLE_MANUAL_SYNC = true; 
 
@@ -19,6 +19,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
+window.currentPartnerPerfil = null; // Variable global para la edición
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
 window.mostrarAlerta = (mensaje) => { 
@@ -64,7 +65,7 @@ window.logout = async () => {
     signOut(auth).then(() => location.reload()); 
 };
 
-// --- CONTROL DE UI Y BOTÓN PARTNER (Fuerza visual) ---
+// --- CONTROL DE UI Y BOTÓN PARTNER ---
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
     const btnPartner = document.getElementById('btnSidebarPartner');
@@ -78,7 +79,7 @@ window.actualizarUI_Pago = () => {
         }
         if (btnPartner) {
             btnPartner.classList.remove('hidden'); 
-            btnPartner.classList.add('flex'); // Lo muestra forzado
+            btnPartner.classList.add('flex'); 
         }
     } 
     else if (window.userAccessStatus === 'pendiente') { 
@@ -122,10 +123,8 @@ window.abrirPortalPartner = async () => {
             const data = docSnap.data();
             
             if (data.partner_perfil) {
-                // Ya aceptó reglas y guardó datos
                 window.cargarDashboardPartner(data);
             } else {
-                // Primer ingreso: Mostrar Términos y Condiciones
                 document.getElementById('reglasPartnerModal').classList.remove('hidden');
             }
         }
@@ -139,6 +138,28 @@ window.cerrarReglasPartner = () => { document.getElementById('reglasPartnerModal
 
 window.aceptarReglasYRegistrar = () => {
     window.cerrarReglasPartner();
+    document.getElementById('tituloRegistroPartner').innerText = "Perfil de Cobro";
+    document.getElementById('btnGuardarPartner').innerText = "Guardar Mis Datos";
+    document.getElementById('partnerNombre').value = "";
+    document.getElementById('partnerBanco').value = "";
+    document.getElementById('partnerCI').value = "";
+    document.getElementById('partnerCuenta').value = "";
+    document.getElementById('registroPartnerModal').classList.remove('hidden');
+};
+
+// BOTÓN LÁPIZ: Para editar sin perder el código
+window.abrirEdicionPartner = () => {
+    if (!window.currentPartnerPerfil) return;
+    
+    document.getElementById('tituloRegistroPartner').innerText = "Editar Mis Datos";
+    document.getElementById('btnGuardarPartner').innerText = "Guardar Cambios";
+    
+    // Carga los datos actuales en el formulario
+    document.getElementById('partnerNombre').value = window.currentPartnerPerfil.nombre || "";
+    document.getElementById('partnerBanco').value = window.currentPartnerPerfil.banco || "";
+    document.getElementById('partnerCI').value = window.currentPartnerPerfil.ci || "";
+    document.getElementById('partnerCuenta').value = window.currentPartnerPerfil.cuenta || "";
+    
     document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
@@ -154,32 +175,62 @@ window.guardarPerfilPartner = async () => {
     if(!nombre || !banco || !ci || !cuenta) return window.mostrarAlerta("Completá todos tus datos bancarios para poder pagarte.");
 
     const btn = document.getElementById('btnGuardarPartner');
-    btn.innerHTML = "Generando Perfil... ⏳"; btn.disabled = true;
+    const textoOriginal = btn.innerHTML;
+    btn.innerHTML = "Guardando... ⏳"; btn.disabled = true;
 
     try {
-        const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
-        const rnd = Math.floor(1000 + Math.random() * 9000);
-        const codigo = `${baseCode}${rnd}`;
-
-        const perfil = { nombre, banco, ci, cuenta, codigo };
-
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
-        await updateDoc(userRef, {
-            partner_perfil: perfil,
-            partner_saldo: 0,
-            partner_historico: 0
-        });
+        const docSnap = await getDoc(userRef);
+        const userData = docSnap.exists() ? docSnap.data() : {};
+
+        if (userData.partner_perfil) {
+            // ES UNA EDICIÓN: Guardamos el historial de la cuenta vieja por seguridad
+            const perfilViejo = userData.partner_perfil;
+            const registroHistorico = {
+                ...perfilViejo,
+                fecha_cambio: new Date().toISOString()
+            };
+
+            const perfilNuevo = {
+                nombre, banco, ci, cuenta,
+                codigo: perfilViejo.codigo // Mantiene su código de referido INTACTO
+            };
+
+            // Usamos arrayUnion para agregar la cuenta vieja al archivo histórico
+            await updateDoc(userRef, {
+                partner_perfil: perfilNuevo,
+                partner_historial_cuentas: arrayUnion(registroHistorico)
+            });
+
+        } else {
+            // ES PRIMERA VEZ: Se crea de cero
+            const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
+            const rnd = Math.floor(1000 + Math.random() * 9000);
+            const codigo = `${baseCode}${rnd}`;
+
+            const perfilNuevo = { nombre, banco, ci, cuenta, codigo };
+
+            await updateDoc(userRef, {
+                partner_perfil: perfilNuevo,
+                partner_saldo: 0,
+                partner_historico: 0
+            });
+        }
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner(); // Recarga el flujo, ahora lo mandará al Dashboard
+        window.abrirPortalPartner(); // Vuelve a recargar el Dashboard
     } catch(e) {
-        window.mostrarAlerta("Error al guardar tu perfil.");
-        btn.innerHTML = "Guardar Mis Datos"; btn.disabled = false;
+        console.error(e);
+        window.mostrarAlerta("Error al guardar tu perfil. Revisá tu conexión.");
+    } finally {
+        btn.innerHTML = textoOriginal; 
+        btn.disabled = false;
     }
 };
 
 window.cargarDashboardPartner = async (userData) => {
     const perfil = userData.partner_perfil;
+    window.currentPartnerPerfil = perfil; // Guardamos en global para poder editar después
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
