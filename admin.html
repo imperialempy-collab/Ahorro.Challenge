@@ -11,6 +11,9 @@
     </script>
     <style>
         summary::-webkit-details-marker { display: none; }
+        .sort-icon { display: inline-block; width: 0; height: 0; margin-left: 5px; vertical-align: middle; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+        .sort-asc { border-bottom: 4px solid currentColor; }
+        .sort-desc { border-top: 4px solid currentColor; }
     </style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -34,232 +37,170 @@
         const provider = new GoogleAuthProvider();
 
         const ADMIN_EMAILS = ["imperial.empy@gmail.com", "axelnm35@gmail.com"];
-        let todosLosUsuarios = []; // Variable global para usar en el sistema Partner
+        
+        // VARIABLES GLOBALES EN MEMORIA (Para filtros sin gastar Firebase)
+        window.todosLosUsuarios = [];
+        window.configPartners = { filtro: 'monto' }; // 'monto', 'cobrar', 'abc'
+        window.configDirectorio = { busqueda: '', estado: 'todos', ordenCampo: 'fecha', ordenDir: 'desc' };
 
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth).then(() => location.reload());
 
-        // Función auxiliar para Telegram
         function enviarTelegram(mensaje) {
             const telegramToken = '8753413505:AAHK_h6bwEWgugMLz4LEBZsTOSnKV5Zx1PU';
             const chatId = '-1003625405883';
             fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: chatId, text: mensaje, parse_mode: 'Markdown' })
             }).catch(e => console.log("Telegram silent fail."));
         }
 
-        // Función original para cambios de estado simples (Prueba o Suspender)
         window.cambiarEstado = async (email, nuevoEstado) => {
-            const mensajes = {
-                'vencido': `¿Suspender la cuenta de ${email}?`,
-                'prueba': `¿Reiniciar los 7 días de prueba de ${email}?`
-            };
-            
+            const mensajes = { 'vencido': `¿Suspender la cuenta de ${email}?`, 'prueba': `¿Reiniciar los 7 días de prueba de ${email}?` };
             if(confirm(mensajes[nuevoEstado])) {
                 try {
-                    await updateDoc(doc(db, "usuarios_multimeta", email), { 
-                        status: nuevoEstado,
-                        mensaje_admin: "", // Limpiamos mensajes anteriores
-                        ...(nuevoEstado === 'prueba' && { fechaInicio: new Date().toISOString() }) 
-                    });
-                    alert("✅ ¡Estado actualizado correctamente!");
-                    cargarUsuarios();
-                } catch (error) {
-                    alert("❌ Error al actualizar: " + error.message);
-                }
+                    await updateDoc(doc(db, "usuarios_multimeta", email), { status: nuevoEstado, mensaje_admin: "", ...(nuevoEstado === 'prueba' && { fechaInicio: new Date().toISOString() }) });
+                    alert("✅ ¡Estado actualizado correctamente!"); window.cargarDatos();
+                } catch (error) { alert("❌ Error al actualizar: " + error.message); }
             }
         };
-
-        // --- FUNCIONES DE COBRO Y PARTNERS ---
 
         window.aprobarPago = async (email, rutaComprobante, referidoPor) => {
             if(!confirm(`¿Aprobar pago de ${email} y darle acceso ILIMITADO?`)) return;
-            
             try {
-                // 1. Actualizamos la BD del cliente
-                await updateDoc(doc(db, "usuarios_multimeta", email), { 
-                    status: 'pagado',
-                    mensaje_admin: "",
-                    comprobante_url: "", 
-                    comprobante_ruta: ""
-                });
-
-                // 2. Sistema Partner: Si vino referido, le pagamos la comisión al socio
+                await updateDoc(doc(db, "usuarios_multimeta", email), { status: 'pagado', mensaje_admin: "", comprobante_url: "", comprobante_ruta: "" });
                 if (referidoPor && referidoPor.trim() !== "") {
-                    const pPartner = todosLosUsuarios.find(u => u.partner_perfil && u.partner_perfil.codigo === referidoPor);
+                    const pPartner = window.todosLosUsuarios.find(u => u.partner_perfil && u.partner_perfil.codigo === referidoPor);
                     if (pPartner) {
                         const partnerRef = doc(db, "usuarios_multimeta", pPartner.email);
                         await updateDoc(partnerRef, { partner_saldo: increment(5000) });
-
-                        // Revisar si con esto llegó a los 20.000 para avisar por Telegram
                         const nuevoSaldo = (pPartner.partner_saldo || 0) + 5000;
                         if (nuevoSaldo >= 20000) {
-                            const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
-                            enviarTelegram(`🚨 *¡LIQUIDACIÓN DE PARTNER PENDIENTE!*\n\nEl socio *${pPartner.partner_perfil.nombre}* acaba de alcanzar los *${formatGs(nuevoSaldo)}*.\n\nEntrá a tu Bóveda Admin para transferirle su plata.`);
+                            enviarTelegram(`🚨 *¡LIQUIDACIÓN DE PARTNER PENDIENTE!*\n\nEl socio *${pPartner.partner_perfil.nombre}* acaba de alcanzar los *${new Intl.NumberFormat('es-PY').format(nuevoSaldo)} Gs*.\n\nEntrá a tu Bóveda Admin para transferirle su plata.`);
                         }
                     }
                 }
-
-                // 3. Borramos la foto de Firebase Storage para ahorrar espacio
-                if (rutaComprobante) {
-                    const fileRef = ref(storage, rutaComprobante);
-                    await deleteObject(fileRef).catch(e => console.log("La foto ya no existía en el servidor."));
-                }
-
-                alert("✅ ¡Pago aprobado! Comprobante eliminado del servidor.");
-                cargarUsuarios();
-            } catch (error) {
-                alert("❌ Error al aprobar: " + error.message);
-            }
+                if (rutaComprobante) { const fileRef = ref(storage, rutaComprobante); await deleteObject(fileRef).catch(e => {}); }
+                alert("✅ ¡Pago aprobado! Comprobante eliminado del servidor."); window.cargarDatos();
+            } catch (error) { alert("❌ Error al aprobar: " + error.message); }
         };
 
         window.rechazarPago = async (email, rutaComprobante) => {
-            const motivo = prompt(`Rechazando a ${email}.\nEscribí el motivo para el cliente (Ej: Faltan 5.000 Gs, o La foto está borrosa):`);
-            
+            const motivo = prompt(`Rechazando a ${email}.\nEscribí el motivo para el cliente:`);
             if (motivo === null) return; 
-            if (motivo.trim() === "") return alert("Debes escribir un motivo para rechazar el pago.");
-
+            if (motivo.trim() === "") return alert("Debes escribir un motivo.");
             try {
-                // 1. Lo pasamos a estado rechazado y le guardamos el mensaje
-                await updateDoc(doc(db, "usuarios_multimeta", email), { 
-                    status: 'rechazado',
-                    mensaje_admin: motivo,
-                    comprobante_url: "", 
-                    comprobante_ruta: ""
-                });
-
-                // 2. Borramos la foto rechazada de Storage
-                if (rutaComprobante) {
-                    const fileRef = ref(storage, rutaComprobante);
-                    await deleteObject(fileRef).catch(e => console.log("La foto ya no existía."));
-                }
-
-                alert("✅ Pago rechazado. El usuario verá tu mensaje y podrá subir otra foto.");
-                cargarUsuarios();
-            } catch (error) {
-                alert("❌ Error al rechazar: " + error.message);
-            }
+                await updateDoc(doc(db, "usuarios_multimeta", email), { status: 'rechazado', mensaje_admin: motivo, comprobante_url: "", comprobante_ruta: "" });
+                if (rutaComprobante) { const fileRef = ref(storage, rutaComprobante); await deleteObject(fileRef).catch(e => {}); }
+                alert("✅ Pago rechazado."); window.cargarDatos();
+            } catch (error) { alert("❌ Error al rechazar: " + error.message); }
         };
 
         window.liquidarPartner = async (emailPartner, nombrePartner) => {
             if(!confirm(`¿Ya hiciste la transferencia de 20.000 Gs a ${nombrePartner}?`)) return;
-
             try {
-                const partnerRef = doc(db, "usuarios_multimeta", emailPartner);
-                await updateDoc(partnerRef, { 
-                    partner_saldo: increment(-20000),
-                    partner_historico: increment(20000)
-                });
-                
-                alert("✅ ¡Liquidación registrada con éxito!");
-                cargarUsuarios();
-            } catch(e) {
-                alert("❌ Error al liquidar: " + e.message);
-            }
+                await updateDoc(doc(db, "usuarios_multimeta", emailPartner), { partner_saldo: increment(-20000), partner_historico: increment(20000) });
+                alert("✅ ¡Liquidación registrada con éxito!"); window.cargarDatos();
+            } catch(e) { alert("❌ Error al liquidar: " + e.message); }
         };
 
-        async function cargarUsuarios() {
-            const tbodyPendientes = document.getElementById('tablaPendientes');
-            const tbodyTodos = document.getElementById('tablaTodos');
-            const contPartners = document.getElementById('listaPartnersUI');
-            
-            tbodyPendientes.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando...</td></tr>';
-            tbodyTodos.innerHTML = '<tr><td colspan="4" class="text-center p-4">Cargando...</td></tr>';
-            contPartners.innerHTML = '<div class="text-slate-400 font-bold p-4">Cargando...</div>';
+        // --- SISTEMA DE EXTRACCIÓN MAESTRA ---
+        window.cargarDatos = async () => {
+            document.getElementById('tablaPendientes').innerHTML = '<tr><td colspan="4" class="text-center p-4 font-bold text-slate-400">Cargando la bóveda...</td></tr>';
             
             try {
                 const querySnapshot = await getDocs(collection(db, "usuarios_multimeta"));
-                todosLosUsuarios = [];
-
-                let htmlPendientes = '';
-                let htmlTodos = '';
+                window.todosLosUsuarios = [];
                 let stats = { total: 0, pagados: 0, pendientes: 0, prueba: 0, syncs: 0, ingresosGlobales: 0, totalPartners: 0 };
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    todosLosUsuarios.push(data);
+                    // Agregar fecha sanitizada para cálculos
+                    data._fechaOrden = new Date(data.fechaInicio || 0).getTime();
+                    window.todosLosUsuarios.push(data);
                     
                     stats.total++;
-                    if(data.status === 'pagado') {
-                        stats.pagados++;
-                        stats.ingresosGlobales += (data.monto_esperado || 30000); 
-                    }
+                    if(data.status === 'pagado') { stats.pagados++; stats.ingresosGlobales += (data.monto_esperado || 30000); }
                     else if(data.status === 'pendiente') stats.pendientes++;
                     else stats.prueba++;
-
                     if(data.sync_count) stats.syncs += data.sync_count;
                     if(data.partner_perfil) stats.totalPartners++;
-
-                    const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
-                    const start = new Date(data.fechaInicio);
-                    const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
-                    
-                    let estadoHtml = '';
-                    if (data.status === 'pagado') estadoHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGADO 👑</span>`;
-                    else if (data.status === 'pendiente') estadoHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR PAGO ⏳</span>`;
-                    else if (data.status === 'vencido') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">SUSPENDIDO</span>`;
-                    else if (data.status === 'rechazado') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGO RECHAZADO</span>`;
-                    else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA (Día ${diffDays})</span>`;
-
-                    let etiquetaSocio = '';
-                    if (data.status === 'pendiente' && data.referido_por) {
-                        const montoPagar = data.monto_esperado || 30000;
-                        etiquetaSocio = `<div class="mt-2"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black tracking-widest uppercase">🤝 REFERIDO: ${data.referido_por} | A Pagar: ${new Intl.NumberFormat('es-PY').format(montoPagar)} Gs</span></div>`;
-                    }
-
-                    // Botones Dinámicos
-                    let botonesHtml = `<div class="flex justify-end gap-1 flex-wrap">`;
-                    if (data.status === 'pendiente') {
-                        botonesHtml += `
-                            <a href="${data.comprobante_url}" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 px-2 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1">Ver Foto</a>
-                            <button onclick="aprobarPago('${data.email}', '${data.comprobante_ruta || ''}', '${data.referido_por || ''}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Aprobar</button>
-                            <button onclick="rechazarPago('${data.email}', '${data.comprobante_ruta || ''}')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Rechazar</button>
-                        `;
-                    } else {
-                        if (data.status === 'pagado') {
-                            botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>`;
-                        }
-                        if (data.status !== 'prueba' && data.status !== 'pagado' && data.status !== 'pendiente') {
-                            botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Dar Prueba</button>`;
-                        }
-                    }
-                    botonesHtml += `</div>`;
-
-                    const filaHtml = `
-                        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                            <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}${etiquetaSocio}</td>
-                            <td class="p-3 text-slate-500 text-xs">${fecha}</td>
-                            <td class="p-3">${estadoHtml}</td>
-                            <td class="p-3">${botonesHtml}</td>
-                        </tr>
-                    `;
-
-                    if (data.status === 'pendiente') htmlPendientes += filaHtml;
-                    htmlTodos += filaHtml;
                 });
 
-                tbodyPendientes.innerHTML = htmlPendientes || '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay comprobantes pendientes a revisión.</td></tr>';
-                tbodyTodos.innerHTML = htmlTodos || '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay usuarios registrados.</td></tr>';
-                
                 actualizarMetricas(stats);
-                renderizarRadarPartners();
+                window.renderizarPendientes();
+                window.renderizarRadarPartners();
+                window.renderizarDirectorio();
 
             } catch (error) {
-                tbodyTodos.innerHTML = `<tr><td colspan="4" class="text-center text-rose-500 p-4">Error: ${error.message}</td></tr>`;
+                alert("Error al conectar con la base de datos.");
             }
+        };
+
+        function actualizarMetricas(stats) {
+            document.getElementById('statTotal').innerText = stats.total; document.getElementById('statPagados').innerText = stats.pagados;
+            document.getElementById('statPendientes').innerText = stats.pendientes; document.getElementById('statPartners').innerText = stats.totalPartners;
+            document.getElementById('statIngresos').innerText = new Intl.NumberFormat('es-PY').format(stats.ingresosGlobales);
+            document.getElementById('statSyncs').innerText = new Intl.NumberFormat('es-PY').format(stats.syncs) + " Clics a la nube";
+            const costoEstimado = stats.syncs * 0.01; 
+            document.getElementById('statCostos').innerText = new Intl.NumberFormat('es-PY').format(costoEstimado < 1 ? 0 : Math.round(costoEstimado));
         }
 
-        // --- RENDER DEL NUEVO RADAR DE PARTNERS ---
-        function renderizarRadarPartners() {
+        // --- RENDER 1: PENDIENTES ---
+        window.renderizarPendientes = () => {
+            const pendientes = window.todosLosUsuarios.filter(u => u.status === 'pendiente');
+            const tbody = document.getElementById('tablaPendientes');
+            if (pendientes.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay comprobantes pendientes a revisión.</td></tr>'; return; }
+            
+            let html = '';
+            pendientes.forEach(data => {
+                const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                const etiquetaSocio = data.referido_por ? `<div class="mt-1"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">🤝 SOCIO: ${data.referido_por} | A Pagar: ${new Intl.NumberFormat('es-PY').format(data.monto_esperado || 30000)} Gs</span></div>` : '';
+                html += `
+                    <tr class="border-b border-amber-100 hover:bg-amber-50/50 transition-colors">
+                        <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}${etiquetaSocio}</td>
+                        <td class="p-3 text-slate-500 text-xs">${fecha}</td>
+                        <td class="p-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR ⏳</span></td>
+                        <td class="p-3">
+                            <div class="flex justify-end gap-1 flex-wrap">
+                                <a href="${data.comprobante_url}" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 px-2 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1">Foto</a>
+                                <button onclick="aprobarPago('${data.email}', '${data.comprobante_ruta || ''}', '${data.referido_por || ''}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Aprobar</button>
+                                <button onclick="rechazarPago('${data.email}', '${data.comprobante_ruta || ''}')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Rechazar</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+
+        // --- RENDER 2: RADAR PARTNERS (Con Filtros) ---
+        window.setFiltroPartner = (tipo) => {
+            window.configPartners.filtro = tipo;
+            // Actualizar UI de botones
+            document.querySelectorAll('.btn-filtro-partner').forEach(b => { b.classList.remove('bg-slate-800', 'text-white', 'shadow-sm'); b.classList.add('bg-white', 'text-slate-500'); });
+            const btnActivo = document.getElementById(`btnFiltroPartner_${tipo}`);
+            if(btnActivo) { btnActivo.classList.remove('bg-white', 'text-slate-500'); btnActivo.classList.add('bg-slate-800', 'text-white', 'shadow-sm'); }
+            window.renderizarRadarPartners();
+        };
+
+        window.renderizarRadarPartners = () => {
             const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n || 0) + ' Gs.';
             const cont = document.getElementById('listaPartnersUI');
             
-            let partners = todosLosUsuarios.filter(u => u.partner_perfil).sort((a,b) => (b.partner_saldo || 0) - (a.partner_saldo || 0));
+            let partners = window.todosLosUsuarios.filter(u => u.partner_perfil);
             
+            // Aplicar filtro/orden seleccionado
+            if (window.configPartners.filtro === 'cobrar') {
+                partners = partners.filter(p => (p.partner_saldo || 0) >= 20000);
+                partners.sort((a,b) => (b.partner_saldo || 0) - (a.partner_saldo || 0));
+            } else if (window.configPartners.filtro === 'abc') {
+                partners.sort((a,b) => a.partner_perfil.nombre.localeCompare(b.partner_perfil.nombre));
+            } else { // 'monto' (default)
+                partners.sort((a,b) => (b.partner_saldo || 0) - (a.partner_saldo || 0));
+            }
+
             if (partners.length === 0) {
-                cont.innerHTML = '<div class="text-center py-6 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl mx-4 mb-4">Nadie se registró como Partner todavía.</div>';
+                cont.innerHTML = '<div class="text-center py-6 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl mx-4 mb-4">No se encontraron partners para este filtro.</div>';
                 return;
             }
 
@@ -270,22 +211,9 @@
                 const saldo = p.partner_saldo || 0;
                 const listoParaCobrar = saldo >= 20000;
                 const porc = Math.min((saldo / 20000) * 100, 100);
-
-                const referidos = todosLosUsuarios.filter(u => u.referido_por === perf.codigo);
-                let referidosHtml = "";
+                const referidos = window.todosLosUsuarios.filter(u => u.referido_por === perf.codigo);
                 
-                if (referidos.length > 0) {
-                    referidosHtml = `<div class="mt-2 bg-white/50 border border-slate-100 rounded-xl p-2 max-h-32 overflow-y-auto space-y-1">`;
-                    referidos.forEach(ref => {
-                        let estado = "⏳";
-                        if(ref.status === 'pagado') estado = "✅";
-                        else if(ref.status === 'pendiente') estado = "🟡";
-                        referidosHtml += `<div class="flex justify-between items-center text-[10px] px-1 py-0.5 border-b border-slate-50 last:border-0"><span class="truncate text-slate-600">${ref.email.split('@')[0]}</span> <span>${estado}</span></div>`;
-                    });
-                    referidosHtml += `</div>`;
-                } else {
-                    referidosHtml = `<div class="mt-2 text-[10px] text-slate-400 italic py-1">Sin afiliados todavía.</div>`;
-                }
+                let referidosHtml = referidos.length > 0 ? `<div class="mt-2 bg-white/50 border border-slate-100 rounded-xl p-2 max-h-32 overflow-y-auto space-y-1">` + referidos.map(ref => `<div class="flex justify-between items-center text-[10px] px-1 py-0.5 border-b border-slate-50 last:border-0"><span class="truncate text-slate-600">${ref.email.split('@')[0]}</span> <span>${ref.status === 'pagado' ? '✅' : (ref.status === 'pendiente' ? '🟡' : '⏳')}</span></div>`).join('') + `</div>` : `<div class="mt-2 text-[10px] text-slate-400 italic py-1">Sin afiliados.</div>`;
 
                 html += `
                 <div class="rounded-2xl p-4 transition-all duration-300 border ${listoParaCobrar ? 'bg-emerald-50 border-emerald-300 shadow-md ring-1 ring-emerald-500' : 'bg-white border-slate-200 shadow-sm'}">
@@ -314,32 +242,101 @@
             });
             html += '</div>';
             cont.innerHTML = html;
-        }
+        };
 
-        function actualizarMetricas(stats) {
-            document.getElementById('statTotal').innerText = stats.total;
-            document.getElementById('statPagados').innerText = stats.pagados;
-            document.getElementById('statPendientes').innerText = stats.pendientes;
-            document.getElementById('statPartners').innerText = stats.totalPartners;
-            
-            document.getElementById('statIngresos').innerText = new Intl.NumberFormat('es-PY').format(stats.ingresosGlobales);
-            
-            document.getElementById('statSyncs').innerText = new Intl.NumberFormat('es-PY').format(stats.syncs) + " Clics a la nube";
-            const costoEstimado = stats.syncs * 0.01; 
-            const costoMostrar = costoEstimado < 1 ? 0 : Math.round(costoEstimado);
-            document.getElementById('statCostos').innerText = new Intl.NumberFormat('es-PY').format(costoMostrar);
-        }
+        // --- RENDER 3: DIRECTORIO COMPLETO (Con Filtros y Ordenamiento) ---
+        window.setFiltroDirectorio = (campo, valor) => {
+            window.configDirectorio[campo] = valor;
+            window.renderizarDirectorio();
+        };
 
+        window.setOrdenDirectorio = (campo) => {
+            if (window.configDirectorio.ordenCampo === campo) {
+                window.configDirectorio.ordenDir = window.configDirectorio.ordenDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                window.configDirectorio.ordenCampo = campo;
+                window.configDirectorio.ordenDir = 'asc';
+            }
+            // Actualizar flechas UI
+            document.querySelectorAll('.sort-icon').forEach(el => { el.classList.remove('sort-asc', 'sort-desc'); el.style.opacity = '0.3'; });
+            const icon = document.getElementById(`sortIcon_${campo}`);
+            if (icon) { icon.style.opacity = '1'; icon.classList.add(window.configDirectorio.ordenDir === 'asc' ? 'sort-asc' : 'sort-desc'); }
+            
+            window.renderizarDirectorio();
+        };
+
+        window.renderizarDirectorio = () => {
+            const tbody = document.getElementById('tablaTodos');
+            let clientes = [...window.todosLosUsuarios];
+
+            // 1. Aplicar Buscador (Correo)
+            if (window.configDirectorio.busqueda.trim() !== '') {
+                const search = window.configDirectorio.busqueda.toLowerCase();
+                clientes = clientes.filter(c => c.email.toLowerCase().includes(search));
+            }
+
+            // 2. Aplicar Filtro de Estado
+            if (window.configDirectorio.estado !== 'todos') {
+                if (window.configDirectorio.estado === 'prueba') {
+                    clientes = clientes.filter(c => c.status !== 'pagado' && c.status !== 'pendiente' && c.status !== 'vencido' && c.status !== 'rechazado');
+                } else {
+                    clientes = clientes.filter(c => c.status === window.configDirectorio.estado);
+                }
+            }
+
+            // 3. Ordenamiento
+            const { ordenCampo, ordenDir } = window.configDirectorio;
+            clientes.sort((a, b) => {
+                let valA, valB;
+                if (ordenCampo === 'email') { valA = a.email; valB = b.email; }
+                else if (ordenCampo === 'estado') { valA = a.status || 'prueba'; valB = b.status || 'prueba'; }
+                else { valA = a._fechaOrden; valB = b._fechaOrden; } // default fecha
+
+                if (valA < valB) return ordenDir === 'asc' ? -1 : 1;
+                if (valA > valB) return ordenDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (clientes.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay resultados para este filtro.</td></tr>'; return; }
+
+            let html = '';
+            clientes.forEach(data => {
+                const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                let estadoHtml = '';
+                if (data.status === 'pagado') estadoHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGADO</span>`;
+                else if (data.status === 'pendiente') estadoHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR</span>`;
+                else if (data.status === 'vencido') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">SUSPENDIDO</span>`;
+                else if (data.status === 'rechazado') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">RECHAZADO</span>`;
+                else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA</span>`;
+
+                let botonesHtml = `<div class="flex justify-end gap-1 flex-wrap">`;
+                if (data.status !== 'pendiente') {
+                    if (data.status === 'pagado') botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>`;
+                    if (data.status !== 'prueba' && data.status !== 'pagado') botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Dar Prueba</button>`;
+                }
+                botonesHtml += `</div>`;
+
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}</td>
+                        <td class="p-3 text-slate-500 text-xs">${fecha}</td>
+                        <td class="p-3">${estadoHtml}</td>
+                        <td class="p-3">${botonesHtml}</td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+
+        // --- INICIALIZADOR DE SESIÓN ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 if (ADMIN_EMAILS.includes(user.email)) {
                     document.getElementById('loginDiv').classList.add('hidden');
                     document.getElementById('adminDiv').classList.remove('hidden');
                     document.getElementById('adminEmail').innerText = user.email;
-                    cargarUsuarios();
+                    window.cargarDatos();
                 } else {
-                    alert("⚠️ Acceso denegado. Área exclusiva de administración.");
-                    signOut(auth);
+                    alert("⚠️ Acceso denegado. Área exclusiva de administración."); signOut(auth);
                 }
             } else {
                 document.getElementById('loginDiv').classList.remove('hidden');
@@ -352,9 +349,7 @@
     
     <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4 bg-slate-900/5 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full border border-slate-100">
-            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-            </div>
+            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div>
             <h1 class="text-2xl font-display font-black mb-2">Bóveda de Control</h1>
             <p class="text-slate-500 text-sm mb-6 font-medium">Iniciá sesión con tu correo de administrador</p>
             <button onclick="login()" class="w-full px-6 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
@@ -374,44 +369,23 @@
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center">
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Usuarios</p>
-                <p class="text-3xl font-display font-black text-slate-800" id="statTotal">0</p>
-            </div>
-            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 shadow-sm flex flex-col justify-center">
-                <p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Pagados 👑</p>
-                <p class="text-3xl font-display font-black text-emerald-700" id="statPagados">0</p>
-            </div>
-            <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 shadow-sm flex flex-col justify-center">
-                <p class="text-[9px] font-bold text-amber-600 uppercase tracking-widest mb-1">Pendientes ⏳</p>
-                <p class="text-3xl font-display font-black text-amber-700" id="statPendientes">0</p>
-            </div>
-            <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 shadow-sm flex flex-col justify-center">
-                <p class="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">SOCIOS PARTNER 🤝</p>
-                <p class="text-3xl font-display font-black text-blue-700" id="statPartners">0</p>
-            </div>
+            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Usuarios</p><p class="text-3xl font-display font-black text-slate-800" id="statTotal">0</p></div>
+            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Pagados 👑</p><p class="text-3xl font-display font-black text-emerald-700" id="statPagados">0</p></div>
+            <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-amber-600 uppercase tracking-widest mb-1">Pendientes ⏳</p><p class="text-3xl font-display font-black text-amber-700" id="statPendientes">0</p></div>
+            <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">SOCIOS PARTNER 🤝</p><p class="text-3xl font-display font-black text-blue-700" id="statPartners">0</p></div>
             <div class="md:col-span-2 lg:col-span-1 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-center">
                 <div class="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl -mr-8 -mt-8"></div>
                 <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 relative z-10">Métricas Reales Firebase</p>
                 <div class="flex justify-between items-end relative z-10">
-                    <div>
-                        <p class="text-[10px] text-slate-500 mb-0.5">Ingresos (Gs)</p>
-                        <p class="text-2xl font-display font-black text-emerald-400 leading-none" id="statIngresos">0</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[9px] text-slate-500 mb-0.5" id="statSyncs">0 Sincronizaciones</p>
-                        <p class="text-sm font-display font-bold text-rose-400 leading-none">Costo: <span id="statCostos">0</span> Gs</p>
-                    </div>
+                    <div><p class="text-[10px] text-slate-500 mb-0.5">Ingresos (Gs)</p><p class="text-2xl font-display font-black text-emerald-400 leading-none" id="statIngresos">0</p></div>
+                    <div class="text-right"><p class="text-[9px] text-slate-500 mb-0.5" id="statSyncs">0 Sincronizaciones</p><p class="text-sm font-display font-bold text-rose-400 leading-none">Costo: <span id="statCostos">0</span> Gs</p></div>
                 </div>
             </div>
         </div>
 
         <details class="group bg-white rounded-3xl shadow-sm border border-amber-200 overflow-hidden mb-4" open>
             <summary class="flex items-center justify-between p-5 cursor-pointer bg-amber-50/50 hover:bg-amber-50 transition-colors list-none">
-                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Requieren Aprobación
-                </span>
+                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Requieren Aprobación</span>
                 <svg class="w-5 h-5 text-amber-500 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
             <div class="border-t border-amber-100 overflow-x-auto">
@@ -431,31 +405,40 @@
 
         <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-4">
             <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
-                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-                    🤝 Radar de Socios Comerciales (Partners)
-                </span>
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">🤝 Radar de Socios Comerciales</span>
                 <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
-            <div class="border-t border-slate-100 bg-slate-50/30" id="listaPartnersUI">
-                </div>
+            <div class="flex gap-2 p-4 bg-slate-50 border-t border-slate-100 overflow-x-auto">
+                <button onclick="setFiltroPartner('monto')" id="btnFiltroPartner_monto" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-sm whitespace-nowrap transition-colors">💰 Mayor Monto</button>
+                <button onclick="setFiltroPartner('cobrar')" id="btnFiltroPartner_cobrar" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">✅ Listos para Cobrar</button>
+                <button onclick="setFiltroPartner('abc')" id="btnFiltroPartner_abc" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors">🔤 Orden A-Z</button>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-50/30" id="listaPartnersUI"></div>
         </details>
 
         <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
-                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    Directorio Completo de Clientes
-                </span>
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Directorio de Clientes</span>
                 <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
+            <div class="flex flex-col md:flex-row gap-3 p-4 bg-slate-50 border-t border-slate-100">
+                <input type="text" onkeyup="setFiltroDirectorio('busqueda', this.value)" placeholder="🔍 Buscar por correo..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold w-full md:w-72 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-slate-700 bg-white">
+                <select onchange="setFiltroDirectorio('estado', this.value)" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary text-slate-600 bg-white cursor-pointer">
+                    <option value="todos">Todos los Estados</option>
+                    <option value="pagado">👑 Pagados</option>
+                    <option value="prueba">⏳ En Prueba</option>
+                    <option value="pendiente">🟡 Pendientes</option>
+                    <option value="vencido">🔴 Suspendidos/Vencidos</option>
+                </select>
+            </div>
             <div class="border-t border-slate-100 overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[600px]">
                     <thead>
-                        <tr class="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-widest border-b border-slate-200">
-                            <th class="p-4 font-bold">Correo del Cliente</th>
-                            <th class="p-4 font-bold">Inicio</th>
-                            <th class="p-4 font-bold">Estado</th>
-                            <th class="p-4 font-bold text-right">Acciones</th>
+                        <tr class="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-widest border-b border-slate-200 cursor-pointer select-none">
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('email')">Correo del Cliente <span class="sort-icon" id="sortIcon_email" style="opacity: 0.3;"></span></th>
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('fecha')">Inicio <span class="sort-icon sort-desc" id="sortIcon_fecha" style="opacity: 1;"></span></th>
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('estado')">Estado <span class="sort-icon" id="sortIcon_estado" style="opacity: 0.3;"></span></th>
+                            <th class="p-4 font-bold text-right cursor-default">Acciones Rápidas</th>
                         </tr>
                     </thead>
                     <tbody id="tablaTodos"></tbody>
