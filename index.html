@@ -75,22 +75,11 @@
         <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md border border-slate-100">
             <h3 class="text-2xl font-display font-black text-slate-900 mb-2">Condiciones del Programa</h3>
             <p class="text-sm text-slate-500 mb-6 font-medium">Leé atentamente cómo funciona el pago de incentivos antes de registrarte.</p>
-            
             <div class="space-y-4 mb-8">
-                <div class="flex gap-3 items-start">
-                    <div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</div>
-                    <p class="text-sm text-slate-700 font-medium">Recibirás <b class="text-emerald-600">5.000 Gs</b> en tu cuenta virtual por cada usuario referido que adquiera y pague su Acceso Ilimitado.</p>
-                </div>
-                <div class="flex gap-3 items-start">
-                    <div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</div>
-                    <p class="text-sm text-slate-700 font-medium">El dinero acumulado se te transferirá por SIPAP automáticamente cada vez que alcances los <b class="text-slate-900">20.000 Gs</b> en tu panel.</p>
-                </div>
-                <div class="flex gap-3 items-start">
-                    <div class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">!</div>
-                    <p class="text-sm text-slate-700 font-medium">Sos el único responsable de proveer datos bancarios correctos. <b class="text-rose-600">No nos hacemos responsables por transferencias perdidas o rebotadas debido a errores en tus datos.</b></p>
-                </div>
+                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</div><p class="text-sm text-slate-700 font-medium">Recibirás <b class="text-emerald-600">5.000 Gs</b> en tu cuenta virtual por cada usuario referido que adquiera y pague su Acceso Ilimitado.</p></div>
+                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</div><p class="text-sm text-slate-700 font-medium">El dinero acumulado se te transferirá por SIPAP automáticamente cada vez que alcances los <b class="text-slate-900">20.000 Gs</b> en tu panel.</p></div>
+                <div class="flex gap-3 items-start"><div class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">!</div><p class="text-sm text-slate-700 font-medium">Sos el único responsable de proveer datos bancarios correctos. <b class="text-rose-600">No nos hacemos responsables por transferencias perdidas o rebotadas debido a errores en tus datos.</b></p></div>
             </div>
-            
             <div class="flex gap-3">
                 <button onclick="cerrarReglasPartner()" class="w-full py-4 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
                 <button onclick="aceptarReglasYRegistrar()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-lg hover:bg-slate-800 transition-colors shadow-md">Acepto las condiciones</button>
@@ -99,12 +88,12 @@
     </div>
 
 
-    <div id="registroPartnerModal" class="fixed inset-0 z-[250] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
+    <div id="registroPartnerModal" class="fixed inset-0 z-[260] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 max-h-[90vh] overflow-y-auto relative">
             <button onclick="cerrarRegistroPartner()" class="absolute top-4 right-4 text-slate-400 hover:text-rose-500 transition-colors"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             <div class="text-center mb-6 mt-2">
                 <div class="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 shadow-sm"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-                <h3 class="text-2xl font-display font-black text-slate-900">Perfil de Cobro</h3>
+                <h3 class="text-2xl font-display font-black text-slate-900" id="tituloRegistroPartner">Perfil de Cobro</h3>
                 <p class="text-[11px] text-slate-500 font-medium mt-2 px-4 leading-relaxed">Cargá la cuenta bancaria donde querés recibir tus incentivos ganados.</p>
             </div>
             <div class="space-y-4 mb-6">
@@ -121,16 +110,23 @@
 
     <div id="dashboardPartnerModal" class="fixed inset-0 z-[250] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-sm">
         <div class="bg-slate-50 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 h-[90vh] flex flex-col relative overflow-hidden">
+            
             <div class="p-6 pb-4 bg-white border-b border-slate-100 flex justify-between items-start shrink-0">
                 <div>
                     <h3 class="text-xl font-display font-black text-slate-900">Panel de Recompensas</h3>
                     <p class="text-xs text-slate-500 font-medium">Invitá amigos y generá ingresos.</p>
                 </div>
-                <button onclick="cerrarDashboardPartner()" class="text-slate-400 hover:text-rose-500 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                <div class="flex gap-2">
+                    <button onclick="abrirEdicionPartner()" class="text-slate-400 hover:text-blue-500 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm transition-colors" title="Editar Datos Bancarios">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    </button>
+                    <button onclick="cerrarDashboardPartner()" class="text-slate-400 hover:text-rose-500 bg-slate-50 p-2 rounded-xl border border-slate-100 shadow-sm transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
             </div>
 
             <div class="p-4 overflow-y-auto flex-grow space-y-4">
-                
                 <div class="bg-slate-900 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full -z-0"></div>
                     <div class="relative z-10 mb-5">
