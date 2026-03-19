@@ -21,56 +21,15 @@ let retoActivoId = null;
 let docDataActual = null;
 let unsubscribeReto = null; 
 
-// --- UTILIDADES GLOBALES Y MODALES ---
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
-window.mostrarAlerta = (mensaje) => { 
-    document.getElementById('customAlertMessage').innerText = mensaje; 
-    document.getElementById('customAlert').classList.remove('hidden'); 
-};
+window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
+window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 
-window.mostrarConfirm = (mensaje) => { 
-    return new Promise((resolve) => { 
-        document.getElementById('customConfirmMessage').innerText = mensaje; 
-        const modal = document.getElementById('customConfirm'); 
-        const btnOk = document.getElementById('btnConfirmOk'); 
-        const btnCancel = document.getElementById('btnConfirmCancel'); 
-        const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; 
-        btnOk.onclick = () => { cleanUp(); resolve(true); }; 
-        btnCancel.onclick = () => { cleanUp(); resolve(false); }; 
-        modal.classList.remove('hidden'); 
-    }); 
-};
-
-// --- CONTROL DE ACCESO (VIP) ---
-window.actualizarUI_Pago = () => {
-    const btnPagar = document.getElementById('btnSidebarPagar');
-    if (!btnPagar) return;
-    if(window.userAccessStatus === 'pagado') { 
-        btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; 
-        btnPagar.onclick = null; 
-        btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
-        btnPagar.classList.replace('text-white', 'text-emerald-700'); 
-    } 
-    else if (window.userAccessStatus === 'pendiente') { 
-        btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; 
-        btnPagar.onclick = () => window.location.href = '../activar.html'; 
-        btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
-        btnPagar.classList.replace('text-white', 'text-amber-700'); 
-    } 
-    else { 
-        btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; 
-        btnPagar.onclick = () => window.location.href = '../activar.html'; 
-    }
-};
-
-window.logout = async () => { 
-    localStorage.removeItem('local_user_status'); 
-    signOut(auth).then(() => { window.location.href = '../index.html'; }); 
-};
+window.logout = async () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => { window.location.href = '../index.html'; }); };
 
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent');
@@ -80,7 +39,6 @@ onAuthStateChanged(auth, async (user) => {
         
         if (localStatus === 'pagado') {
             window.userAccessStatus = 'pagado';
-            window.actualizarUI_Pago();
             loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
             window.initRetos(); 
             return; 
@@ -92,7 +50,6 @@ onAuthStateChanged(auth, async (user) => {
             if (docSnap.exists()) {
                 const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; 
                 localStorage.setItem('local_user_status', window.userAccessStatus);
-                window.actualizarUI_Pago();
                 
                 if (window.userAccessStatus === 'pagado' || window.userAccessStatus === 'prueba') {
                     loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
@@ -113,29 +70,18 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Modales UI
 window.openCreateRetoModal = () => { document.getElementById('crearRetoNombre').value=''; document.getElementById('crearRetoMonto').value=''; document.getElementById('crearRetoSemanas').value=''; document.getElementById('crearRetoApodo').value=''; document.getElementById('createRetoModal').classList.remove('hidden'); };
 window.closeCreateRetoModal = () => { document.getElementById('createRetoModal').classList.add('hidden'); };
 window.openJoinRetoModal = () => { document.getElementById('joinRetoCodigo').value=''; document.getElementById('joinRetoApodo').value=''; document.getElementById('joinRetoModal').classList.remove('hidden'); };
 window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 
-// =======================================================
-// EL MOTOR ANTI-VAMPIRO
-// =======================================================
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'visible') {
         if (retoActivoId) window.conectarTableroEnVivo(retoActivoId);
     } else {
-        if (unsubscribeReto) {
-            unsubscribeReto();
-            unsubscribeReto = null;
-        }
+        if (unsubscribeReto) { unsubscribeReto(); unsubscribeReto = null; }
     }
 });
-
-// =======================================================
-// LÓGICA DE DATOS
-// =======================================================
 
 window.initRetos = async () => {
     await window.cargarMisRetos();
@@ -163,12 +109,12 @@ window.cargarMisRetos = async () => {
         }
 
         list.innerHTML = retosDisponibles.map(r => `
-            <button onclick="conectarTableroEnVivo('${r.id}')" class="w-full text-left bg-white p-3 rounded-xl border ${r.id === retoActivoId ? 'border-blue-500 shadow-md ring-1 ring-blue-500' : 'border-slate-200 hover:border-blue-300'} transition-all flex justify-between items-center group">
+            <button onclick="conectarTableroEnVivo('${r.id}')" class="w-full text-left bg-white p-3 rounded-xl border ${r.id === retoActivoId ? 'border-primary shadow-md ring-1 ring-primary' : 'border-slate-200 hover:border-emerald-300'} transition-all flex justify-between items-center group">
                 <div class="truncate">
                     <h3 class="text-xs font-bold text-slate-800 truncate">${r.nombre}</h3>
                     <p class="text-[9px] text-slate-400 uppercase tracking-widest mt-0.5">${r.participantes.length} Jugadores</p>
                 </div>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7-7"></path></svg>
             </button>
         `).join('');
 
@@ -185,7 +131,7 @@ window.conectarTableroEnVivo = (id) => {
     
     document.getElementById('estadoTableroVacio').classList.add('hidden');
     document.getElementById('tableroActivo').classList.remove('hidden');
-    document.getElementById('arenaProgresoContent').innerHTML = `<div class="text-center py-10"><svg class="animate-spin h-8 w-8 mx-auto text-blue-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`;
+    document.getElementById('arenaProgresoContent').innerHTML = `<div class="text-center py-10"><svg class="animate-spin h-8 w-8 mx-auto text-primary mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>`;
 
     const retoRef = doc(db, "retos_multijugador", id);
     unsubscribeReto = onSnapshot(retoRef, (docSnap) => {
@@ -212,7 +158,6 @@ window.renderizarTablero = () => {
     let granMeta = d.tipo === 'competencia' ? (d.meta * d.participantes.length) : d.meta;
     let porcentajeGlobal = granMeta > 0 ? (granTotalPlata / granMeta) * 100 : 0;
     
-    // El punto que titila con texto "EN VIVO"
     document.getElementById('statsTitle').innerHTML = `${d.nombre} <span class="flex items-center gap-1 ml-2 px-1.5 py-0.5 rounded text-[8px] bg-rose-100 text-rose-600 font-black tracking-widest"><span class="animate-ping inline-flex h-1.5 w-1.5 rounded-full bg-rose-500 opacity-75"></span> EN VIVO</span>`;
     document.getElementById('totalSavedCounter').innerText = window.formatoGs(granTotalPlata);
     document.getElementById('progressPercentage').innerText = Math.round(Math.min(porcentajeGlobal, 100)) + '%';
@@ -227,14 +172,14 @@ window.renderizarTablero = () => {
         let miPorc = metaIndividual > 0 ? (p.pagado / metaIndividual) * 100 : 0;
         
         return `
-        <div class="relative p-3 rounded-xl border ${soyYo ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}">
+        <div class="relative p-3 rounded-xl border ${soyYo ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'}">
             ${esGanador ? '<div class="absolute -top-2 -right-2 text-xl filter drop-shadow-md">👑</div>' : ''}
             <div class="flex justify-between items-end mb-1.5">
-                <span class="text-xs font-black ${soyYo ? 'text-blue-700' : 'text-slate-700'}">${p.apodo} ${soyYo ? '(Vos)' : ''}</span>
-                <span class="text-sm font-black ${soyYo ? 'text-blue-600' : 'text-slate-900'}">${window.formatoGs(p.pagado)} <span class="text-[10px] text-slate-500 font-bold ml-1">${Math.round(miPorc)}%</span></span>
+                <span class="text-xs font-black ${soyYo ? 'text-emerald-700' : 'text-slate-700'}">${p.apodo} ${soyYo ? '(Vos)' : ''}</span>
+                <span class="text-sm font-black ${soyYo ? 'text-emerald-600' : 'text-slate-900'}">${window.formatoGs(p.pagado)} <span class="text-[10px] text-slate-500 font-bold ml-1">${Math.round(miPorc)}%</span></span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden shadow-inner">
-                <div class="h-2 rounded-full transition-all duration-1000 ${soyYo ? 'bg-blue-500' : 'bg-slate-400'}" style="width: ${Math.min(miPorc, 100)}%"></div>
+                <div class="h-2 rounded-full transition-all duration-1000 ${soyYo ? 'bg-primary' : 'bg-slate-400'}" style="width: ${Math.min(miPorc, 100)}%"></div>
             </div>
         </div>`;
     }).join('');
@@ -254,15 +199,15 @@ window.renderizarTablero = () => {
         let montoMostrado = hecho ? infoPago.pagado : cuotaOriginal;
 
         htmlCuotas += `
-        <div class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hecho ? 'border-l-blue-500 bg-white shadow-sm' : 'border-l-slate-200 bg-slate-50'}">
-            <div class="w-8 h-8 rounded-lg ${hecho ? 'bg-blue-100 text-blue-600' : 'bg-white text-slate-400 border border-slate-200'} flex items-center justify-center text-[10px] font-black shrink-0">${i}</div>
+        <div class="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 ${hecho ? 'border-l-primary bg-white shadow-sm' : 'border-l-slate-200 bg-slate-50'}">
+            <div class="w-8 h-8 rounded-lg ${hecho ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 border border-slate-200'} flex items-center justify-center text-[10px] font-black shrink-0">${i}</div>
             <div class="flex-grow">
-                <div class="text-sm font-bold ${hecho ? 'text-blue-900' : 'text-slate-700'}">${hecho ? 'COMPLETADO' : window.formatoGs(montoMostrado)}</div>
-                <div class="text-[8px] uppercase ${hecho ? 'text-blue-400' : 'text-slate-400'} font-bold">Depósito ${i}</div>
+                <div class="text-sm font-bold ${hecho ? 'text-emerald-900' : 'text-slate-700'}">${hecho ? 'COMPLETADO' : window.formatoGs(montoMostrado)}</div>
+                <div class="text-[8px] uppercase ${hecho ? 'text-emerald-500' : 'text-slate-400'} font-bold">Depósito ${i}</div>
             </div>
             ${hecho ? `<div class="text-[8px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md text-right">${infoPago.fecha}<br>${window.formatoGs(infoPago.pagado)}</div>` : ''}
             <div class="flex gap-1 pl-2 border-l border-slate-100">
-                <button onclick="togglePago(${i}, ${cuotaOriginal})" class="px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${hecho ? 'bg-blue-500 text-white shadow-md hover:bg-blue-600' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-blue-500'}">${hecho ? 'LISTO' : 'MARCAR'}</button>
+                <button onclick="togglePago(${i}, ${cuotaOriginal})" class="px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${hecho ? 'bg-primary text-white shadow-md hover:bg-emerald-600' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-primary'}">${hecho ? 'LISTO' : 'MARCAR'}</button>
             </div>
         </div>`;
     }
