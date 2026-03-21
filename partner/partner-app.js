@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
@@ -16,6 +16,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 window.currentPartnerPerfil = null; 
+window.ENABLE_MANUAL_SYNC = true;
 
 // --- EL GUARDAESPALDAS INSTANTÁNEO ---
 if (localStorage.getItem('local_user_status') !== 'pagado') {
@@ -31,9 +32,11 @@ window.logout = async () => { localStorage.removeItem('local_user_status'); sign
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent');
     if (user) {
-        document.getElementById('sidebarUserEmail').innerText = user.email;
+        // Enviar email al menu maestro
+        const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
+        if (sidebarEmail) sidebarEmail.innerText = user.email;
+
         const localStatus = localStorage.getItem('local_user_status');
-        
         if (localStatus !== 'pagado') {
             window.location.href = '../activar.html';
             return;
@@ -48,6 +51,7 @@ onAuthStateChanged(auth, async (user) => {
                     loginScreen.classList.add('hidden'); 
                     appContent.classList.remove('hidden'); 
                     iniciarPortal(data);
+                    window.verificarAutoSync(); // Verifica sync en background
                 } else {
                     window.location.href = '../activar.html';
                 }
@@ -72,6 +76,10 @@ window.aceptarReglasYRegistrar = () => {
     document.getElementById('reglasPartnerModal').classList.add('hidden');
     document.getElementById('tituloRegistroPartner').innerText = "Datos de Recepción";
     document.getElementById('btnGuardarPartner').innerText = "Guardar Mis Datos";
+    document.getElementById('partnerNombre').value = "";
+    document.getElementById('partnerBanco').value = "";
+    document.getElementById('partnerCI').value = "";
+    document.getElementById('partnerCuenta').value = "";
     document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
@@ -222,7 +230,7 @@ async function cargarDashboardPartner(userData) {
     }
 }
 
-// BOTONES DE ACCIÓN
+// BOTONES DE ACCIÓN (Sin WhatsApp verde)
 window.copiarDato = (tipo) => {
     const codigo = document.getElementById('partnerCodigoUI').innerText;
     let texto = (tipo === 'codigo') ? codigo : `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
@@ -237,4 +245,52 @@ window.compartirWhatsApp = () => {
     const urlApp = `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
     const texto = `¡Te regalo un descuento exclusivo! 🎁\n\nDescargá la app que uso para organizar mi dinero y activá tu cuenta con un descuento especial usando mi link:\n\n👉 ${urlApp}\n\nO ingresá este código al pagar: *${codigo}*`;
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+};
+
+// --- MOTOR DE SINCRONIZACIÓN (TOTALMENTE SILENCIOSO) ---
+window.sincronizarNube = async (manual = false) => {
+    if (!auth.currentUser) return;
+    if (manual && !window.ENABLE_MANUAL_SYNC) return; // Silencio total si está desactivada
+
+    try {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const realStatus = docSnap.data().status;
+            localStorage.setItem('local_user_status', realStatus);
+            window.userAccessStatus = realStatus;
+            if (realStatus === 'vencido' || realStatus === 'rechazado') {
+                window.location.href = '../activar.html';
+                return;
+            }
+        }
+
+        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+        const payload = {
+            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
+            last_sync: new Date().toISOString(),
+            sync_count: increment(1)
+        };
+
+        await updateDoc(userRef, payload);
+        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        
+        const sidebar = document.querySelector('app-sidebar');
+        if (sidebar && typeof sidebar.actualizarUI === 'function') sidebar.actualizarUI();
+        
+    } catch (error) {
+        console.error("Error nube:", error);
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+    }
+};
+
+window.verificarAutoSync = () => {
+    if (typeof window.sincronizarNube !== 'function') return;
+    const lastSync = localStorage.getItem('last_cloud_sync');
+    const now = new Date().getTime();
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
 };
