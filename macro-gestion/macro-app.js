@@ -41,7 +41,6 @@ if (localEmail && localStatus) {
         window.location.href = '../activar.html';
     }
 } else {
-    // Si no hay sesión local, lo mandamos al inicio a loguearse
     window.location.href = '../index.html'; 
 }
 
@@ -50,7 +49,6 @@ onAuthStateChanged(auth, async (user) => {
     if (user) { 
         localStorage.setItem('local_user_email', user.email);
         
-        // Actualizar email en el menú maestro si existe
         const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
         if (sidebarEmail) sidebarEmail.innerText = user.email;
 
@@ -67,7 +65,6 @@ onAuthStateChanged(auth, async (user) => {
                 const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
                 localStorage.setItem('local_prueba_dias', diffDays.toString());
 
-                // Descargar datos si la memoria local está vacía
                 const localCuentas = localStorage.getItem('mg_cuentas');
                 const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
                 if (!hasLocalMacro && userData.macro_data) {
@@ -76,7 +73,6 @@ onAuthStateChanged(auth, async (user) => {
                     if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
                     if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
                     
-                    // Refrescar variables en memoria activa
                     cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || cuentas;
                     gastos = JSON.parse(localStorage.getItem('mg_gastos')) || gastos;
                     historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || historialMovimientos;
@@ -90,7 +86,6 @@ onAuthStateChanged(auth, async (user) => {
 
                 document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
                 
-                // Le avisa al menú maestro que actualice botones por si el status cambió en la nube
                 const sidebar = document.querySelector('app-sidebar');
                 if (sidebar) sidebar.actualizarUI();
             }
@@ -107,13 +102,10 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 
-// --- MOTOR DE SINCRONIZACIÓN ---
+// --- MOTOR DE SINCRONIZACIÓN (TOTALMENTE SILENCIOSO AHORA) ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
-    if (manual && !window.ENABLE_MANUAL_SYNC) {
-        window.interactuarApp('alert', 'Actualización Manual', 'La actualización manual está desactivada.');
-        return;
-    }
+    if (manual && !window.ENABLE_MANUAL_SYNC) return; // Silencio total si está desactivada
 
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
@@ -145,9 +137,7 @@ window.sincronizarNube = async (manual = false) => {
         const sidebar = document.querySelector('app-sidebar');
         if (sidebar) sidebar.actualizarUI();
         
-        if (manual) window.interactuarApp('alert', 'Nube Sincronizada', '✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.');
     } catch (error) {
-        if (manual) window.interactuarApp('alert', 'Error', '❌ Hubo un error al guardar en la nube.');
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
     }
 };
