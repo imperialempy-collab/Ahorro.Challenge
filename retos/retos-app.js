@@ -26,6 +26,7 @@ let unsubscribeReto = null;
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 
+// ACÁ ESTÁ EL CAMBIO 2: .innerHTML en vez de .innerText para que lea las negritas y saltos
 window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerHTML = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
@@ -164,7 +165,7 @@ document.addEventListener("visibilitychange", () => {
 
 window.initRetos = async () => {
     await window.cargarMisRetos();
-    window.verificarAutoSync(); // Verificación silenciosa
+    window.verificarAutoSync(); 
     const urlParams = new URLSearchParams(window.location.search);
     const retoCode = urlParams.get('reto');
     if (retoCode) {
@@ -184,6 +185,7 @@ window.cargarMisRetos = async () => {
         snapshot.forEach(doc => { retosDisponibles.push({ id: doc.id, ...doc.data() }); });
         
         if (retosDisponibles.length === 0) {
+            // ACÁ ESTÁ EL CAMBIO 1: Eliminado el texto de "Aún no estás en la arena"
             list.innerHTML = ``;
             return;
         }
