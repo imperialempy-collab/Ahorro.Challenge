@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -15,91 +15,100 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); 
 
-window.userAccessStatus = 'prueba';
 let retosDisponibles = [];
 let retoActivoId = null;
 let docDataActual = null;
 let unsubscribeReto = null; 
 
+// --- UTILIDADES ---
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
-window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
 window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 
-// --- NAVEGACIÓN Y BOTONES ---
-window.abrirPortalPartner = () => {
-    // Redirige al inicio y le pasa la orden de abrir el portal
-    window.location.href = '../index.html?open=partner';
-};
+window.openCreateRetoModal = () => { document.getElementById('crearRetoNombre').value=''; document.getElementById('crearRetoMonto').value=''; document.getElementById('crearRetoSemanas').value=''; document.getElementById('crearRetoApodo').value=''; document.getElementById('createRetoModal').classList.remove('hidden'); };
+window.closeCreateRetoModal = () => { document.getElementById('createRetoModal').classList.add('hidden'); };
+window.openJoinRetoModal = () => { document.getElementById('joinRetoCodigo').value=''; document.getElementById('joinRetoApodo').value=''; document.getElementById('joinRetoModal').classList.remove('hidden'); };
+window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 
-window.actualizarUI_Pago = () => {
-    const btnPagar = document.getElementById('btnSidebarPagar');
-    const btnPartner = document.getElementById('btnSidebarPartner');
-    
-    if(window.userAccessStatus === 'pagado') { 
-        if (btnPagar) { btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>'; btnPagar.onclick = null; btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); btnPagar.classList.replace('text-white', 'text-emerald-700'); }
-        if (btnPartner) { btnPartner.classList.remove('hidden'); btnPartner.classList.add('flex'); }
-    } 
-    else if (window.userAccessStatus === 'pendiente') { 
-        if (btnPagar) { btnPagar.innerHTML = 'Ver mi Comprobante ⏳'; btnPagar.onclick = () => window.location.href = '../activar.html'; btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); btnPagar.classList.replace('text-white', 'text-amber-700'); }
-        if (btnPartner) { btnPartner.classList.add('hidden'); btnPartner.classList.remove('flex'); }
-    } 
-    else { 
-        if (btnPagar) { btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑'; btnPagar.onclick = () => window.location.href = '../activar.html'; btnPagar.classList.replace('bg-emerald-50', 'bg-slate-900'); btnPagar.classList.replace('text-emerald-700', 'text-white'); }
-        if (btnPartner) { btnPartner.classList.add('hidden'); btnPartner.classList.remove('flex'); }
-    }
-};
+// --- OPTIMISTIC UI: CARGA INSTANTÁNEA ---
+const localStatus = localStorage.getItem('local_user_status');
+const localEmail = localStorage.getItem('local_user_email');
 
-window.logout = async () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => { window.location.href = '../index.html'; }); };
-
-onAuthStateChanged(auth, async (user) => {
-    const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent');
-    if (user) {
-        document.getElementById('sidebarUserEmail').innerText = user.email;
-        const localStatus = localStorage.getItem('local_user_status');
-        
-        if (localStatus === 'pagado') {
-            window.userAccessStatus = 'pagado';
-            window.actualizarUI_Pago(); // Agregado para activar botón Partner
-            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
-            window.initRetos(); 
-            return; 
+if (localEmail && localStatus) {
+    if (localStatus === 'prueba') {
+        const hoy = new Date().toLocaleDateString('es-PY');
+        const ultimaAlerta = localStorage.getItem('last_prueba_alert');
+        if (ultimaAlerta !== hoy) {
+            const diffDays = localStorage.getItem('local_prueba_dias') || '1';
+            setTimeout(() => {
+                window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`);
+            }, 500);
+            localStorage.setItem('last_prueba_alert', hoy);
         }
+    } else if (localStatus === 'vencido' || localStatus === 'rechazado') {
+        window.location.href = '../activar.html';
+    }
+} else {
+    // Si no hay sesión, al index a loguearse
+    window.location.href = '../index.html';
+}
+
+// --- VERIFICACIÓN SILENCIOSA EN LA NUBE ---
+onAuthStateChanged(auth, async (user) => {
+    const loginScreen = document.getElementById('loginScreen'); 
+    const appContent = document.getElementById('appContent');
+    
+    if (user) {
+        localStorage.setItem('local_user_email', user.email);
+        
+        // Alimentar al Menú Maestro
+        const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
+        if (sidebarEmail) sidebarEmail.innerText = user.email;
 
         const userRef = doc(db, "usuarios_multimeta", user.email);
         try {
             const docSnap = await getDoc(userRef);
             if (docSnap.exists()) {
-                const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; 
-                localStorage.setItem('local_user_status', window.userAccessStatus);
-                window.actualizarUI_Pago(); // Agregado para activar botón Partner
+                const userData = docSnap.data(); 
+                const dbStatus = userData.status || 'prueba'; 
+                localStorage.setItem('local_user_status', dbStatus);
                 
-                if (window.userAccessStatus === 'pagado' || window.userAccessStatus === 'prueba') {
-                    loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
-                    window.initRetos();
-                } else {
+                const start = new Date(userData.fechaInicio || new Date()); 
+                const now = new Date(); 
+                const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                localStorage.setItem('local_prueba_dias', diffDays.toString());
+
+                const sidebar = document.querySelector('app-sidebar');
+                if (sidebar) sidebar.actualizarUI();
+
+                if (dbStatus === 'vencido' || dbStatus === 'rechazado' || (dbStatus === 'prueba' && diffDays > 7)) {
+                    localStorage.setItem('local_user_status', 'vencido');
                     window.location.href = '../activar.html';
+                    return;
                 }
+                
+                loginScreen.classList.add('hidden'); 
+                appContent.classList.remove('hidden'); 
+                window.initRetos();
             } else {
                 window.location.href = '../index.html';
             }
         } catch (error) { 
-            console.error("Modo local por error de red"); 
-            loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); 
+            console.error("Control silencioso falló, seguimos locales."); 
+            loginScreen.classList.add('hidden'); 
+            appContent.classList.remove('hidden'); 
             window.initRetos(); 
         }
     } else { 
-        loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); 
+        localStorage.removeItem('local_user_status');
+        loginScreen.classList.remove('hidden'); 
+        appContent.classList.add('hidden'); 
     }
 });
 
-window.openCreateRetoModal = () => { document.getElementById('crearRetoNombre').value=''; document.getElementById('crearRetoMonto').value=''; document.getElementById('crearRetoSemanas').value=''; document.getElementById('crearRetoApodo').value=''; document.getElementById('createRetoModal').classList.remove('hidden'); };
-window.closeCreateRetoModal = () => { document.getElementById('createRetoModal').classList.add('hidden'); };
-window.openJoinRetoModal = () => { document.getElementById('joinRetoCodigo').value=''; document.getElementById('joinRetoApodo').value=''; document.getElementById('joinRetoModal').classList.remove('hidden'); };
-window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'visible') {
@@ -244,7 +253,8 @@ window.calculateWeights = (totalWeeks) => { let weights = []; let currentWeight 
 window.generateSchedule = (metaMonto, metaSemanas) => { let schedule = []; let weights = window.calculateWeights(metaSemanas); let totalWeight = weights.reduce((a, b) => a + b, 0); let baseUnit = metaMonto / totalWeight; let currentSum = 0; for (let i = 0; i < metaSemanas; i++) { if (i === metaSemanas - 1) { schedule.push(metaMonto - currentSum); } else { let amount = Math.round((baseUnit * weights[i]) / 5000) * 5000; if (amount < 5000) amount = 5000; if (currentSum + amount >= metaMonto) { amount = Math.max(0, metaMonto - currentSum - 5000); } schedule.push(amount); currentSum += amount; } } return schedule; };
 
 window.togglePago = async (semanaNum, montoEsperado) => {
-    if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') return window.location.href = '../activar.html'; 
+    const localStatus = localStorage.getItem('local_user_status');
+    if (localStatus === 'vencido' || localStatus === 'rechazado') return window.location.href = '../activar.html'; 
     if (!retoActivoId || !docDataActual) return;
 
     try {
@@ -299,7 +309,9 @@ window.abandonarReto = async () => {
 };
 
 window.crearRetoCloud = async () => {
-    if (window.userAccessStatus === 'vencido') return window.location.href = '../activar.html'; 
+    const localStatus = localStorage.getItem('local_user_status');
+    if (localStatus === 'vencido') return window.location.href = '../activar.html'; 
+
     const nombre = document.getElementById('crearRetoNombre').value.trim(); const montoRaw = document.getElementById('crearRetoMonto').value.replace(/\D/g, ''); const semanasRaw = document.getElementById('crearRetoSemanas').value; const tipo = document.getElementById('crearRetoTipo').value; const apodo = document.getElementById('crearRetoApodo').value.trim();
     if (!nombre || !montoRaw || !semanasRaw || !apodo) return window.mostrarAlerta("Completá todos los campos.");
     const monto = parseInt(montoRaw); const semanas = parseInt(semanasRaw);
@@ -314,7 +326,9 @@ window.crearRetoCloud = async () => {
 };
 
 window.unirseRetoCloud = async () => {
-    if (window.userAccessStatus === 'vencido') return window.location.href = '../activar.html'; 
+    const localStatus = localStorage.getItem('local_user_status');
+    if (localStatus === 'vencido') return window.location.href = '../activar.html'; 
+
     const codigoInput = document.getElementById('joinRetoCodigo').value.trim().toUpperCase(); const apodo = document.getElementById('joinRetoApodo').value.trim();
     if (!codigoInput || !apodo) return window.mostrarAlerta("Faltan datos.");
     document.getElementById('btnConfirmJoinReto').innerHTML = "Buscando... ⏳";
