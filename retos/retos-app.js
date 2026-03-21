@@ -26,7 +26,7 @@ let unsubscribeReto = null;
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 
-window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
+window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerHTML = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 
@@ -109,7 +109,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- MOTOR DE SINCRONIZACIÓN SILENCIOSO (Faltaba acá) ---
+// --- MOTOR DE SINCRONIZACIÓN SILENCIOSO ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) return;
@@ -184,7 +184,7 @@ window.cargarMisRetos = async () => {
         snapshot.forEach(doc => { retosDisponibles.push({ id: doc.id, ...doc.data() }); });
         
         if (retosDisponibles.length === 0) {
-            list.innerHTML = `<div class="text-center py-4 bg-white rounded-xl border border-slate-100"><p class="text-[11px] text-slate-400 font-bold mb-1">Aún no estás en la arena</p><p class="text-[9px] text-slate-400">Creá una sala o unite a una.</p></div>`;
+            list.innerHTML = ``;
             return;
         }
 
@@ -366,7 +366,7 @@ window.crearRetoCloud = async () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'; let rnd = ''; for (let i = 0; i < 4; i++) rnd += chars.charAt(Math.floor(Math.random() * chars.length)); const cod = `RETO-${rnd}`;
         const jug = { email: auth.currentUser.email, apodo: apodo, pagado: 0, progreso: [] };
         await addDoc(collection(db, "retos_multijugador"), { codigo: cod, nombre: nombre, meta: monto, semanas: semanas, tipo: tipo, creador: auth.currentUser.email, participantes: [jug], participantes_emails: [auth.currentUser.email], createdAt: serverTimestamp() });
-        window.closeCreateRetoModal(); window.initRetos(); window.mostrarAlerta(`✅ Sala creada con éxito.\nCódigo: ${cod}`);
+        window.closeCreateRetoModal(); window.initRetos(); window.mostrarAlerta(`✅ Sala creada con éxito.<br>Código: <b>${cod}</b>`);
     } catch (e) { window.mostrarAlerta("Error al crear reto."); } finally { document.getElementById('btnConfirmCrearReto').innerHTML = "Crear Sala"; }
 };
 
