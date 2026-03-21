@@ -15,6 +15,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app); 
 
+window.ENABLE_MANUAL_SYNC = true;
+
 let retosDisponibles = [];
 let retoActivoId = null;
 let docDataActual = null;
@@ -52,7 +54,6 @@ if (localEmail && localStatus) {
         window.location.href = '../activar.html';
     }
 } else {
-    // Si no hay sesión, al index a loguearse
     window.location.href = '../index.html';
 }
 
@@ -64,7 +65,6 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         localStorage.setItem('local_user_email', user.email);
         
-        // Alimentar al Menú Maestro
         const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
         if (sidebarEmail) sidebarEmail.innerText = user.email;
 
@@ -109,6 +109,50 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// --- MOTOR DE SINCRONIZACIÓN SILENCIOSO (Faltaba acá) ---
+window.sincronizarNube = async (manual = false) => {
+    if (!auth.currentUser) return;
+    if (manual && !window.ENABLE_MANUAL_SYNC) return;
+
+    try {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
+        const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
+
+        const docSnap = await getDoc(userRef);
+        if (docSnap.exists()) {
+            const realStatus = docSnap.data().status;
+            localStorage.setItem('local_user_status', realStatus);
+            if (realStatus === 'vencido' || realStatus === 'rechazado') {
+                window.location.href = '../activar.html';
+                return;
+            }
+        }
+
+        const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
+        const payload = {
+            ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
+            macro_data: { cuentas: safeParse(localStorage.getItem('mg_cuentas')), gastos: safeParse(localStorage.getItem('mg_gastos')), historial: safeParse(localStorage.getItem('mg_historial')), ingreso: localStorage.getItem('mg_ingreso') || 0 },
+            last_sync: new Date().toISOString()
+        };
+
+        await updateDoc(userRef, payload);
+        localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
+        
+        const sidebar = document.querySelector('app-sidebar');
+        if (sidebar && typeof sidebar.actualizarUI === 'function') sidebar.actualizarUI();
+        
+    } catch (error) {
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
+    }
+};
+
+window.verificarAutoSync = () => {
+    if (typeof window.sincronizarNube !== 'function') return;
+    const lastSync = localStorage.getItem('last_cloud_sync');
+    const now = new Date().getTime();
+    if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
+};
 
 document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === 'visible') {
@@ -120,6 +164,7 @@ document.addEventListener("visibilitychange", () => {
 
 window.initRetos = async () => {
     await window.cargarMisRetos();
+    window.verificarAutoSync(); // Verificación silenciosa
     const urlParams = new URLSearchParams(window.location.search);
     const retoCode = urlParams.get('reto');
     if (retoCode) {
