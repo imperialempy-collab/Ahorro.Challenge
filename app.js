@@ -19,7 +19,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
-window.currentPartnerPerfil = null; 
+window.currentPartnerPerfil = null; // Variable global para la edición
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
 window.mostrarAlerta = (mensaje, esPaywall = false) => { 
@@ -41,7 +41,6 @@ window.mostrarAlerta = (mensaje, esPaywall = false) => {
     
     document.getElementById('customAlert').classList.remove('hidden'); 
 };
-
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 
 window.mostrarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.remove('hidden'); };
@@ -75,7 +74,7 @@ window.logout = async () => {
         }
     }
     
-    const keys = ['local_user_status', 'ahorro_dinamico_LAB_TEST_MULTIMETA', 'mg_cuentas', 'mg_gastos', 'mg_historial', 'mg_ingreso', 'last_cloud_sync'];
+    const keys = ['local_user_status', 'local_user_email', 'ahorro_dinamico_LAB_TEST_MULTIMETA', 'mg_cuentas', 'mg_gastos', 'mg_historial', 'mg_ingreso', 'last_cloud_sync', 'last_prueba_alert', 'local_prueba_dias'];
     keys.forEach(k => localStorage.removeItem(k));
     
     signOut(auth).then(() => location.reload()); 
@@ -163,12 +162,14 @@ window.aceptarReglasYRegistrar = () => {
     document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
+// BOTÓN LÁPIZ: Para editar sin perder el código
 window.abrirEdicionPartner = () => {
     if (!window.currentPartnerPerfil) return;
     
     document.getElementById('tituloRegistroPartner').innerText = "Editar Mis Datos";
     document.getElementById('btnGuardarPartner').innerText = "Guardar Cambios";
     
+    // Carga los datos actuales en el formulario
     document.getElementById('partnerNombre').value = window.currentPartnerPerfil.nombre || "";
     document.getElementById('partnerBanco').value = window.currentPartnerPerfil.banco || "";
     document.getElementById('partnerCI').value = window.currentPartnerPerfil.ci || "";
@@ -198,6 +199,7 @@ window.guardarPerfilPartner = async () => {
         const userData = docSnap.exists() ? docSnap.data() : {};
 
         if (userData.partner_perfil) {
+            // ES UNA EDICIÓN: Guardamos el historial de la cuenta vieja por seguridad
             const perfilViejo = userData.partner_perfil;
             const registroHistorico = {
                 ...perfilViejo,
@@ -206,15 +208,17 @@ window.guardarPerfilPartner = async () => {
 
             const perfilNuevo = {
                 nombre, banco, ci, cuenta,
-                codigo: perfilViejo.codigo 
+                codigo: perfilViejo.codigo // Mantiene su código de referido INTACTO
             };
 
+            // Usamos arrayUnion para agregar la cuenta vieja al archivo histórico
             await updateDoc(userRef, {
                 partner_perfil: perfilNuevo,
                 partner_historial_cuentas: arrayUnion(registroHistorico)
             });
 
         } else {
+            // ES PRIMERA VEZ: Se crea de cero
             const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
             const rnd = Math.floor(1000 + Math.random() * 9000);
             const codigo = `${baseCode}${rnd}`;
@@ -229,7 +233,7 @@ window.guardarPerfilPartner = async () => {
         }
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner(); 
+        window.abrirPortalPartner(); // Vuelve a recargar el Dashboard
     } catch(e) {
         console.error(e);
         window.mostrarAlerta("Error al guardar tu perfil. Revisá tu conexión.");
@@ -241,7 +245,7 @@ window.guardarPerfilPartner = async () => {
 
 window.cargarDashboardPartner = async (userData) => {
     const perfil = userData.partner_perfil;
-    window.currentPartnerPerfil = perfil; 
+    window.currentPartnerPerfil = perfil; // Guardamos en global para poder editar después
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
@@ -317,12 +321,16 @@ window.compartirLinkPartner = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 };
 
+
 // --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
     if (user) {
+        // 🚨 ACÁ ESTÁ LA LÍNEA MÁGICA QUE ARREGLA EL NAVEGADOR 🚨
+        localStorage.setItem('local_user_email', user.email);
         document.getElementById('sidebarUserEmail').innerText = user.email;
+        
         const localStatus = localStorage.getItem('local_user_status');
         if (localStatus === 'pagado') {
             window.userAccessStatus = 'pagado'; window.actualizarUI_Pago(); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
@@ -378,7 +386,6 @@ onAuthStateChanged(auth, async (user) => {
                     if (diffDays > 7 && window.userAccessStatus !== 'pendiente') { window.userAccessStatus = 'vencido'; localStorage.setItem('local_user_status', 'vencido'); window.location.href = 'activar.html';
                     } else {
                         if (window.userAccessStatus !== 'pendiente') { 
-                            // ALERTA DE PAYWALL 
                             window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`, true); 
                         }
                         loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
