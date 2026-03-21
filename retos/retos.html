@@ -17,7 +17,9 @@
     </script>
     
     <link rel="stylesheet" href="../styles.css">
+    
     <script type="module" src="retos-app.js"></script>
+    <script type="module" src="../menu.js"></script>
 </head>
 <body class="font-body text-slate-800 bg-slate-50">
 
@@ -25,24 +27,7 @@
     
     <div id="customConfirm" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Retos en Equipo</h3><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors shadow-md">Aceptar</button></div></div></div>
 
-    <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden transition-opacity" onclick="toggleSidebar()"></div>
-    <div id="sidebar" class="fixed inset-y-0 left-0 w-72 bg-white shadow-2xl transform -translate-x-full transition-transform duration-300 z-[100] flex flex-col border-r border-slate-100">
-        <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-            <div><h2 class="font-display font-black text-sm text-slate-400 uppercase tracking-widest">Cuenta</h2><p id="sidebarUserEmail" class="text-xs text-slate-800 font-bold truncate max-w-[150px]">Cargando...</p></div>
-            <div class="flex items-center gap-2"><button onclick="toggleSidebar()" class="text-slate-400 hover:text-rose-500 bg-white p-1 rounded-lg border border-slate-200"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L6 6M6 6l12 12"></path></svg></button></div>
-        </div>
-        <div class="flex-grow p-4 space-y-2 overflow-y-auto">
-            <a href="../index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>Ahorro Challenge</a>
-            <a href="#" class="flex items-center gap-3 w-full p-3 rounded-xl bg-emerald-50 text-primary font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>Retos en Equipo</a>
-            <a href="../macro-gestion/macro-gestion.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>Macro Gestión</a>
-            <a href="../arcade/index.html" class="flex items-center gap-3 w-full p-3 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Gimnasio Financiero</a>
-            <hr class="border-slate-100 my-4">
-            
-            <button id="btnSidebarPartner" onclick="abrirPortalPartner()" class="hidden w-full p-3 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition-colors items-center gap-3 mb-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>Programa Partner</button>
-            <button id="btnSidebarPagar" onclick="window.location.href='../activar.html'" class="w-full p-3 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
-        </div>
-        <div class="p-4 border-t border-slate-100 bg-slate-50"><button onclick="logout()" class="flex items-center justify-center gap-2 w-full p-3 rounded-xl text-rose-500 hover:bg-rose-50 font-bold transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Cerrar Sesión</button></div>
-    </div>
+    <app-sidebar base-path="../"></app-sidebar>
 
     <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4 bg-background">
         <div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white">
@@ -58,7 +43,7 @@
         <div class="sticky-header glass-card border-b border-slate-200 px-4">
             <div class="max-w-6xl mx-auto flex flex-col gap-3">
                 <div class="relative flex items-center justify-center w-full">
-                    <button onclick="toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+                    <button onclick="window.toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
                     <div class="text-center"><h1 class="text-xl font-display font-black text-slate-900 tracking-wide uppercase">Retos <span class="text-primary">en Equipo</span></h1></div>
                     <button onclick="window.location.href='../index.html'" class="absolute right-0 p-2 -mr-2 text-slate-400 hover:text-rose-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                 </div>
@@ -151,7 +136,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Semanas</label><input type="number" id="crearRetoSemanas" placeholder="Ej: 24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold"></div>
                     <div>
-                        <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="window.mostrarAlerta('Carrera Individual: Gana el primero que junte el monto total por su cuenta.\n\nEquipo: Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
+                        <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="window.mostrarAlerta('Carrera Individual: Gana el primero que junte el monto total por su cuenta.\\n\\nEquipo: Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
                         <select id="crearRetoTipo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold text-xs"><option value="competencia">Carrera</option><option value="colaborativo">Equipo</option></select>
                     </div>
                 </div>
