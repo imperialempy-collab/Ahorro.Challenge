@@ -77,18 +77,14 @@
                         
                         <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 pl-1 border-b border-slate-100 pb-2">Tus Tableros Activos</h2>
                         <div id="listaMisRetos" class="space-y-2">
-                            <div class="text-center py-6 text-slate-400"><svg class="animate-spin h-5 w-5 mx-auto mb-2 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="text-[11px] font-medium">Buscando salas...</span></div>
-                        </div>
+                            </div>
                     </div>
                 </aside>
 
                 <main class="lg:col-span-3">
                     
                     <div id="estadoTableroVacio" class="glass-card rounded-2xl p-10 text-center border border-white h-full flex flex-col justify-center items-center min-h-[300px]">
-                        <div class="w-20 h-20 bg-slate-100 text-slate-300 rounded-full flex items-center justify-center mb-4"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg></div>
-                        <h2 class="text-xl font-black text-slate-700 mb-2">Arena Multijugador</h2>
-                        <p class="text-sm text-slate-500 max-w-sm mx-auto font-medium">Seleccioná un reto de la lista izquierda para conectar en tiempo real y ver cómo avanzan tus amigos.</p>
-                    </div>
+                        </div>
 
                     <div id="tableroActivo" class="hidden space-y-6">
                         
@@ -133,13 +129,17 @@
             <div class="space-y-4 mb-6">
                 <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Nombre del Reto</label><input type="text" id="crearRetoNombre" placeholder="Ej: Viaje a Brasil" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold"></div>
                 <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Monto Meta (Gs)</label><input type="text" id="crearRetoMonto" inputmode="numeric" oninput="window.formatoEnVivo(event)" placeholder="Ej: 5.000.000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-black text-lg"></div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3 mb-3">
                     <div><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Semanas</label><input type="number" id="crearRetoSemanas" placeholder="Ej: 24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold"></div>
                     <div>
-                        <div class="flex items-center justify-between mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label><button onclick="window.mostrarAlerta('Carrera Individual: Gana el primero que junte el monto total por su cuenta.\\n\\nEquipo: Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button></div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Dinámica</label>
+                            <button onclick="window.mostrarAlerta('<b class=\'text-slate-900 font-black\'>Carrera Individual:</b> Gana el primero que junte el monto total por su cuenta.<br><br><b class=\'text-slate-900 font-black\'>Equipo:</b> Todos los participantes suman dinero a una misma bolsa hasta alcanzar juntos el monto total.')" class="w-4 h-4 rounded-full bg-slate-200 text-slate-500 font-bold text-[10px] flex items-center justify-center hover:bg-slate-300">i</button>
+                        </div>
                         <select id="crearRetoTipo" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-bold text-xs"><option value="competencia">Carrera</option><option value="colaborativo">Equipo</option></select>
                     </div>
                 </div>
+                
                 <div class="border-t border-slate-100 pt-4 mt-2"><label class="text-[10px] font-bold text-primary uppercase tracking-wider mb-1 block">Tu Apodo en el juego</label><input type="text" id="crearRetoApodo" placeholder="Ej: El_Pepe" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-emerald-700 outline-none focus:ring-2 focus:ring-emerald-500 font-black"></div>
             </div>
             <button onclick="crearRetoCloud()" id="btnConfirmCrearReto" class="w-full py-4 bg-primary text-white rounded-xl font-black text-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30">Crear Sala</button>
