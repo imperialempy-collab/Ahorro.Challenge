@@ -19,13 +19,30 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
-window.currentPartnerPerfil = null; // Variable global para la edición
+window.currentPartnerPerfil = null; 
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
-window.mostrarAlerta = (mensaje) => { 
+window.mostrarAlerta = (mensaje, esPaywall = false) => { 
     document.getElementById('customAlertMessage').innerText = mensaje; 
+    
+    const btnActivar = document.getElementById('btnAlertActivar');
+    const btnGratis = document.getElementById('btnProbarGratis');
+    const btnOk = document.getElementById('btnAlertOk');
+    
+    // Acá está la magia para que las alertas comunes no muestren los botones de pago
+    if(esPaywall) {
+        if(btnActivar) btnActivar.classList.remove('hidden');
+        if(btnGratis) btnGratis.classList.remove('hidden');
+        if(btnOk) btnOk.classList.add('hidden');
+    } else {
+        if(btnActivar) btnActivar.classList.add('hidden');
+        if(btnGratis) btnGratis.classList.add('hidden');
+        if(btnOk) btnOk.classList.remove('hidden');
+    }
+    
     document.getElementById('customAlert').classList.remove('hidden'); 
 };
+
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 
 window.mostrarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.remove('hidden'); };
@@ -147,14 +164,12 @@ window.aceptarReglasYRegistrar = () => {
     document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
-// BOTÓN LÁPIZ: Para editar sin perder el código
 window.abrirEdicionPartner = () => {
     if (!window.currentPartnerPerfil) return;
     
     document.getElementById('tituloRegistroPartner').innerText = "Editar Mis Datos";
     document.getElementById('btnGuardarPartner').innerText = "Guardar Cambios";
     
-    // Carga los datos actuales en el formulario
     document.getElementById('partnerNombre').value = window.currentPartnerPerfil.nombre || "";
     document.getElementById('partnerBanco').value = window.currentPartnerPerfil.banco || "";
     document.getElementById('partnerCI').value = window.currentPartnerPerfil.ci || "";
@@ -184,7 +199,6 @@ window.guardarPerfilPartner = async () => {
         const userData = docSnap.exists() ? docSnap.data() : {};
 
         if (userData.partner_perfil) {
-            // ES UNA EDICIÓN: Guardamos el historial de la cuenta vieja por seguridad
             const perfilViejo = userData.partner_perfil;
             const registroHistorico = {
                 ...perfilViejo,
@@ -193,17 +207,15 @@ window.guardarPerfilPartner = async () => {
 
             const perfilNuevo = {
                 nombre, banco, ci, cuenta,
-                codigo: perfilViejo.codigo // Mantiene su código de referido INTACTO
+                codigo: perfilViejo.codigo 
             };
 
-            // Usamos arrayUnion para agregar la cuenta vieja al archivo histórico
             await updateDoc(userRef, {
                 partner_perfil: perfilNuevo,
                 partner_historial_cuentas: arrayUnion(registroHistorico)
             });
 
         } else {
-            // ES PRIMERA VEZ: Se crea de cero
             const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
             const rnd = Math.floor(1000 + Math.random() * 9000);
             const codigo = `${baseCode}${rnd}`;
@@ -218,7 +230,7 @@ window.guardarPerfilPartner = async () => {
         }
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner(); // Vuelve a recargar el Dashboard
+        window.abrirPortalPartner(); 
     } catch(e) {
         console.error(e);
         window.mostrarAlerta("Error al guardar tu perfil. Revisá tu conexión.");
@@ -230,7 +242,7 @@ window.guardarPerfilPartner = async () => {
 
 window.cargarDashboardPartner = async (userData) => {
     const perfil = userData.partner_perfil;
-    window.currentPartnerPerfil = perfil; // Guardamos en global para poder editar después
+    window.currentPartnerPerfil = perfil; 
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
@@ -306,7 +318,6 @@ window.compartirLinkPartner = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 };
 
-
 // --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
@@ -367,7 +378,10 @@ onAuthStateChanged(auth, async (user) => {
                     const start = new Date(userData.fechaInicio || new Date()); const now = new Date(); const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
                     if (diffDays > 7 && window.userAccessStatus !== 'pendiente') { window.userAccessStatus = 'vencido'; localStorage.setItem('local_user_status', 'vencido'); window.location.href = 'activar.html';
                     } else {
-                        if (window.userAccessStatus !== 'pendiente') { document.getElementById('btnProbarGratis').classList.remove('hidden'); window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`); }
+                        if (window.userAccessStatus !== 'pendiente') { 
+                            // ALERTA DE PAYWALL 
+                            window.mostrarAlerta(`🎁 Estás en tu día ${diffDays} de 7 de prueba gratis.`, true); 
+                        }
                         loginScreen.classList.add('hidden'); document.getElementById('upgradeScreen').classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp();
                     }
                 }
@@ -405,12 +419,11 @@ window.verificarAutoSync = () => { if (typeof window.sincronizarNube !== 'functi
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 
 // ============================================================================
-// --- LÓGICA DE AHORRO LOCAL (INTACTA) ---
+// --- LÓGICA DE AHORRO LOCAL ---
 // ============================================================================
 
 const DB_KEY = 'ahorro_dinamico_LAB_TEST_MULTIMETA'; 
 let goals = [{ id: 'default', name: 'Meta Principal', amount: 13780000, weeks: 52 }]; let participants = []; let participantGoals = {}; let userReminders = {}; let activeParticipant = ""; 
-// --- CAMBIO UX: EMPIEZA EN INDIVIDUAL ---
 let statsView = "INDIVIDUAL"; 
 let userProgress = {}; let userSchedules = {}; 
 const formatPYG = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
@@ -426,7 +439,6 @@ window.load = () => {
                 participants = p.participants || []; 
                 userReminders = p.userReminders || {}; 
                 activeParticipant = p.activeParticipant || ""; 
-                // --- CAMBIO UX: SIEMPRE INDIVIDUAL SI NO ESTABA SETEADO ---
                 statsView = p.statsView || "INDIVIDUAL"; 
                 userProgress = p.userProgress || {}; 
                 userSchedules = p.userSchedules || {}; 
@@ -445,7 +457,12 @@ window.renderAdminGoals = () => { const list = document.getElementById('goalsAdm
 window.createNewGoal = async () => { const name = await window.mostrarPrompt("Nombre de la nueva meta:", "Nueva Meta", "text"); if (!name) return; const amount = await window.mostrarPrompt("Monto total a alcanzar:", "", "number"); if (!amount) return; const weeks = await window.mostrarPrompt("Cantidad de semanas:", "24", "number"); if (!weeks) return; const nAmount = parseInt(amount.toString().replace(/\D/g,'')); const nWeeks = parseInt(weeks.toString().replace(/\D/g,'')); if (nAmount > 0 && nWeeks > 0) { const newId = 'goal_' + Date.now(); goals.push({ id: newId, name: name, amount: nAmount, weeks: nWeeks }); window.save(); window.renderAdminGoals(); window.updateGoalDropdown(); window.renderGoals(); window.updateStats(); } };
 window.editGoal = async (id) => { const goal = goals.find(g => g.id === id); if(!goal) return; const name = await window.mostrarPrompt("Editar Nombre:", goal.name, "text"); if (!name) return; const amount = await window.mostrarPrompt("Editar Monto total:", goal.amount, "number"); if (!amount) return; const weeks = await window.mostrarPrompt("Editar Semanas:", goal.weeks, "number"); if (!weeks) return; goal.name = name; goal.amount = parseInt(amount.toString().replace(/\D/g,'')); goal.weeks = parseInt(weeks.toString().replace(/\D/g,'')); participants.forEach(p => { if(participantGoals[p] === id) { window.generateSchedule(p); window.recalculateRemaining(p); } }); window.save(); window.renderAdminGoals(); window.updateGoalDropdown(); window.renderGoals(); window.updateStats(); };
 window.deleteGoal = async (id) => { const inUse = participants.some(p => participantGoals[p] === id); if (inUse) return window.mostrarAlerta("Hay participantes usando esta meta."); if (goals.length === 1) return window.mostrarAlerta("Debe existir al menos una meta."); const seguro = await window.mostrarConfirm("¿Eliminar esta meta?"); if(seguro) { goals = goals.filter(g => g.id !== id); window.save(); window.renderAdminGoals(); window.updateGoalDropdown(); window.renderGoals(); window.updateStats(); } };
-window.openReminderModal = () => { if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante."); const savedReminders = userReminders[activeParticipant] || { type: 'semanal', day: 'Lunes', date: '5', time: '10:00' }; document.getElementById('reminderType').value = savedReminders.type; document.getElementById('reminderDay').value = savedReminders.day; document.getElementById('reminderDate').value = savedReminders.date; document.getElementById('reminderTime').value = savedReminders.time; window.toggleReminderType(); document.getElementById('reminderModal').classList.remove('hidden'); };
+
+window.openReminderModal = () => { 
+    if (!activeParticipant) return window.mostrarAlerta("Seleccioná un participante para configurar su alarma de ahorro."); 
+    const savedReminders = userReminders[activeParticipant] || { type: 'semanal', day: 'Lunes', date: '5', time: '10:00' }; document.getElementById('reminderType').value = savedReminders.type; document.getElementById('reminderDay').value = savedReminders.day; document.getElementById('reminderDate').value = savedReminders.date; document.getElementById('reminderTime').value = savedReminders.time; window.toggleReminderType(); document.getElementById('reminderModal').classList.remove('hidden'); 
+};
+
 window.closeReminderModal = () => { document.getElementById('reminderModal').classList.add('hidden'); };
 window.toggleReminderType = () => { const type = document.getElementById('reminderType').value; if (type === 'semanal') { document.getElementById('weeklyOptions').classList.remove('hidden'); document.getElementById('monthlyOptions').classList.add('hidden'); } else { document.getElementById('weeklyOptions').classList.add('hidden'); document.getElementById('monthlyOptions').classList.remove('hidden'); } };
 window.saveReminder = () => { const type = document.getElementById('reminderType').value; const day = document.getElementById('reminderDay').value; const date = document.getElementById('reminderDate').value; const time = document.getElementById('reminderTime').value; const userGoal = window.getGoalForUser(activeParticipant); const titulo = `🐷 Depósito de ${activeParticipant} 💰`; const descripcion = `¡Llegó el día! Te toca hacer el depósito para tu meta: ${userGoal.name}.\n\nEntrá a tu app para marcarlo como listo:\nhttps://imperialempy-collab.github.io/Ahorro.Challenge/`; let startDate = new Date(); const [hours, minutes] = time.split(':'); startDate.setHours(parseInt(hours), parseInt(minutes), 0, 0); let gcalRecur = ''; let icalRecur = ''; if (type === 'semanal') { const diasICal = {'Lunes':'MO', 'Martes':'TU', 'Miércoles':'WE', 'Jueves':'TH', 'Viernes':'FR', 'Sábado':'SA', 'Domingo':'SU'}; const rday = diasICal[day]; icalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`; gcalRecur = `RRULE:FREQ=WEEKLY;BYDAY=${rday}`; const dayMap = {'Domingo':0, 'Lunes':1, 'Martes':2, 'Miércoles':3, 'Jueves':4, 'Viernes':5, 'Sábado':6}; let distance = (dayMap[day] + 7 - startDate.getDay()) % 7; if (distance === 0) distance = 7; startDate.setDate(startDate.getDate() + distance); } else { icalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`; gcalRecur = `RRULE:FREQ=MONTHLY;BYMONTHDAY=${date}`; let targetDate = parseInt(date); if (startDate.getDate() >= targetDate) { startDate.setMonth(startDate.getMonth() + 1); } startDate.setDate(targetDate); } const formatICS = (d) => { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }; const startStr = formatICS(startDate); const endDate = new Date(startDate.getTime() + 60*60*1000); const endStr = formatICS(endDate); const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); if (isIOS) { const icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Ahorro Challenge//AppWeb//ES\nCALSCALE:GREGORIAN\nBEGIN:VEVENT\nSUMMARY:${titulo}\nDTSTART:${startStr}\nDTEND:${endStr}\n${icalRecur}\nDESCRIPTION:${descripcion.replace(/\n/g, '\\n')}\nEND:VEVENT\nEND:VCALENDAR`; window.location.href = 'data:text/calendar;charset=utf8,' + encodeURIComponent(icsContent); } else { const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startStr}/${endStr}&details=${encodeURIComponent(descripcion)}&recur=${encodeURIComponent(gcalRecur)}`; window.open(gcalUrl, '_blank'); } userReminders[activeParticipant] = { type, day, date, time }; window.save(); window.closeReminderModal(); window.renderParticipants(); };
@@ -495,7 +512,6 @@ window.renderGoals = () => {
         container.innerHTML = html; 
     } else { 
         if (!activeParticipant) { 
-            // --- CAMBIO UX: MENSAJE INSTRUCTIVO LIMPIO (SIN ÍCONO GIGANTE) ---
             container.innerHTML = `
                 <div class="text-center p-10 flex flex-col items-center justify-center gap-3">
                     <p class="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
@@ -517,7 +533,6 @@ window.renderGoals = () => {
 
 window.renderParticipants = () => { 
     const list = document.getElementById('participantList'); 
-    // --- CAMBIO UX: ELIMINADO EL TEXTO DE 'AGREGÁ UN NOMBRE' ---
     if (!participants.length) { list.innerHTML = ``; return; } 
     list.innerHTML = participants.map(p => { 
         const goal = window.getGoalForUser(p); 
