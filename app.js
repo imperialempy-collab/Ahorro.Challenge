@@ -29,7 +29,6 @@ window.mostrarAlerta = (mensaje, esPaywall = false) => {
     const btnGratis = document.getElementById('btnProbarGratis');
     const btnOk = document.getElementById('btnAlertOk');
     
-    // Acá está la magia para que las alertas comunes no muestren los botones de pago
     if(esPaywall) {
         if(btnActivar) btnActivar.classList.remove('hidden');
         if(btnGratis) btnGratis.classList.remove('hidden');
@@ -551,11 +550,10 @@ window.initApp = () => {
     window.updateStats(); 
     if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
 
-    // MAGIA DE REDIRECCIÓN: Abre el portal partner al volver de otra sección
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('open') === 'partner') {
         window.abrirPortalPartner();
-        window.history.replaceState({}, document.title, window.location.pathname); // Limpia la URL
+        window.history.replaceState({}, document.title, window.location.pathname); 
     }
 };
 
