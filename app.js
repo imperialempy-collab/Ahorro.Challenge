@@ -495,8 +495,13 @@ window.renderGoals = () => {
         container.innerHTML = html; 
     } else { 
         if (!activeParticipant) { 
-            // --- CAMBIO UX: EL MENSAJE INSTRUCTIVO HERMOSO ---
-            container.innerHTML = `<div class="text-center p-10 flex flex-col items-center justify-center gap-3"><div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></div><p class="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">Configurá tu meta en el botón <svg class="inline w-4 h-4 -mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> y agregá un participante en el botón <span class="inline-block bg-emerald-50 text-primary px-1.5 py-0 rounded font-bold text-xs">+</span> para comenzar.</p></div>`; 
+            // --- CAMBIO UX: MENSAJE INSTRUCTIVO LIMPIO (SIN ÍCONO GIGANTE) ---
+            container.innerHTML = `
+                <div class="text-center p-10 flex flex-col items-center justify-center gap-3">
+                    <p class="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
+                        Configurá tu meta en el botón <svg class="inline w-4 h-4 -mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> y agregá un participante en el botón <span class="inline-block bg-emerald-50 text-primary px-1.5 py-0 rounded font-bold text-xs">+</span> para comenzar.
+                    </p>
+                </div>`; 
             return; 
         } 
         const userGoal = window.getGoalForUser(activeParticipant); 
@@ -531,10 +536,11 @@ window.initApp = () => {
     window.updateStats(); 
     if (typeof window.verificarAutoSync === 'function') window.verificarAutoSync();
 
+    // MAGIA DE REDIRECCIÓN: Abre el portal partner al volver de otra sección
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('open') === 'partner') {
         window.abrirPortalPartner();
-        window.history.replaceState({}, document.title, window.location.pathname); 
+        window.history.replaceState({}, document.title, window.location.pathname); // Limpia la URL
     }
 };
 
