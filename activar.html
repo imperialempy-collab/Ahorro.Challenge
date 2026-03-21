@@ -49,20 +49,16 @@
             codigoReferido = codigo.toUpperCase();
             montoEsperado = 25000;
             
-            // Tachamos el precio viejo
             const precioNormal = document.getElementById('precioNormal');
             precioNormal.classList.remove('text-primary', 'text-lg');
             precioNormal.classList.add('line-through', 'text-slate-400', 'text-sm');
             
-            // Mostramos el precio nuevo y el mensaje de regalo
             document.getElementById('precioDescuento').classList.remove('hidden');
             document.getElementById('mensajeRegalo').innerText = `🎁 ¡Regalo de ${codigoReferido} aplicado!`;
             document.getElementById('mensajeRegalo').classList.remove('hidden');
             
-            // Escondemos la cajita manual porque ya aplicó un código
             document.getElementById('cajaCodigoDescuento').classList.add('hidden');
             
-            // Guardamos el código por si recarga la página
             localStorage.setItem('partner_code_saved', codigoReferido);
         };
 
@@ -73,7 +69,6 @@
         };
 
         window.onload = () => {
-            // Buscamos si vino con Link Inteligente o si ya lo guardó antes
             const urlParams = new URLSearchParams(window.location.search);
             const refCode = urlParams.get('ref') || localStorage.getItem('partner_code_saved');
             if (refCode) {
@@ -81,6 +76,7 @@
             }
         };
 
+        // --- CEREBRO DE VERIFICACIÓN DE PAGOS ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUserEmail = user.email;
@@ -92,6 +88,11 @@
                     
                     if (docSnap.exists()) {
                         const data = docSnap.data();
+                        
+                        // 🚨 LA SOLUCIÓN AL BUCLE: ACTUALIZAR LA MEMORIA LOCAL 🚨
+                        // Esto garantiza que el index.html optimista sepa que el usuario ya es VIP
+                        localStorage.setItem('local_user_status', data.status);
+                        localStorage.setItem('local_user_email', user.email);
                         
                         if (data.status === 'pagado') {
                             showSection('successSection');
@@ -119,7 +120,7 @@
             }
         });
 
-        // CONTROL DE UX PARA SUBIR ARCHIVOS
+        // --- CONTROL DE UX PARA SUBIR ARCHIVOS ---
         window.handleFileSelect = (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -172,6 +173,9 @@
                     monto_esperado: montoEsperado,
                     referido_por: codigoReferido || ""
                 });
+                
+                // Actualizamos memoria local al estado pendiente
+                localStorage.setItem('local_user_status', 'pendiente');
 
                 // 3. Alerta a Telegram detallada
                 const telegramToken = '8753413505:AAHK_h6bwEWgugMLz4LEBZsTOSnKV5Zx1PU';
