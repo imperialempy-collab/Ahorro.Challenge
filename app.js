@@ -19,7 +19,7 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 window.userAccessStatus = 'prueba';
-window.currentPartnerPerfil = null; // Variable global para la edición
+window.currentPartnerPerfil = null; 
 
 // --- UTILIDADES GLOBALES Y REDIRECCIONES ---
 window.mostrarAlerta = (mensaje, esPaywall = false) => { 
@@ -41,6 +41,7 @@ window.mostrarAlerta = (mensaje, esPaywall = false) => {
     
     document.getElementById('customAlert').classList.remove('hidden'); 
 };
+
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 
 window.mostrarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.remove('hidden'); };
@@ -162,14 +163,12 @@ window.aceptarReglasYRegistrar = () => {
     document.getElementById('registroPartnerModal').classList.remove('hidden');
 };
 
-// BOTÓN LÁPIZ: Para editar sin perder el código
 window.abrirEdicionPartner = () => {
     if (!window.currentPartnerPerfil) return;
     
     document.getElementById('tituloRegistroPartner').innerText = "Editar Mis Datos";
     document.getElementById('btnGuardarPartner').innerText = "Guardar Cambios";
     
-    // Carga los datos actuales en el formulario
     document.getElementById('partnerNombre').value = window.currentPartnerPerfil.nombre || "";
     document.getElementById('partnerBanco').value = window.currentPartnerPerfil.banco || "";
     document.getElementById('partnerCI').value = window.currentPartnerPerfil.ci || "";
@@ -199,7 +198,6 @@ window.guardarPerfilPartner = async () => {
         const userData = docSnap.exists() ? docSnap.data() : {};
 
         if (userData.partner_perfil) {
-            // ES UNA EDICIÓN: Guardamos el historial de la cuenta vieja por seguridad
             const perfilViejo = userData.partner_perfil;
             const registroHistorico = {
                 ...perfilViejo,
@@ -208,17 +206,15 @@ window.guardarPerfilPartner = async () => {
 
             const perfilNuevo = {
                 nombre, banco, ci, cuenta,
-                codigo: perfilViejo.codigo // Mantiene su código de referido INTACTO
+                codigo: perfilViejo.codigo 
             };
 
-            // Usamos arrayUnion para agregar la cuenta vieja al archivo histórico
             await updateDoc(userRef, {
                 partner_perfil: perfilNuevo,
                 partner_historial_cuentas: arrayUnion(registroHistorico)
             });
 
         } else {
-            // ES PRIMERA VEZ: Se crea de cero
             const baseCode = nombre.split(' ')[0].toUpperCase().replace(/[^A-Z]/g, '');
             const rnd = Math.floor(1000 + Math.random() * 9000);
             const codigo = `${baseCode}${rnd}`;
@@ -233,7 +229,7 @@ window.guardarPerfilPartner = async () => {
         }
 
         window.cerrarRegistroPartner();
-        window.abrirPortalPartner(); // Vuelve a recargar el Dashboard
+        window.abrirPortalPartner(); 
     } catch(e) {
         console.error(e);
         window.mostrarAlerta("Error al guardar tu perfil. Revisá tu conexión.");
@@ -245,7 +241,7 @@ window.guardarPerfilPartner = async () => {
 
 window.cargarDashboardPartner = async (userData) => {
     const perfil = userData.partner_perfil;
-    window.currentPartnerPerfil = perfil; // Guardamos en global para poder editar después
+    window.currentPartnerPerfil = perfil; 
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
@@ -321,13 +317,11 @@ window.compartirLinkPartner = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
 };
 
-
 // --- AUTENTICACIÓN OPTIMISTA Y RESTAURACIÓN ---
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent'); const loadingSpinner = document.getElementById('loadingSpinner'); const googleLoginBtn = document.getElementById('googleLoginBtn'); const loginText = document.getElementById('loginText');
     
     if (user) {
-        // 🚨 ACÁ ESTÁ LA LÍNEA MÁGICA QUE ARREGLA EL NAVEGADOR 🚨
         localStorage.setItem('local_user_email', user.email);
         document.getElementById('sidebarUserEmail').innerText = user.email;
         
@@ -396,9 +390,10 @@ onAuthStateChanged(auth, async (user) => {
     } else { loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden'); }
 });
 
+// LÓGICA DE SINCRONIZACIÓN SILENCIOSA
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
-    if (manual && !window.ENABLE_MANUAL_SYNC) { window.mostrarAlerta("La actualización manual está desactivada."); return; }
+    if (manual && !window.ENABLE_MANUAL_SYNC) return;
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
@@ -416,8 +411,10 @@ window.sincronizarNube = async (manual = false) => {
         await updateDoc(userRef, payload);
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors"); window.actualizarUI_Pago();
-        if (manual) window.mostrarAlerta("✅ Sincronización exitosa. Tu progreso está 100% seguro.");
-    } catch (error) { console.error("Error nube:", error); if (manual) window.mostrarAlerta("❌ Error al guardar en la nube."); document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors"); }
+    } catch (error) { 
+        console.error("Error nube:", error); 
+        document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors"); 
+    }
 };
 
 window.verificarAutoSync = () => { if (typeof window.sincronizarNube !== 'function') return; const lastSync = localStorage.getItem('last_cloud_sync'); const now = new Date().getTime(); if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); } };
