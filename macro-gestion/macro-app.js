@@ -20,32 +20,94 @@ const db = getFirestore(app);
 window.userAccessStatus = localStorage.getItem('local_user_status') || 'prueba';
 window.logout = () => { localStorage.removeItem('local_user_status'); signOut(auth).then(() => { window.location.href = '../index.html'; }); };
 
-// UI GENERALES
-window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
-window.cerrarPaywall = () => {}; // Desactivado porque ahora redirigimos
-window.abrirPaywall = () => { window.location.href = '../activar.html'; };
 window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
-window.actualizarUI_Pago = () => {
-    const btnPagar = document.getElementById('btnSidebarPagar');
-    if (!btnPagar) return;
-    if(window.userAccessStatus === 'pagado') {
-        btnPagar.innerHTML = '<span class="text-emerald-500 font-black">Acceso Ilimitado 👑</span>';
-        btnPagar.onclick = null;
-        btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50');
-        btnPagar.classList.replace('text-white', 'text-emerald-700');
-    } else if (window.userAccessStatus === 'pendiente') {
-        btnPagar.innerHTML = 'Ver mi Comprobante ⏳';
-        btnPagar.onclick = () => window.location.href = '../activar.html';
-        btnPagar.classList.replace('bg-slate-900', 'bg-amber-100');
-        btnPagar.classList.replace('text-white', 'text-amber-700');
-    } else {
-        btnPagar.innerHTML = 'Activar Acceso Ilimitado 👑';
-        btnPagar.onclick = () => window.location.href = '../activar.html';
-    }
-};
+// --- OPTIMISTIC UI: CARGA INSTANTÁNEA ---
+const localStatus = localStorage.getItem('local_user_status');
+const localEmail = localStorage.getItem('local_user_email');
 
-// --- MOTOR DE SINCRONIZACIÓN Y SEGURIDAD DIFERIDA ---
+if (localEmail && localStatus) {
+    if (localStatus === 'prueba') {
+        const hoy = new Date().toLocaleDateString('es-PY');
+        const ultimaAlerta = localStorage.getItem('last_prueba_alert');
+        if (ultimaAlerta !== hoy) {
+            const diffDays = localStorage.getItem('local_prueba_dias') || '1';
+            setTimeout(() => {
+                window.interactuarApp('alert', '🎁 Modo Prueba', `Estás en tu día ${diffDays} de 7 de prueba gratis.`);
+            }, 500);
+            localStorage.setItem('last_prueba_alert', hoy);
+        }
+    } else if (localStatus === 'vencido' || localStatus === 'rechazado') {
+        window.location.href = '../activar.html';
+    }
+} else {
+    // Si no hay sesión local, lo mandamos al inicio a loguearse
+    window.location.href = '../index.html'; 
+}
+
+// --- VERIFICACIÓN SILENCIOSA EN LA NUBE ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) { 
+        localStorage.setItem('local_user_email', user.email);
+        
+        // Actualizar email en el menú maestro si existe
+        const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
+        if (sidebarEmail) sidebarEmail.innerText = user.email;
+
+        const userRef = doc(db, "usuarios_multimeta", user.email);
+        try {
+            const docSnap = await getDoc(userRef);
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                window.userAccessStatus = userData.status || 'prueba';
+                localStorage.setItem('local_user_status', window.userAccessStatus);
+                
+                const start = new Date(userData.fechaInicio || new Date());
+                const now = new Date();
+                const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                localStorage.setItem('local_prueba_dias', diffDays.toString());
+
+                // Descargar datos si la memoria local está vacía
+                const localCuentas = localStorage.getItem('mg_cuentas');
+                const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
+                if (!hasLocalMacro && userData.macro_data) {
+                    if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
+                    if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
+                    if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
+                    if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
+                    
+                    // Refrescar variables en memoria activa
+                    cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || cuentas;
+                    gastos = JSON.parse(localStorage.getItem('mg_gastos')) || gastos;
+                    historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || historialMovimientos;
+                }
+
+                if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado' || (window.userAccessStatus === 'prueba' && diffDays > 7)) {
+                    localStorage.setItem('local_user_status', 'vencido');
+                    window.location.href = '../activar.html';
+                    return;
+                }
+
+                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
+                
+                // Le avisa al menú maestro que actualice botones por si el status cambió en la nube
+                const sidebar = document.querySelector('app-sidebar');
+                if (sidebar) sidebar.actualizarUI();
+            }
+        } catch(e) { console.error("Modo local forzado en Macro.", e); }
+        
+        window.renderizarSelectorIconos(); 
+        window.renderizarApp();
+        window.verificarAutoSync(); 
+        
+    } else { 
+        localStorage.removeItem('local_user_status');
+        window.location.href = '../index.html'; 
+    }
+});
+
+
+// --- MOTOR DE SINCRONIZACIÓN ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
@@ -57,20 +119,17 @@ window.sincronizarNube = async (manual = false) => {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
 
-        // 1. SEGURIDAD A CABALLITO
         const docSnap = await getDoc(userRef);
         if (docSnap.exists()) {
             const realStatus = docSnap.data().status;
             localStorage.setItem('local_user_status', realStatus);
             window.userAccessStatus = realStatus;
-
             if (realStatus === 'vencido' || realStatus === 'rechazado') {
                 window.location.href = '../activar.html';
                 return;
             }
         }
 
-        // 2. GUARDADO
         const safeParse = (str) => { try { return (str && str !== "null" && str !== "undefined") ? JSON.parse(str) : null; } catch(e) { return null; } };
         const payload = {
             ahorro_data: safeParse(localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA')),
@@ -80,14 +139,14 @@ window.sincronizarNube = async (manual = false) => {
         };
 
         await updateDoc(userRef, payload);
-
         localStorage.setItem('last_cloud_sync', new Date().getTime().toString());
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full transition-colors");
-        window.actualizarUI_Pago();
+        
+        const sidebar = document.querySelector('app-sidebar');
+        if (sidebar) sidebar.actualizarUI();
         
         if (manual) window.interactuarApp('alert', 'Nube Sincronizada', '✅ Sincronización exitosa. Tu progreso está 100% seguro en la nube.');
     } catch (error) {
-        console.error("Error sincronizando:", error);
         if (manual) window.interactuarApp('alert', 'Error', '❌ Hubo un error al guardar en la nube.');
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full transition-colors");
     }
@@ -100,74 +159,10 @@ window.verificarAutoSync = () => {
     if (!lastSync || (now - parseInt(lastSync)) > 86400000) { window.sincronizarNube(false); }
 };
 
-// --- AUTENTICACIÓN OPTIMISTA (EL PASE VIP) ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) { 
-        document.getElementById('sidebarUserEmail').innerText = user.email;
-        
-        // --- 🚀 PASE VIP LOCAL ---
-        const localStatus = localStorage.getItem('local_user_status');
-        if (localStatus === 'pagado') {
-            window.userAccessStatus = 'pagado';
-            window.actualizarUI_Pago();
-            document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
-            window.renderizarSelectorIconos(); 
-            window.renderizarApp();
-            window.verificarAutoSync(); 
-            return; // SALIDA RÁPIDA VIP
-        }
+// ==========================================
+// MACRO GESTION LOGIC (Cuentas, Gastos, Reportes)
+// ==========================================
 
-        // --- SI NO ES VIP, VA A FIREBASE ---
-        const userRef = doc(db, "usuarios_multimeta", user.email);
-        try {
-            const docSnap = await getDoc(userRef);
-            if (docSnap.exists()) {
-                const userData = docSnap.data();
-                window.userAccessStatus = userData.status || 'prueba';
-                localStorage.setItem('local_user_status', window.userAccessStatus);
-                
-                const localCuentas = localStorage.getItem('mg_cuentas');
-                const hasLocalMacro = localCuentas && localCuentas !== "null" && localCuentas !== "undefined" && localCuentas.length > 10;
-                if (!hasLocalMacro) {
-                    if (userData.macro_data) {
-                        if(userData.macro_data.cuentas) localStorage.setItem('mg_cuentas', JSON.stringify(userData.macro_data.cuentas));
-                        if(userData.macro_data.gastos) localStorage.setItem('mg_gastos', JSON.stringify(userData.macro_data.gastos));
-                        if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
-                        if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
-                    }
-                }
-                
-                const localAhorro = localStorage.getItem('ahorro_dinamico_LAB_TEST_MULTIMETA');
-                if (!localAhorro || localAhorro === "null" || localAhorro === "undefined") {
-                    if (userData.ahorro_data && Object.keys(userData.ahorro_data).length > 0) { localStorage.setItem('ahorro_dinamico_LAB_TEST_MULTIMETA', JSON.stringify(userData.ahorro_data)); }
-                }
-
-                if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado') {
-                    window.location.href = '../activar.html';
-                    return;
-                }
-
-                document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-emerald-500 border border-white rounded-full");
-            } else {
-                await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
-                window.userAccessStatus = 'prueba';
-                localStorage.setItem('local_user_status', 'prueba');
-            }
-        } catch(e) { console.error("Modo local forzado.", e); }
-        
-        window.actualizarUI_Pago();
-        window.renderizarSelectorIconos(); 
-        window.renderizarApp();
-        window.verificarAutoSync(); 
-        
-    } else { 
-        localStorage.removeItem('local_user_status');
-        window.location.href = '../index.html'; 
-    }
-});
-
-
-// MACRO GESTION LOGIC (Intacta)
 const descripcionesReportes = { flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste. La gráfica te muestra cómo tu sueldo se va consumiendo día a día." }, burnrate: { tit: "⏱️ Velocidad de Quema", desc: "Es una carrera entre tu Dinero y el Calendario.\n\nCompara qué porcentaje de tu Ingreso ya te gastaste, frente a qué porcentaje del mes ya pasó. Si gastaste mucho y apenas estamos a mitad de mes, la aguja irá a ROJO y deberás frenar." }, asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en el ⚙️.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." }, agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma de todo el dinero que gastaste al ir actualizando los saldos de tus cuentas a mano.\n\nIMPORTANTE: Esta suma NO incluye los Gastos Fijos que vas tildando arriba. Es pura y exclusivamente tu gasto variable y hormiga." }, tradicional: { tit: "📊 Reporte Tradicional", desc: "Los porcentajes reflejan cuánto representa cada gasto frente al Ingreso Promedio que configuraste manualmente en el ⚙️." } };
 window.infoReporte = (clave) => { window.interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc); };
 
