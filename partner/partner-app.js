@@ -17,7 +17,11 @@ const db = getFirestore(app);
 
 window.currentPartnerPerfil = null; 
 
-window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
+// --- EL GUARDAESPALDAS INSTANTÁNEO ---
+if (localStorage.getItem('local_user_status') !== 'pagado') {
+    window.location.href = '../activar.html';
+}
+
 window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerText = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
 window.mostrarLoaderSilencioso = () => { document.getElementById('silentLoader').classList.remove('hidden'); };
@@ -218,7 +222,7 @@ async function cargarDashboardPartner(userData) {
     }
 }
 
-// BOTONES DE ACCIÓN (Sin WhatsApp verde)
+// BOTONES DE ACCIÓN
 window.copiarDato = (tipo) => {
     const codigo = document.getElementById('partnerCodigoUI').innerText;
     let texto = (tipo === 'codigo') ? codigo : `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
