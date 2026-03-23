@@ -165,7 +165,6 @@ window.formatoInputEnVivo = (e) => { let val = e.target.value.replace(/\D/g, '')
 const logosDisponibles = [ 'itau.png', 'ueno.png', 'familiar.png', 'continental.png', 'bnf.png', 'tigo.png', 'personal.png', 'mango.png', 'wally.png', 'zimple.png', 'iconotarjeta.png', 'tarjetas.png', 'efectivo1.png', 'efectivo2.png', 'efectivo3.png', 'efectivo4.png', 'efectivo5.png' ];
 let iconoSeleccionado = '🏦';
 
-// CAMBIO DE RUTA AQUÍ: De ../logos/ a logos/
 window.renderizarSelectorIconos = () => { 
     const grilla = document.getElementById('grillaIconos'); 
     if(grilla){ 
@@ -194,8 +193,9 @@ window.seleccionarIcono = (logo) => {
 
 window.limpiarSeleccionIconos = () => { document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); };
 
-let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [ { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" }, { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" } ];
-let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [ { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" }, { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" } ];
+// SE VACIARON LOS DATOS DE PRUEBA AQUÍ ABAJO (Dejamos los corchetes vacíos [])
+let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
+let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [];
 let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
 
 window.guardarDatos = () => { 
@@ -234,7 +234,6 @@ window.renderizarReportes = () => {
     if(agujeroNegro === 0 && fijosPagadosTotales === 0) { contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; }
 };
 
-// CAMBIO DE RUTA AQUÍ: De ../logos/ a logos/
 window.renderizarCuentas = () => { 
     const cont = document.getElementById('contenedorCuentas'); 
     cont.innerHTML = ''; 
@@ -315,8 +314,12 @@ window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gast
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
 
-// --- MAGIA UX: RENDERIZADO EN EL MILISEGUNDO CERO ---
+// --- MAGIA UX: RENDERIZADO EN EL MILISEGUNDO CERO CON FADE-IN ---
 if (localEmail && localStatus) {
     window.renderizarSelectorIconos();
     window.renderizarApp();
+    setTimeout(() => {
+        const mainContent = document.getElementById('macroMainContent');
+        if(mainContent) mainContent.classList.remove('opacity-0');
+    }, 50); // El micro-respiro para que la transición sea fluida
 }
