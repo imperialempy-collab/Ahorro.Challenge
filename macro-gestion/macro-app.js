@@ -165,14 +165,14 @@ window.formatoInputEnVivo = (e) => { let val = e.target.value.replace(/\D/g, '')
 const logosDisponibles = [ 'itau.png', 'ueno.png', 'familiar.png', 'continental.png', 'bnf.png', 'tigo.png', 'personal.png', 'mango.png', 'wally.png', 'zimple.png', 'iconotarjeta.png', 'tarjetas.png', 'efectivo1.png', 'efectivo2.png', 'efectivo3.png', 'efectivo4.png', 'efectivo5.png' ];
 let iconoSeleccionado = '🏦';
 
-// CORRECCIÓN DEL SALVAVIDAS: Se usa &quot; en lugar de \' para no romper el HTML
+// CAMBIO DE RUTA AQUÍ: De ../logos/ a logos/
 window.renderizarSelectorIconos = () => { 
     const grilla = document.getElementById('grillaIconos'); 
     if(grilla){ 
         grilla.innerHTML = logosDisponibles.map(logo => { 
             const logoId = logo.replace('.png', ''); 
             const nombreCorto = logoId.substring(0, 2).toUpperCase();
-            return `<div id="logo-${logoId}" onclick="seleccionarIcono('${logo}')" class="logo-opt w-14 h-14 shrink-0 bg-white border-2 border-slate-100 rounded-xl p-0.5 cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm overflow-hidden"><img src="../logos/${logo}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=&quot;text-lg font-black text-slate-400&quot;>${nombreCorto}</span>';" class="w-full h-full object-contain scale-125 transform transition-transform" alt="${logo}"></div>`; 
+            return `<div id="logo-${logoId}" onclick="seleccionarIcono('${logo}')" class="logo-opt w-14 h-14 shrink-0 bg-white border-2 border-slate-100 rounded-xl p-0.5 cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm overflow-hidden"><img src="logos/${logo}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=&quot;text-lg font-black text-slate-400&quot;>${nombreCorto}</span>';" class="w-full h-full object-contain scale-125 transform transition-transform" alt="${logo}"></div>`; 
         }).join(''); 
     }
 };
@@ -234,14 +234,14 @@ window.renderizarReportes = () => {
     if(agujeroNegro === 0 && fijosPagadosTotales === 0) { contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; }
 };
 
-// CORRECCIÓN DEL SALVAVIDAS TAMBIÉN AQUÍ PARA LAS LISTAS: Se usa &quot; en lugar de \'
+// CAMBIO DE RUTA AQUÍ: De ../logos/ a logos/
 window.renderizarCuentas = () => { 
     const cont = document.getElementById('contenedorCuentas'); 
     cont.innerHTML = ''; 
     cuentas.forEach(c => { 
         let nombreCorto = '';
         if(c.icono && c.icono.includes('.png')){ nombreCorto = c.icono.replace('.png', '').substring(0, 2).toUpperCase(); }
-        let iconoHtml = (c.icono && c.icono.includes('.png')) ? `<img src="../logos/${c.icono}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=&quot;text-lg font-black text-primary&quot;>${nombreCorto}</span>';" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` : `<span class="text-xl">${c.icono || '💳'}</span>`; 
+        let iconoHtml = (c.icono && c.icono.includes('.png')) ? `<img src="logos/${c.icono}?v=2" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=&quot;text-lg font-black text-primary&quot;>${nombreCorto}</span>';" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` : `<span class="text-xl">${c.icono || '💳'}</span>`; 
         cont.innerHTML += `<div class="bg-surface rounded-2xl p-4 shadow-md flex items-center justify-between border border-slate-100"><div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0 overflow-hidden text-primary">${iconoHtml}</div><div><h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">${c.nombre}<button onclick="abrirModalForm('cuenta', ${c.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[11px] font-medium text-slate-500 leading-tight">${c.descripcion}</p><p class="text-[9px] text-slate-400 mt-0.5">Última act: ${c.ultimaAct}</p></div></div><div class="text-right"><p class="font-bold text-base text-slate-900">${window.formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[9px] text-slate-500">Gs</span></p><button onclick="actualizarSaldo(${c.id})" class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors">ACTUALIZAR</button></div></div>`; 
     }); 
 };
