@@ -22,6 +22,17 @@ window.logout = () => { localStorage.removeItem('local_user_status'); signOut(au
 
 window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
+// --- CÁPSULA DE SEGURIDAD PARA LECTURA DE DATOS ---
+const safeParseArray = (key) => {
+    try {
+        const data = localStorage.getItem(key);
+        if (!data || data === "null" || data === "undefined" || data.trim() === "") return [];
+        return JSON.parse(data) || [];
+    } catch (e) {
+        return [];
+    }
+};
+
 // --- OPTIMISTIC UI: CARGA INSTANTÁNEA ---
 const localStatus = localStorage.getItem('local_user_status');
 const localEmail = localStorage.getItem('local_user_email');
@@ -73,9 +84,10 @@ onAuthStateChanged(auth, async (user) => {
                     if(userData.macro_data.historial) localStorage.setItem('mg_historial', JSON.stringify(userData.macro_data.historial));
                     if(userData.macro_data.ingreso) localStorage.setItem('mg_ingreso', userData.macro_data.ingreso.toString());
                     
-                    cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || cuentas;
-                    gastos = JSON.parse(localStorage.getItem('mg_gastos')) || gastos;
-                    historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || historialMovimientos;
+                    // Aplicada la cápsula de seguridad aquí también
+                    cuentas = safeParseArray('mg_cuentas');
+                    gastos = safeParseArray('mg_gastos');
+                    historialMovimientos = safeParseArray('mg_historial');
                     
                     window.renderizarSelectorIconos(); 
                     window.renderizarApp();
@@ -193,9 +205,10 @@ window.seleccionarIcono = (logo) => {
 
 window.limpiarSeleccionIconos = () => { document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); };
 
-let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
-let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [];
-let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
+// --- LECTURA SEGURA DE LOS DATOS AL INICIAR ---
+let cuentas = safeParseArray('mg_cuentas');
+let gastos = safeParseArray('mg_gastos');
+let historialMovimientos = safeParseArray('mg_historial');
 
 window.guardarDatos = () => { 
     localStorage.setItem('mg_cuentas', JSON.stringify(cuentas)); 
@@ -313,14 +326,16 @@ window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gast
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
 
-// --- MAGIA UX: RENDERIZADO CON PANTALLA DE CARGA (Sin transparencias) ---
+// --- MAGIA UX: RENDERIZADO CON PANTALLA DE CARGA ---
 if (localEmail && localStatus) {
     window.renderizarSelectorIconos();
     window.renderizarApp();
     
-    // Damos un respiro de 150 milisegundos para que el navegador dibuje los datos locales por detrás, y luego ocultamos el spinner
     setTimeout(() => {
         const loader = document.getElementById('loadingScreen');
-        if(loader) loader.classList.add('hidden');
+        if(loader) {
+            loader.classList.add('hidden');
+            loader.style.display = 'none';
+        }
     }, 150);
 }
