@@ -76,6 +76,10 @@ onAuthStateChanged(auth, async (user) => {
                     cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || cuentas;
                     gastos = JSON.parse(localStorage.getItem('mg_gastos')) || gastos;
                     historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || historialMovimientos;
+                    
+                    // Si descargó datos de la nube, forzamos un repintado
+                    window.renderizarSelectorIconos(); 
+                    window.renderizarApp();
                 }
 
                 if (window.userAccessStatus === 'vencido' || window.userAccessStatus === 'rechazado' || (window.userAccessStatus === 'prueba' && diffDays > 7)) {
@@ -91,8 +95,6 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch(e) { console.error("Modo local forzado en Macro.", e); }
         
-        window.renderizarSelectorIconos(); 
-        window.renderizarApp();
         window.verificarAutoSync(); 
         
     } else { 
@@ -232,3 +234,10 @@ window.cambiarMontoGasto = async (id) => { const gasto = gastos.find(g => g.id =
 window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gasto.pagado = !gasto.pagado; gasto.fechaPago = gasto.pagado ? window.obtenerFechaHoy() : ""; if(gasto.pagado) { window.registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto); } else { window.registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto); } window.guardarDatos(); };
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
+
+// --- MAGIA UX: RENDERIZADO EN EL MILISEGUNDO CERO ---
+// Esto elimina el "parpadeo" de datos vacíos. Dibuja la app con los datos locales antes de que Firebase responda.
+if (localEmail && localStatus) {
+    window.renderizarSelectorIconos();
+    window.renderizarApp();
+}
