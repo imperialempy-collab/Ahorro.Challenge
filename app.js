@@ -559,6 +559,13 @@ window.initApp = () => {
         window.abrirPortalPartner();
         window.history.replaceState({}, document.title, window.location.pathname); 
     }
+
+    // --- SEMÁFORO INTELIGENTE: REDIRECCIÓN A RETOS ---
+    // Si el usuario trae un código guardado en el bolsillo, lo redirigimos a la sala.
+    const retoPendiente = localStorage.getItem('reto_pendiente');
+    if (retoPendiente) {
+        window.location.href = 'retos/retos.html';
+    }
 };
 
 if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }
