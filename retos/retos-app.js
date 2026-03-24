@@ -36,6 +36,14 @@ window.closeCreateRetoModal = () => { document.getElementById('createRetoModal')
 window.openJoinRetoModal = () => { document.getElementById('joinRetoCodigo').value=''; document.getElementById('joinRetoApodo').value=''; document.getElementById('joinRetoModal').classList.remove('hidden'); };
 window.closeJoinRetoModal = () => { document.getElementById('joinRetoModal').classList.add('hidden'); };
 
+// --- ATRAPA-CÓDIGOS PARA DEEP LINKING ---
+// Atrapa el código de WhatsApp y lo guarda en el bolsillo antes de cualquier redirección.
+const urlParamsCapture = new URLSearchParams(window.location.search);
+const retoCodeCapture = urlParamsCapture.get('reto');
+if (retoCodeCapture) {
+    localStorage.setItem('reto_pendiente', retoCodeCapture);
+}
+
 // --- OPTIMISTIC UI: CARGA INSTANTÁNEA ---
 const localStatus = localStorage.getItem('local_user_status');
 const localEmail = localStorage.getItem('local_user_email');
@@ -166,12 +174,14 @@ document.addEventListener("visibilitychange", () => {
 window.initRetos = async () => {
     await window.cargarMisRetos();
     window.verificarAutoSync(); 
-    const urlParams = new URLSearchParams(window.location.search);
-    const retoCode = urlParams.get('reto');
-    if (retoCode) {
+    
+    // DEEP LINKING: Lee el código del bolsillo (sin importar si vino por WhatsApp fresco o si se logueó recién).
+    const retoPendiente = localStorage.getItem('reto_pendiente');
+    if (retoPendiente) {
         window.openJoinRetoModal();
-        document.getElementById('joinRetoCodigo').value = retoCode;
-        window.history.replaceState({}, document.title, window.location.pathname);
+        document.getElementById('joinRetoCodigo').value = retoPendiente;
+        localStorage.removeItem('reto_pendiente'); // Saca el código del bolsillo para no repetirlo
+        window.history.replaceState({}, document.title, window.location.pathname); // Limpia la URL
     }
 };
 
