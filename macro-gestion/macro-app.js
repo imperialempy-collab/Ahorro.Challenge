@@ -22,6 +22,34 @@ window.logout = () => { localStorage.removeItem('local_user_status'); signOut(au
 
 window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
+// --- NUEVAS FUNCIONES PARA EL PAYWALL VIP ---
+window.mostrarAlerta = (mensaje, esPaywall = false) => { 
+    const alertMsg = document.getElementById('customAlertMessage');
+    if(alertMsg) alertMsg.innerText = mensaje; 
+    
+    const btnActivar = document.getElementById('btnAlertActivar');
+    const btnGratis = document.getElementById('btnProbarGratis');
+    const btnOk = document.getElementById('btnAlertOk');
+    
+    if(esPaywall) {
+        if(btnActivar) btnActivar.classList.remove('hidden');
+        if(btnGratis) btnGratis.classList.remove('hidden');
+        if(btnOk) btnOk.classList.add('hidden');
+    } else {
+        if(btnActivar) btnActivar.classList.add('hidden');
+        if(btnGratis) btnGratis.classList.add('hidden');
+        if(btnOk) btnOk.classList.remove('hidden');
+    }
+    
+    const alertModal = document.getElementById('customAlert');
+    if(alertModal) alertModal.classList.remove('hidden'); 
+};
+
+window.closeCustomAlert = () => { 
+    const alertModal = document.getElementById('customAlert');
+    if(alertModal) alertModal.classList.add('hidden'); 
+};
+
 // --- CÁPSULA DE SEGURIDAD PARA LECTURA DE DATOS ---
 const safeParseArray = (key) => {
     try {
