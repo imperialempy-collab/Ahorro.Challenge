@@ -82,7 +82,19 @@ window.checkPartnerAccess = (basePath) => {
     if(status === 'pagado') {
         window.location.href = basePath + 'partner/partner.html';
     } else {
-        alert("Esta zona es exclusiva para miembros con Acceso Ilimitado. ¡Activá el tuyo para ser partner!");
-        window.location.href = basePath + 'activar.html';
+        const mensaje = "Esta zona es exclusiva para miembros con Acceso Ilimitado. ¡Activá el tuyo para ser partner y ganar incentivos!";
+        
+        // Detector inteligente de alertas según la página
+        if (typeof window.interactuarApp === 'function') {
+            // Estamos en Macro Gestión
+            window.interactuarApp('alert', 'Acceso VIP Requerido 👑', mensaje);
+        } else if (typeof window.mostrarAlerta === 'function') {
+            // Estamos en Inicio, Retos o Partner
+            // El 'true' activa los botones de pago si la página los tiene configurados (como en app.js)
+            window.mostrarAlerta(mensaje, true);
+        } else {
+            // Fallback de seguridad extrema
+            alert(mensaje);
+        }
     }
 };
