@@ -3,178 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Macro Gestión PY - Ahorro Challenge</title>
+    <title>Macro Gestión - Ahorro Challenge</title>
+    
+    <link rel="manifest" href="../manifest-macro.json">
+    <meta name="theme-color" content="#10b981">
+    <meta name="color-scheme" content="light">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <script>
-        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc', surface: '#ffffff', error: '#f43f5e' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', background: '#f8fafc', surface: '#ffffff' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
+
+    <link rel="stylesheet" href="../styles.css">
     <style>
-        .font-display { font-family: 'Outfit', sans-serif; }
-        .font-body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { -webkit-tap-highlight-color: transparent; }
-        
-        /* Ocultar scrollbars sin perder funcionalidad */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Estilos para inputs */
-        input:focus { outline: none; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); border-color: #10b981; }
-        .card-shadow { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.01); }
-
-        /* Estilos para las tarjetas de cuentas */
-        .tarjeta-credito { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); position: relative; overflow: hidden; }
-        .tarjeta-credito::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 70%); transform: rotate(30deg); }
-        .tarjeta-efectivo { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        summary::-webkit-details-marker { display: none; }
+        .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
+    
+    <script type="module" src="macro-app.js"></script>
+    <script type="module" src="../menu.js"></script>
+
 </head>
-<body class="bg-background text-slate-800 font-body min-h-screen">
+<body class="font-body text-slate-800 bg-background overflow-x-hidden pb-24">
 
-    <app-sidebar base-path="../"></app-sidebar>
-    <script src="../menu.js"></script>
-
-    <header class="sticky top-0 bg-background/90 backdrop-blur-sm z-40 border-b border-slate-100 card-shadow">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-            <button onclick="window.toggleSidebar()" class="p-2 -ml-2 text-slate-500 hover:text-primary transition-colors bg-white rounded-lg border border-slate-100">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-primary rounded-xl flex items-center justify-center text-white shadow font-black text-sm">M</div>
-                <h1 class="text-xl font-display font-black text-slate-900 tracking-tight">Macro <span class="text-primary">Gestión</span> <span class="text-[10px] font-bold text-slate-400 align-top">PY</span></h1>
-            </div>
-            <div class="w-10"></div> </div>
-    </header>
-
-    <div class="bg-surface border-b border-slate-100 card-shadow">
-        <div class="max-w-7xl mx-auto px-5 py-6 grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
-            <div class="text-center md:text-left">
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Tu Dinero Total Hoy</p>
-                <p id="totalNeto" class="text-4xl font-display font-black text-slate-900 leading-none">0 Gs.</p>
-                <div id="badgeVariacion" class="inline-flex items-center gap-1 mt-3 px-2.5 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-bold">
-                    <span id="txtVariacion">Cargando...</span>
-                </div>
-            </div>
-            <div class="flex items-center justify-center gap-3 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
-                <button onclick="configurarIngresoPrompt()" class="flex-grow flex items-center justify-center gap-2 px-4 py-3 bg-primary/10 text-primary text-xs font-bold rounded-xl hover:bg-primary/20 transition-all">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Fijar Ingreso
-                </button>
-                <div class="text-center">
-                    <p class="text-[9px] font-bold text-slate-400 uppercase">Ingreso Fijo</p>
-                    <p id="ingresoFijoTxt" class="text-xs font-bold text-slate-700">0 Gs.</p>
-                </div>
-            </div>
-        </div>
+    <div id="loadingScreen" class="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-center transition-opacity duration-300">
+        <svg class="animate-spin h-10 w-10 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-sm font-bold text-slate-500">Cargando...</p>
     </div>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-8 pb-24">
-        
+    <app-sidebar base-path="../"></app-sidebar>
+
+    <header class="bg-surface sticky top-0 z-40 border-b border-slate-100 p-4 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <button onclick="window.toggleSidebar()" class="p-2 -ml-2 text-slate-500 hover:text-primary transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <h1 class="text-xl font-display font-black text-slate-900 tracking-wide">Macro <span class="text-primary">Gestión</span></h1>
+        </div>
+        <div class="flex gap-2 items-center">
+            <button onclick="if(window.sincronizarNube) window.sincronizarNube(true)" class="relative p-1.5 bg-slate-50 rounded-full text-slate-400" title="Sincronización a la nube">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"></path></svg>
+                <span class="sync-dot absolute top-1 right-1 w-2 h-2 bg-emerald-500 border border-white rounded-full"></span>
+            </button>
+
+            <button onclick="toggleModal('modalInfo')" class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-emerald-50 transition-colors border border-slate-200">
+                <span class="font-bold font-display">i</span>
+            </button>
+            <a href="../index.html" class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition-colors border border-slate-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </a>
+        </div>
+    </header>
+
+    <main class="p-4 max-w-md mx-auto mt-2">
+
         <section>
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest pl-1 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg> Mis Bóvedas</h2>
-                <button onclick="window.abrirModalNuevaCuenta()" class="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded-lg hover:bg-slate-800 shadow flex items-center gap-1.5">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg> Nueva
-                </button>
-            </div>
-            
-            <div id="contenedorCuentas" class="flex gap-4 overflow-x-auto pb-4 -mb-4 no-scrollbar">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Tus Cuentas</h2>
+                    <button onclick="abrirModalForm('cuenta')" class="w-5 h-5 rounded bg-emerald-100 text-primary flex items-center justify-center hover:bg-emerald-200 transition-colors" title="Agregar cuenta">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
                 </div>
+            </div>
+            <div id="contenedorCuentas" class="space-y-3"></div>
         </section>
 
-        <section class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-            <h2 class="text-base font-display font-black text-slate-900 mb-5 flex items-center gap-2 tracking-tight"><svg class="w-5 h-5 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Registrar Gasto Real</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="sm:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">¿En qué gastaste?</label>
-                    <input type="text" id="gastoNombre" placeholder="Ej: Superseis o Factura ANDE" class="w-full px-4 py-3.5 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 placeholder:text-slate-300 placeholder:font-medium">
+        <hr class="border-slate-200 my-8">
+
+        <section>
+            <div class="flex justify-between items-center mb-1">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Gastos Fijos</h2>
+                    <button onclick="abrirModalForm('gasto')" class="w-5 h-5 rounded bg-emerald-100 text-primary flex items-center justify-center hover:bg-emerald-200 transition-colors" title="Agregar gasto fijo">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                    </button>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">¿Monto exacto?</label>
-                    <div class="relative">
-                        <input type="text" id="gastoMonto" oninput="window.formatoEnVivo(event)" placeholder="0 Gs." class="w-full px-4 py-3.5 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 pr-12 text-right placeholder:text-right placeholder:text-slate-300 placeholder:font-medium" inputmode="numeric">
-                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Gs.</span>
+                
+                <button onclick="cerrarMes()" class="text-[11px] text-slate-500 font-bold hover:text-slate-800 flex items-center gap-1 transition-colors">
+                    Cerrar Mes 
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
+
+            <p class="text-[11px] text-slate-500 mb-4">
+                Total pagado a la fecha: <span id="totalPagado" class="font-black text-primary text-sm ml-1">0 Gs</span>
+            </p>
+
+            <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 p-4">
+                <summary class="flex items-center justify-between text-xs font-bold text-slate-600 cursor-pointer list-none border-b border-slate-100 pb-3 mb-2 hover:text-slate-900 transition-colors">
+                    <span>Lista de Gastos</span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div id="contenedorGastos" class="space-y-0"></div>
+            </details>
+        </section>
+
+        <div class="my-10 relative flex items-center justify-center">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t-2 border-primary/30 border-dashed"></div></div>
+            <div class="relative bg-background px-4 flex items-center gap-2">
+                <span class="bg-emerald-50 text-primary font-black px-5 py-2 rounded-full text-[10px] tracking-widest uppercase border border-primary/20 shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Tu Salud Financiera
+                </span>
+                <button onclick="configurarIngreso()" class="w-8 h-8 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-500 hover:text-primary transition-colors shadow-sm" title="Configurar Ingreso Promedio">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <section class="space-y-4">
+            
+            <div class="bg-gradient-to-br from-rose-50 to-surface border border-rose-100 rounded-3xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <h3 class="text-xs font-bold text-rose-500 uppercase tracking-widest flex items-center gap-1.5">🕳️ El Agujero Negro</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Dinero fugado este mes</p>
+                    </div>
+                    <button onclick="infoReporte('agujero')" class="w-6 h-6 rounded-full bg-surface border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary transition-colors shadow-sm"><span class="font-bold font-display text-xs">i</span></button>
+                </div>
+                <div class="mt-4 relative z-10">
+                    <p class="text-4xl font-black text-rose-600 tracking-tighter"><span id="repAgujeroTotal">0</span> <span class="text-sm text-rose-400 font-bold">Gs</span></p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <span id="repAgujeroPorcentaje" class="bg-rose-100 text-rose-700 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider border border-rose-200">0% DE TU INGRESO</span>
+                        <p class="text-[10px] text-slate-500">Cuidado con los gastos hormiga</p>
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 items-end">
-                <div class="sm:col-span-2">
-                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">¿De dónde salió el dinero?</label>
-                    <select id="gastoCuentaSelect" class="w-full px-4 py-3.5 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 appearance-none cursor-pointer focus:border-primary focus:ring-1 focus:ring-primary"></select>
-                </div>
-                <button onclick="registrarGasto()" class="w-full py-3.5 bg-rose-500 text-white rounded-xl text-sm font-black hover:bg-rose-600 transition-colors shadow-lg flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> REGISTRAR GASTO
-                </button>
-            </div>
-        </section>
 
-        <section class="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-base font-display font-black text-slate-900 flex items-center gap-2 tracking-tight"><svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Últimos Movimientos</h2>
-                <span id="txtBalanceMes" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Gastos del Mes: 0 Gs.</span>
-            </div>
-            
-            <div id="contenedorHistorial" class="space-y-3 max-h-96 overflow-y-auto pr-2 -mr-2">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-[155px]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Flujo de<br>Caja</h3>
+                        <button onclick="infoReporte('flujo')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                    </div>
+                    <div class="mt-auto">
+                        <p class="text-lg font-black text-slate-800 tracking-tight"><span id="repFlujoCaja">0</span> <span class="text-[9px] text-slate-400">Gs</span></p>
+                        <div class="mt-2" id="graficoFlujo"></div>
+                    </div>
                 </div>
-        </section>
 
+                <div class="bg-surface border border-slate-100 rounded-3xl p-4 shadow-md relative flex flex-col justify-between h-[155px]">
+                    <div class="flex justify-between items-start z-10">
+                        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Velocidad<br>de Quema</h3>
+                        <button onclick="infoReporte('burnrate')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                    </div>
+                    <div class="absolute inset-x-0 bottom-0 flex flex-col items-center justify-end overflow-hidden rounded-b-3xl pb-2">
+                        <h4 id="repBurnRateText" class="text-sm font-black text-slate-800 z-10 -mb-1">Calculando</h4>
+                        <div class="w-full px-2 mt-1 relative h-[50px] flex justify-center overflow-visible">
+                            <svg viewBox="0 0 100 55" class="w-full h-full overflow-visible drop-shadow-sm">
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" stroke-width="8" stroke-linecap="round" />
+                                <path id="speedoPath" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"
+                                      stroke-dasharray="125.66" stroke-dashoffset="125.66" class="text-slate-300 transition-all duration-1000 ease-out" />
+                                <g id="speedoNeedle" class="transition-transform duration-1000 ease-out" style="transform-origin: 50px 50px; transform: rotate(-90deg);">
+                                    <polygon points="48,50 52,50 50,15" fill="#334155" />
+                                    <circle cx="50" cy="50" r="4" fill="#1e293b" />
+                                    <circle cx="50" cy="50" r="1.5" fill="#ffffff" />
+                                </g>
+                            </svg>
+                        </div>
+                        <p id="repBurnRateMsg" class="text-[8px] text-slate-400 font-medium px-2 text-center leading-tight mt-1">Ingresá datos ⚙️</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-surface border border-slate-100 rounded-3xl p-5 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">⚖️ Ratio de Asfixia</h3>
+                    <button onclick="infoReporte('asfixia')" class="text-slate-300 hover:text-primary"><span class="font-bold font-display text-xs bg-slate-50 rounded-full w-5 h-5 flex items-center justify-center border border-slate-100">i</span></button>
+                </div>
+                <div class="w-full h-4 rounded-full flex overflow-hidden shadow-inner bg-slate-100">
+                    <div id="barFijos" class="bg-amber-400 h-full progress-bar" style="width: 0%"></div>
+                    <div id="barVar" class="bg-rose-500 h-full progress-bar" style="width: 0%"></div>
+                    <div id="barAhorro" class="bg-primary h-full progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center mt-3 px-1">
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-amber-400 mx-auto mb-1"></div><p id="txtFijos" class="text-[9px] font-bold text-slate-600">0% Fijo</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-rose-500 mx-auto mb-1"></div><p id="txtVar" class="text-[9px] font-bold text-slate-600">0% Var</p></div>
+                    <div class="text-center"><div class="w-2 h-2 rounded-full bg-primary mx-auto mb-1"></div><p id="txtAhorro" class="text-[9px] font-bold text-slate-600">0% Libre</p></div>
+                </div>
+            </div>
+
+            <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 p-4 mt-6">
+                <summary class="flex items-center justify-between text-xs font-bold text-slate-600 cursor-pointer list-none hover:text-primary transition-colors">
+                    <span class="flex items-center gap-2">
+                        📊 Reporte Tradicional
+                        <button onclick="event.preventDefault(); event.stopPropagation(); infoReporte('tradicional')" class="text-slate-300 hover:text-primary ml-1" title="Ver info">
+                            <span class="font-bold font-display text-[10px] bg-slate-50 rounded-full w-4 h-4 flex items-center justify-center border border-slate-100 shadow-sm">i</span>
+                        </button>
+                    </span>
+                    <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </summary>
+                <div class="pt-4 mt-3 border-t border-slate-100">
+                    <div id="contenedorReporteTradicional" class="space-y-3"></div>
+                </div>
+            </details>
+
+        </section>
     </main>
 
-    <button onclick="window.sincronizarNube(true)" class="fixed bottom-6 right-6 p-4 bg-primary text-white rounded-full shadow-2xl z-40 md:hidden hover:scale-110 transition-transform active:scale-95">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-        <span class="sync-dot absolute top-0 right-0 w-3 h-3 bg-amber-400 border-2 border-primary rounded-full animate-ping hidden"></span>
-    </button>
-
-    <div id="modalAccion" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 text-center max-w-sm w-full border border-slate-100 relative overflow-hidden">
-            <div id="modalDecoracion" class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner"></div>
-            <h3 id="modalTitulo" class="text-xl font-display font-black mb-1.5 text-slate-900 tracking-tight"></h3>
-            <p id="modalMensaje" class="text-xs text-slate-500 mb-6 font-medium leading-relaxed"></p>
-            <div class="flex gap-2">
-                <button id="btnModalCancel" onclick="interactuarApp('cancel')" class="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button id="btnModalOk" onclick="interactuarApp('ok')" class="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 transition-colors shadow-md"></button>
+    <div id="modalInfo" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100">
+            <button onclick="toggleModal('modalInfo')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 text-xl">✕</button>
+            <div class="space-y-4 text-sm text-slate-600 pr-2 mt-2">
+                <p>¿Pierdes el ritmo de anotar todos y cada uno de tus gastos?</p>
+                <p class="font-bold text-slate-900 text-base">Prueba la Macro gestión.</p>
+                <p>Aquí no anotas cada cafe, aquí separa tu dinero en cuentas. ej</p>
+                <div class="flex gap-2">
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center"><p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p><p class="text-xs font-bold text-slate-800 mt-1">Compras de casa</p></div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 flex-1 text-center"><p class="text-[10px] font-bold text-slate-500 uppercase">Cuenta</p><p class="text-xs font-bold text-slate-800 mt-1">Mantenimientos</p></div>
+                </div>
+                <p>Solo actualizando los saldos de esas cuentas, vas a tener un panorama de como se mueve tu dinero.</p>
+            </div>
+            <div class="mt-6 flex flex-col gap-3">
+                <button onclick="descargarDatosCSV()" class="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-emerald-600 text-sm transition-colors flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>Descargar Historial (Excel)</button>
             </div>
         </div>
     </div>
 
-    <div id="modalNuevaCuenta" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 text-center max-w-sm w-full border border-slate-100">
-            <h3 class="text-lg font-display font-black mb-5 text-slate-900">Nueva Bóveda</h3>
-            <input type="text" id="nuevaCuentaNombre" placeholder="Nombre (Ej: Banco Itaú o Efectivo)" class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 mb-3 placeholder:font-medium placeholder:text-slate-300">
-            <select id="nuevaCuentaTipo" class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 mb-3 appearance-none focus:border-primary focus:ring-1 focus:ring-primary">
-                <option value="EFECTIVO">Tipo: Efectivo</option>
-                <option value="BANCO">Tipo: Banco</option>
-            </select>
-            <input type="text" id="nuevaCuentaMonto" oninput="window.formatoEnVivo(event)" placeholder="Saldo inicial: 0 Gs." class="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-bold text-slate-800 mb-6 placeholder:font-medium placeholder:text-slate-300" inputmode="numeric">
-            <div class="flex gap-2">
-                <button onclick="window.cerrarModalNuevaCuenta()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors">Cancelar</button>
-                <button onclick="window.crearCuenta()" class="flex-1 py-2.5 bg-primary text-white rounded-xl text-xs font-black hover:bg-primary/90 transition-colors shadow-md">Crear Bóveda</button>
+    <div id="modalAccion" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4 transition-opacity">
+        <div id="modalAccionCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
+            <h3 id="modalAccionTitulo" class="font-black font-display text-slate-900 text-xl mb-2">Título</h3>
+            <p id="modalAccionMensaje" class="text-sm text-slate-600 mb-5 leading-relaxed whitespace-pre-line">Mensaje descriptivo aquí.</p>
+            <div id="modalAccionInputContenedor" class="hidden mb-6"><input type="text" id="modalAccionInput" class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-400 transition-all"></div>
+            <div class="flex gap-3"><button id="btnModalCancelar" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors hidden">Cancelar</button><button id="btnModalConfirmar" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div>
+        </div>
+    </div>
+
+    <div id="modalFormulario" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
+        <div id="modalFormCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
+            <h3 id="modalFormTitulo" class="font-black font-display text-slate-900 text-xl mb-4">Título</h3>
+            <div id="selectorIconosContainer" class="hidden mb-5">
+                <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Elegí el Logo de la cuenta</label>
+                <div id="grillaIconos" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1"></div>
+            </div>
+            <div class="space-y-4 mb-6">
+                <div><label id="lblInput1" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 1</label><input type="text" id="modalFormInput1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
+                <div><label id="lblInput2" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 2</label><input type="text" id="modalFormInput2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
+                <div><label id="lblInput3" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Monto</label><input type="text" id="modalFormInput3" inputmode="numeric" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-primary font-black text-xl text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"></div>
+            </div>
+            <div class="flex flex-col gap-3">
+                <div class="flex gap-3"><button onclick="cerrarModalForm()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="guardarFormulario()" class="flex-1 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-emerald-600 transition-colors shadow-md">Guardar</button></div>
+                <button id="btnEliminarItem" onclick="eliminarItemActual()" class="w-full bg-rose-50 text-rose-600 font-bold py-3 rounded-xl hover:bg-rose-100 transition-colors hidden flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>Eliminar</button>
             </div>
         </div>
     </div>
 
-    <div id="silentLoader" class="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-[200] hidden flex items-center justify-center">
-        <div class="text-center p-5 bg-white rounded-2xl shadow-xl border border-slate-100">
-            <svg class="animate-spin h-6 w-6 text-primary mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <p class="text-[10px] text-slate-600 font-bold">Procesando...</p>
-        </div>
-    </div>
-
-    <div id="customAlert" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[400] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl p-7 text-center max-w-sm w-full border border-slate-100 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-xl -mr-8 -mt-8"></div>
-            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-5 text-white shadow-lg relative z-10">
-                <span class="text-3xl">👑</span>
-            </div>
-            <h3 class="text-2xl font-display font-black mb-3 text-slate-900 relative z-10 tracking-tight">Acceso VIP Requerido</h3>
-            <p id="customAlertMessage" class="text-sm text-slate-500 mb-7 font-medium leading-relaxed relative z-10">Esta zona es exclusiva para miembros con Acceso Ilimitado. ¡Activá el tuyo para ser partner y ganar incentivos!</p>
-            
-            <div class="space-y-3 relative z-10">
-                <button id="btnAlertActivar" onclick="window.location.href='../activar.html'" class="w-full px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Activar Acceso Ilimitado 💎</button>
-                <button id="btnProbarGratis" onclick="window.closeCustomAlert()" class="w-full px-6 py-3 bg-emerald-50 text-primary rounded-xl font-bold hover:bg-emerald-100 transition-colors border border-emerald-100">Seguir probando gratis</button>
-                <button id="btnAlertOk" onclick="window.closeCustomAlert()" class="w-full px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors hidden">Aceptar</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="macro-app.js" type="module"></script>
 </body>
 </html>
