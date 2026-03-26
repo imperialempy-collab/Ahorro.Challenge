@@ -52,7 +52,30 @@ window.mostrarPrompt = (mensaje, valorPorDefecto = '', tipoInput = 'text') => { 
 
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 
-window.login = () => { signInWithPopup(auth, provider).catch(error => { if (error.code === 'auth/user-disabled') { window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); } else { window.mostrarAlerta("Error al entrar: " + error.message); } }); };
+// --- LOGIN CON UX ANTI-ANSIOSOS ---
+window.login = () => { 
+    const btnLogin = document.getElementById('googleLoginBtn');
+    const spinner = document.getElementById('loadingSpinner');
+    const textLogin = document.getElementById('loginText');
+
+    // Cambiar estado visual a "Cargando" apenas se hace clic
+    if (btnLogin) btnLogin.classList.add('hidden');
+    if (spinner) spinner.classList.remove('hidden');
+    if (textLogin) textLogin.innerText = "Accediendo...";
+
+    signInWithPopup(auth, provider).catch(error => { 
+        // Si el usuario cancela o hay error, restauramos el botón visualmente
+        if (btnLogin) btnLogin.classList.remove('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (textLogin) textLogin.innerText = "Iniciá sesión para gestionar tus metas";
+
+        if (error.code === 'auth/user-disabled') { 
+            window.mostrarAlerta("⚠️ Tu acceso se encuentra suspendido."); 
+        } else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') { 
+            window.mostrarAlerta("Error al entrar: " + error.message); 
+        } 
+    }); 
+};
 
 window.logout = async () => { 
     if (auth.currentUser) {
@@ -387,7 +410,17 @@ onAuthStateChanged(auth, async (user) => {
                 }
             }
         } catch (error) { console.error("Error nube:", error); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); }
-    } else { loginScreen.classList.remove('hidden'); appContent.classList.add('hidden'); if (loadingSpinner) loadingSpinner.classList.add('hidden'); if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); if (loginText) loginText.classList.remove('hidden'); }
+    } else { 
+        // Restaurar estado visual del login para que al cerrar sesión o al entrar fresco se vea el botón
+        loginScreen.classList.remove('hidden'); 
+        appContent.classList.add('hidden'); 
+        if (loadingSpinner) loadingSpinner.classList.add('hidden'); 
+        if (googleLoginBtn) googleLoginBtn.classList.remove('hidden'); 
+        if (loginText) {
+            loginText.classList.remove('hidden'); 
+            loginText.innerText = "Iniciá sesión para gestionar tus metas";
+        }
+    }
 });
 
 // LÓGICA DE SINCRONIZACIÓN SILENCIOSA
