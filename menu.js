@@ -78,20 +78,24 @@ window.toggleSidebar = () => {
 };
 
 window.checkPartnerAccess = (basePath) => {
+    // CERRAR EL MENÚ LATERAL ANTES DE MOSTRAR CUALQUIER ALERTA
+    if (typeof window.toggleSidebar === 'function') {
+        window.toggleSidebar();
+    }
+
     const status = localStorage.getItem('local_user_status');
     if(status === 'pagado') {
         window.location.href = basePath + 'partner/partner.html';
     } else {
         const mensaje = "Esta zona es exclusiva para miembros con Acceso Ilimitado. ¡Activá el tuyo para ser partner y ganar incentivos!";
         
-        // Detector inteligente de alertas según la página
-        if (typeof window.interactuarApp === 'function') {
-            // Estamos en Macro Gestión
-            window.interactuarApp('alert', 'Acceso VIP Requerido 👑', mensaje);
-        } else if (typeof window.mostrarAlerta === 'function') {
-            // Estamos en Inicio, Retos o Partner
-            // El 'true' activa los botones de pago si la página los tiene configurados (como en app.js)
+        // Detector inteligente: Ahora prioriza buscar el Paywall hermoso (mostrarAlerta)
+        if (typeof window.mostrarAlerta === 'function') {
+            // El 'true' activa los botones de pago/prueba
             window.mostrarAlerta(mensaje, true);
+        } else if (typeof window.interactuarApp === 'function') {
+            // Fallback si no está el paywall (pronto lo estará)
+            window.interactuarApp('alert', 'Acceso VIP Requerido 👑', mensaje);
         } else {
             // Fallback de seguridad extrema
             alert(mensaje);
