@@ -2,109 +2,472 @@
 <html lang="es" translate="no">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <meta name="google" content="notranslate">
-    <meta name="robots" content="notranslate">
-    <meta name="color-scheme" content="light">
-    
-    <title>Ahorro Challenge - MultiMeta</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
-    <meta name="theme-color" content="#10b981">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Ventas - Ahorro Challenge</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
+        tailwind.config = { theme: { extend: { colors: { primary: '#10b981', secondary: '#0ea5e9', background: '#f8fafc', surface: '#ffffff' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
-    
-    <link rel="stylesheet" href="styles.css">
-    
-    <script type="module" src="app.js"></script>
-    <script type="module" src="menu.js"></script>
+    <style>
+        summary::-webkit-details-marker { display: none; }
+        .sort-icon { display: inline-block; width: 0; height: 0; margin-left: 5px; vertical-align: middle; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+        .sort-asc { border-bottom: 4px solid currentColor; }
+        .sort-desc { border-top: 4px solid currentColor; }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-</head>
-<body class="font-body text-slate-800">
+        const firebaseConfig = {
+            apiKey: "AIzaSyByAQh5iPU5B8JWA4KrQOyphzW9sAgsxDg",
+            authDomain: "ahorro-dinamico.firebaseapp.com",
+            projectId: "ahorro-dinamico",
+            storageBucket: "ahorro-dinamico.firebasestorage.app",
+            messagingSenderId: "906931960122",
+            appId: "1:906931960122:web:02b6d090d163c2c135f803"
+        };
 
-    <div id="silentLoader" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-slate-900/20 backdrop-blur-sm transition-opacity">
-        <div class="bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3">
-            <svg class="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span class="text-sm font-bold text-slate-600">Cargando...</span>
-        </div>
-    </div>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
 
-    <div id="customAlert" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100 transform transition-all scale-100">
-            <img src="icon.png" alt="Logo" class="w-16 h-16 mx-auto mb-4 rounded-xl shadow-sm object-cover">
-            <h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3>
-            <p id="customAlertMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p>
-            <div class="space-y-2">
-                <button id="btnAlertActivar" onclick="window.location.href='activar.html'" class="hidden w-full flex items-center justify-center py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Activar Acceso Ilimitado 👑</button>
-                <button id="btnProbarGratis" onclick="closeCustomAlert()" class="hidden w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Seguir probando gratis</button>
-                <button id="btnAlertOk" onclick="closeCustomAlert()" class="hidden w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Entendido</button>
-            </div>
-        </div>
-    </div>
+        const ADMIN_EMAILS = ["imperial.empy@gmail.com", "axelnm35@gmail.com"];
+        
+        // VARIABLES GLOBALES EN MEMORIA (Para filtros sin gastar Firebase)
+        window.todosLosUsuarios = [];
+        window.configPartners = { filtro: 'monto' }; // 'monto', 'cobrar', 'abc'
+        window.configDirectorio = { busqueda: '', estado: 'todos', ordenCampo: 'fecha', ordenDir: 'desc' };
 
-    <div id="upgradeScreen" class="fixed inset-0 z-[150] hidden flex items-center justify-center px-4 bg-slate-900/80 backdrop-blur-md"><div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center border border-slate-100"><div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-3xl">⏳</span></div><h2 class="text-2xl font-display font-bold text-slate-900 mb-2">¡Tu prueba ha terminado!</h2><p class="text-slate-600 text-sm mb-6 leading-relaxed">Esperamos que hayas disfrutado tus 7 días gratis. Para no perder tu progreso y seguir ahorrando, activá tu acceso ilimitado por un único pago.</p><div class="space-y-3"><button onclick="window.location.href='activar.html'" class="w-full flex items-center justify-center gap-2 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-primary/30"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>Activar Ahora</button></div><button onclick="logout()" class="mt-6 text-sm font-semibold text-slate-400 hover:text-rose-500 transition-colors">Cerrar sesión</button></div></div>
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth).then(() => location.reload());
 
-    <app-sidebar base-path=""></app-sidebar>
+        function enviarTelegram(mensaje) {
+            const telegramToken = '8753413505:AAHK_h6bwEWgugMLz4LEBZsTOSnKV5Zx1PU';
+            const chatId = '-1003625405883';
+            fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: mensaje, parse_mode: 'Markdown' })
+            }).catch(e => console.log("Telegram silent fail."));
+        }
 
-    <div id="loginScreen" class="fixed inset-0 flex items-center justify-center z-[100] px-4 bg-background"><div class="glass-card p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center border border-white"><img src="icon.png" alt="Logo Ahorro Challenge" class="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-sm object-cover"><h1 class="text-3xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h1><p id="loginText" class="hidden text-slate-500 text-sm mb-8 font-medium">Iniciá sesión para gestionar tus metas</p><div id="loadingSpinner" class="flex justify-center items-center py-4 mb-4"><svg class="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div><button id="googleLoginBtn" onclick="login()" class="hidden w-full py-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 transition-all font-bold text-slate-700 shadow-sm"><svg class="w-6 h-6" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.7 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>Entrar con Google</button></div></div>
+        window.cambiarEstado = async (email, nuevoEstado) => {
+            const mensajes = { 'vencido': `¿Suspender la cuenta de ${email}?`, 'prueba': `¿Reiniciar los 7 días de prueba de ${email}?` };
+            if(confirm(mensajes[nuevoEstado])) {
+                try {
+                    await updateDoc(doc(db, "usuarios_multimeta", email), { status: nuevoEstado, mensaje_admin: "", ...(nuevoEstado === 'prueba' && { fechaInicio: new Date().toISOString() }) });
+                    alert("¡Estado actualizado correctamente!"); window.cargarDatos();
+                } catch (error) { alert("Error al actualizar: " + error.message); }
+            }
+        };
 
-    <div id="customConfirm" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customConfirmMessage" class="text-slate-600 text-sm mb-6 font-medium leading-relaxed"></p><div class="flex gap-3"><button id="btnConfirmCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnConfirmOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div></div></div>
-    <div id="customPrompt" class="fixed inset-0 z-[400] hidden flex items-center justify-center px-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"><div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full text-center border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-2">Ahorro <span class="text-primary">Challenge</span></h3><p id="customPromptMessage" class="text-slate-600 text-sm mb-4 font-medium leading-relaxed"></p><input type="text" id="customPromptInput" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-6 text-center text-lg font-bold outline-none focus:ring-2 focus:ring-primary focus:border-transparent"><div class="flex gap-3"><button id="btnPromptCancel" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button id="btnPromptOk" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Aceptar</button></div></div></div>
-    
-    <div id="addParticipantModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><h3 class="text-xl font-display font-bold text-slate-900 mb-6">Nuevo Participante</h3><div class="space-y-4 mb-6"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Nombre</label><input type="text" id="newParticipantInput" placeholder="Ej: Juan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Meta Asignada</label><select id="goalSelect" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></select></div></div><div class="flex gap-3"><button onclick="closeAddParticipantModal()" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Cancelar</button><button onclick="addParticipant()" class="w-full py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md">Agregar</button></div></div></div>
-    <div id="goalsConfigModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 flex flex-col"><div class="flex justify-between items-center mb-6 shrink-0"><h3 class="text-xl font-display font-bold text-slate-900">Gestor de Metas</h3><button onclick="closeGoalsModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><button onclick="createNewGoal()" class="w-full mb-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2 shrink-0"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>Nueva Meta</button><div id="goalsAdminList" class="space-y-3 mb-6"></div><button onclick="closeGoalsModal()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md mt-auto shrink-0">Aceptar</button></div></div>
-    <div id="reminderModal" class="fixed inset-0 z-[160] hidden flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"><div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100"><div class="flex justify-between items-center mb-4"><h3 class="text-xl font-display font-bold text-slate-900">Notificaciones</h3><button onclick="closeReminderModal()" class="text-slate-400 hover:text-rose-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div><p class="text-sm text-slate-500 mb-6">Agregá este depósito a tu calendario para que tu celular te avise.</p><div class="space-y-4"><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tipo de Aviso</label><select id="reminderType" onchange="toggleReminderType()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="semanal">Semanal (Día de la semana)</option><option value="mensual">Mensual (Día del mes)</option></select></div><div id="weeklyOptions"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día de la semana</label><select id="reminderDay" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"><option value="Lunes">Todos los Lunes</option><option value="Martes">Todos los Martes</option><option value="Miércoles">Todos los Miércoles</option><option value="Jueves">Todos los Jueves</option><option value="Viernes">Todos los Viernes</option><option value="Sábado">Todos los Sábados</option><option value="Domingo">Todos los Domingos</option></select></div><div id="monthlyOptions" class="hidden"><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Día del Mes</label><input type="number" id="reminderDate" placeholder="Ej: 5" min="1" max="31" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><div><label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Hora</label><input type="time" id="reminderTime" value="10:00" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-700 outline-none focus:ring-2 focus:ring-primary font-medium"></div><button onclick="saveReminder()" class="w-full mt-4 py-4 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-md flex items-center justify-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>Abrir Calendario</button></div></div></div>
+        window.aprobarPago = async (email, rutaComprobante, referidoPor) => {
+            if(!confirm(`¿Aprobar pago de ${email} y darle acceso ILIMITADO?`)) return;
+            try {
+                await updateDoc(doc(db, "usuarios_multimeta", email), { status: 'pagado', mensaje_admin: "", comprobante_url: "", comprobante_ruta: "" });
+                if (referidoPor && referidoPor.trim() !== "") {
+                    const pPartner = window.todosLosUsuarios.find(u => u.partner_perfil && u.partner_perfil.codigo === referidoPor);
+                    if (pPartner) {
+                        const partnerRef = doc(db, "usuarios_multimeta", pPartner.email);
+                        await updateDoc(partnerRef, { partner_saldo: increment(5000) });
+                        const nuevoSaldo = (pPartner.partner_saldo || 0) + 5000;
+                        if (nuevoSaldo >= 20000) {
+                            enviarTelegram(`🚨 *¡LIQUIDACIÓN DE PARTNER PENDIENTE!*\n\nEl socio *${pPartner.partner_perfil.nombre}* acaba de alcanzar los *${new Intl.NumberFormat('es-PY').format(nuevoSaldo)} Gs*.\n\nEntrá a tu Bóveda Admin para transferirle su plata.`);
+                        }
+                    }
+                }
+                if (rutaComprobante) { const fileRef = ref(storage, rutaComprobante); await deleteObject(fileRef).catch(e => {}); }
+                alert("¡Pago aprobado! Comprobante eliminado del servidor."); window.cargarDatos();
+            } catch (error) { alert("Error al aprobar: " + error.message); }
+        };
 
-    <div id="appContent" class="hidden">
-        <div class="sticky-header glass-card border-b border-slate-200 px-4">
-            <div class="max-w-6xl mx-auto flex flex-col gap-3">
-                <div class="relative flex items-center justify-center w-full">
-                    <button onclick="window.toggleSidebar()" class="absolute left-0 p-2 -ml-2 text-slate-500 hover:text-primary transition-colors"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
-                    <div class="text-center"><h1 class="text-2xl font-display font-bold text-slate-900 tracking-tight">Ahorro <span class="text-primary uppercase">Challenge</span></h1><div class="flex gap-2 mt-1 justify-center"><button onclick="setStatsView('COLECTIVO')" id="btnViewCol" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">COLECTIVO</button><button onclick="setStatsView('INDIVIDUAL')" id="btnViewInd" class="px-3 py-0.5 text-[10px] rounded-full border font-bold transition-all">INDIVIDUAL</button></div></div>
-                </div>
-                <div class="flex justify-center gap-3">
-                    <button id="btnCampanita" onclick="openReminderModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Configurar Alarma"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg></button>
-                    <button onclick="openGoalsModal()" class="p-1.5 bg-slate-50/40 border border-slate-100/50 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-500 transition-colors" title="Gestor de Metas"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
-                </div>
-                <div class="flex items-center gap-2 md:gap-4 bg-white/50 p-2 md:p-3 rounded-2xl border border-white shadow-sm w-full">
-                    <div class="relative w-10 h-10 md:w-12 md:h-12 shrink-0">
-                        <svg class="w-full h-full transform -rotate-90">
-                            <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-100" />
-                            <circle id="globalProgressCircle" cx="20" cy="20" r="18" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="113" stroke-dashoffset="113" class="text-primary transition-all duration-700" />
-                        </svg>
-                        <div class="absolute inset-0 flex items-center justify-center text-[9px] md:text-[10px] font-bold" id="progressPercentage">0%</div>
-                    </div>
-                    <div class="flex-grow">
-                        <div class="text-[9px] font-bold uppercase text-slate-400" id="statsTitle">Total Colectivo</div>
-                        <div class="text-base md:text-lg font-bold font-display text-slate-900 leading-tight" id="totalSavedCounter">0 Gs.</div>
-                        <div class="text-[9px] md:text-[10px] font-semibold text-primary" id="metaLabel">Múltiples Metas</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        window.rechazarPago = async (email, rutaComprobante) => {
+            const motivo = prompt(`Rechazando a ${email}.\nEscribí el motivo para el cliente:`);
+            if (motivo === null) return; 
+            if (motivo.trim() === "") return alert("Debes escribir un motivo.");
+            try {
+                await updateDoc(doc(db, "usuarios_multimeta", email), { status: 'rechazado', mensaje_admin: motivo, comprobante_url: "", comprobante_ruta: "" });
+                if (rutaComprobante) { const fileRef = ref(storage, rutaComprobante); await deleteObject(fileRef).catch(e => {}); }
+                alert("Pago rechazado."); window.cargarDatos();
+            } catch (error) { alert("Error al rechazar: " + error.message); }
+        };
 
-        <div class="max-w-6xl mx-auto px-4 pb-10 mt-6">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <aside class="space-y-4">
-                    <div class="glass-card rounded-2xl p-4 shadow-sm border border-white">
-                        <div class="flex justify-between items-center mb-3">
-                            <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Participantes</h2>
-                            <button onclick="openAddParticipantModal()" class="text-primary bg-emerald-50 hover:bg-emerald-100 rounded-lg px-3 py-1 text-lg font-bold transition-colors shadow-sm" title="Nuevo Participante">+</button>
+        window.liquidarPartner = async (emailPartner, nombrePartner) => {
+            if(!confirm(`¿Ya hiciste la transferencia de 20.000 Gs a ${nombrePartner}?`)) return;
+            try {
+                await updateDoc(doc(db, "usuarios_multimeta", emailPartner), { partner_saldo: increment(-20000), partner_historico: increment(20000) });
+                alert("¡Liquidación registrada con éxito!"); window.cargarDatos();
+            } catch(e) { alert("Error al liquidar: " + e.message); }
+        };
+
+        // --- SISTEMA DE EXTRACCIÓN MAESTRA ---
+        window.cargarDatos = async () => {
+            document.getElementById('tablaPendientes').innerHTML = '<tr><td colspan="4" class="text-center p-4 font-bold text-slate-400">Cargando la bóveda...</td></tr>';
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, "usuarios_multimeta"));
+                window.todosLosUsuarios = [];
+                let stats = { total: 0, pagados: 0, pendientes: 0, prueba: 0, syncs: 0, ingresosGlobales: 0, totalPartners: 0 };
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    data._fechaOrden = new Date(data.fechaInicio || 0).getTime();
+                    window.todosLosUsuarios.push(data);
+                    
+                    stats.total++;
+                    if(data.status === 'pagado') { stats.pagados++; stats.ingresosGlobales += (data.monto_esperado || 30000); }
+                    else if(data.status === 'pendiente') stats.pendientes++;
+                    else stats.prueba++;
+                    if(data.sync_count) stats.syncs += data.sync_count;
+                    if(data.partner_perfil) stats.totalPartners++;
+                });
+
+                actualizarMetricas(stats);
+                window.renderizarPendientes();
+                window.renderizarRadarPartners();
+                window.renderizarDirectorio();
+
+            } catch (error) {
+                alert("Error al conectar con la base de datos.");
+            }
+        };
+
+        function actualizarMetricas(stats) {
+            document.getElementById('statTotal').innerText = stats.total; document.getElementById('statPagados').innerText = stats.pagados;
+            document.getElementById('statPendientes').innerText = stats.pendientes; document.getElementById('statPartners').innerText = stats.totalPartners;
+            document.getElementById('statIngresos').innerText = new Intl.NumberFormat('es-PY').format(stats.ingresosGlobales);
+            document.getElementById('statSyncs').innerText = new Intl.NumberFormat('es-PY').format(stats.syncs) + " Clics a la nube";
+            const costoEstimado = stats.syncs * 0.01; 
+            document.getElementById('statCostos').innerText = new Intl.NumberFormat('es-PY').format(costoEstimado < 1 ? 0 : Math.round(costoEstimado));
+        }
+
+        // --- RENDER 1: PENDIENTES ---
+        window.renderizarPendientes = () => {
+            const pendientes = window.todosLosUsuarios.filter(u => u.status === 'pendiente');
+            const tbody = document.getElementById('tablaPendientes');
+            if (pendientes.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay comprobantes pendientes a revisión.</td></tr>'; return; }
+            
+            let html = '';
+            pendientes.forEach(data => {
+                const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                const etiquetaSocio = data.referido_por ? `<div class="mt-1"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[9px] font-black tracking-widest uppercase">SOCIO: ${data.referido_por} | A Pagar: ${new Intl.NumberFormat('es-PY').format(data.monto_esperado || 30000)} Gs</span></div>` : '';
+                html += `
+                    <tr class="border-b border-amber-100 hover:bg-amber-50/50 transition-colors">
+                        <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}${etiquetaSocio}</td>
+                        <td class="p-3 text-slate-500 text-xs">${fecha}</td>
+                        <td class="p-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1">REVISAR</span></td>
+                        <td class="p-3">
+                            <div class="flex justify-end gap-1 flex-wrap">
+                                <a href="${data.comprobante_url}" target="_blank" class="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 px-2 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1">Foto</a>
+                                <button onclick="aprobarPago('${data.email}', '${data.comprobante_ruta || ''}', '${data.referido_por || ''}')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Aprobar</button>
+                                <button onclick="rechazarPago('${data.email}', '${data.comprobante_ruta || ''}')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Rechazar</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+
+        // --- RENDER 2: RADAR PARTNERS (Con Filtros) ---
+        window.setFiltroPartner = (tipo) => {
+            window.configPartners.filtro = tipo;
+            document.querySelectorAll('.btn-filtro-partner').forEach(b => { b.classList.remove('bg-slate-800', 'text-white', 'shadow-sm'); b.classList.add('bg-white', 'text-slate-500'); });
+            const btnActivo = document.getElementById(`btnFiltroPartner_${tipo}`);
+            if(btnActivo) { btnActivo.classList.remove('bg-white', 'text-slate-500'); btnActivo.classList.add('bg-slate-800', 'text-white', 'shadow-sm'); }
+            window.renderizarRadarPartners();
+        };
+
+        window.renderizarRadarPartners = () => {
+            const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n || 0) + ' Gs.';
+            const cont = document.getElementById('listaPartnersUI');
+            
+            let partners = window.todosLosUsuarios.filter(u => u.partner_perfil);
+            
+            if (window.configPartners.filtro === 'cobrar') {
+                partners = partners.filter(p => (p.partner_saldo || 0) >= 20000);
+                partners.sort((a,b) => (b.partner_saldo || 0) - (a.partner_saldo || 0));
+            } else if (window.configPartners.filtro === 'abc') {
+                partners.sort((a,b) => a.partner_perfil.nombre.localeCompare(b.partner_perfil.nombre));
+            } else {
+                partners.sort((a,b) => (b.partner_saldo || 0) - (a.partner_saldo || 0));
+            }
+
+            if (partners.length === 0) {
+                cont.innerHTML = '<div class="text-center py-6 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl mx-4 mb-4">No se encontraron partners para este filtro.</div>';
+                return;
+            }
+
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">';
+            
+            partners.forEach(p => {
+                const perf = p.partner_perfil;
+                const saldo = p.partner_saldo || 0;
+                const listoParaCobrar = saldo >= 20000;
+                const porc = Math.min((saldo / 20000) * 100, 100);
+                const referidos = window.todosLosUsuarios.filter(u => u.referido_por === perf.codigo);
+                
+                let referidosHtml = referidos.length > 0 ? `<div class="mt-2 bg-white/50 border border-slate-100 rounded-xl p-2 max-h-32 overflow-y-auto space-y-1">` + referidos.map(ref => {
+                    let estadoIcon = '';
+                    if (ref.status === 'pagado') {
+                        estadoIcon = `<svg class="w-3 h-3 text-emerald-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>`;
+                    } else if (ref.status === 'pendiente') {
+                        estadoIcon = `<svg class="w-3 h-3 text-amber-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    } else {
+                        estadoIcon = `<svg class="w-3 h-3 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    }
+                    return `<div class="flex justify-between items-center text-[10px] px-1 py-0.5 border-b border-slate-50 last:border-0"><span class="truncate text-slate-600">${ref.email.split('@')[0]}</span> <span>${estadoIcon}</span></div>`;
+                }).join('') + `</div>` : `<div class="mt-2 text-[10px] text-slate-400 italic py-1">Sin afiliados.</div>`;
+
+                html += `
+                <div class="rounded-2xl p-4 transition-all duration-300 border ${listoParaCobrar ? 'bg-emerald-50 border-emerald-300 shadow-md ring-1 ring-emerald-500' : 'bg-white border-slate-200 shadow-sm'}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="truncate pr-2">
+                            <p class="text-sm font-black ${listoParaCobrar ? 'text-emerald-800' : 'text-slate-800'} truncate">${perf.nombre}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Código: ${perf.codigo}</p>
                         </div>
-                        <div id="participantList" class="space-y-1"></div>
                     </div>
-                </aside>
-                <main class="lg:col-span-3">
-                    <div id="goalsList" class="space-y-2"></div>
-                </main>
+                    <div class="bg-white rounded-xl p-3 mb-3 border border-slate-100">
+                        <div class="flex justify-between text-[10px] mb-1"><span class="text-slate-400 font-bold">Saldo</span><span class="font-black text-slate-800">${formatGs(saldo)} / 20k</span></div>
+                        <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden"><div class="${listoParaCobrar ? 'bg-emerald-500' : 'bg-amber-400'} h-1.5 rounded-full transition-all" style="width: ${porc}%"></div></div>
+                    </div>
+                    <details class="mb-3 text-xs text-slate-600">
+                        <summary class="cursor-pointer font-bold outline-none text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">Ver Datos Bancarios</summary>
+                        <div class="mt-2 bg-slate-50 p-2 rounded-lg border border-slate-200 text-[10px]">
+                            <p><b>Banco:</b> ${perf.banco}</p><p><b>CI/Alias:</b> ${perf.ci}</p><p><b>Cuenta:</b> ${perf.cuenta}</p>
+                        </div>
+                    </details>
+                    <details class="text-xs text-slate-600">
+                        <summary class="cursor-pointer font-bold outline-none text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-600">Afiliados (${referidos.length})</summary>
+                        ${referidosHtml}
+                    </details>
+                    ${listoParaCobrar ? `<button onclick="liquidarPartner('${p.email}', '${perf.nombre}')" class="w-full mt-4 py-2 bg-emerald-600 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Liquidar 20k</button>` : ''}
+                </div>`;
+            });
+            html += '</div>';
+            cont.innerHTML = html;
+        };
+
+        // --- RENDER 3: DIRECTORIO COMPLETO (Con Filtros y Ordenamiento) ---
+        window.setFiltroDirectorio = (campo, valor) => {
+            window.configDirectorio[campo] = valor;
+            window.renderizarDirectorio();
+        };
+
+        window.setOrdenDirectorio = (campo) => {
+            if (window.configDirectorio.ordenCampo === campo) {
+                window.configDirectorio.ordenDir = window.configDirectorio.ordenDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                window.configDirectorio.ordenCampo = campo;
+                window.configDirectorio.ordenDir = 'asc';
+            }
+            document.querySelectorAll('.sort-icon').forEach(el => { el.classList.remove('sort-asc', 'sort-desc'); el.style.opacity = '0.3'; });
+            const icon = document.getElementById(`sortIcon_${campo}`);
+            if (icon) { icon.style.opacity = '1'; icon.classList.add(window.configDirectorio.ordenDir === 'asc' ? 'sort-asc' : 'sort-desc'); }
+            
+            window.renderizarDirectorio();
+        };
+
+        window.renderizarDirectorio = () => {
+            const tbody = document.getElementById('tablaTodos');
+            let clientes = [...window.todosLosUsuarios];
+
+            if (window.configDirectorio.busqueda.trim() !== '') {
+                const search = window.configDirectorio.busqueda.toLowerCase();
+                clientes = clientes.filter(c => c.email.toLowerCase().includes(search));
+            }
+
+            if (window.configDirectorio.estado !== 'todos') {
+                if (window.configDirectorio.estado === 'prueba') {
+                    clientes = clientes.filter(c => c.status !== 'pagado' && c.status !== 'pendiente' && c.status !== 'vencido' && c.status !== 'rechazado');
+                } else {
+                    clientes = clientes.filter(c => c.status === window.configDirectorio.estado);
+                }
+            }
+
+            const { ordenCampo, ordenDir } = window.configDirectorio;
+            clientes.sort((a, b) => {
+                let valA, valB;
+                if (ordenCampo === 'email') { valA = a.email; valB = b.email; }
+                else if (ordenCampo === 'estado') { valA = a.status || 'prueba'; valB = b.status || 'prueba'; }
+                else { valA = a._fechaOrden; valB = b._fechaOrden; } 
+
+                if (valA < valB) return ordenDir === 'asc' ? -1 : 1;
+                if (valA > valB) return ordenDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (clientes.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-sm text-slate-400 p-4 font-medium">No hay resultados para este filtro.</td></tr>'; return; }
+
+            let html = '';
+            clientes.forEach(data => {
+                const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                
+                let diasPruebaTexto = '';
+                const esPrueba = data.status === 'prueba' || (!data.status && data.status !== 'pagado' && data.status !== 'pendiente' && data.status !== 'vencido' && data.status !== 'rechazado');
+                
+                if (esPrueba) {
+                    const start = new Date(data.fechaInicio || new Date());
+                    const now = new Date();
+                    const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                    diasPruebaTexto = ` (Día ${Math.min(diffDays, 7)}/7)`;
+                }
+
+                let estadoHtml = '';
+                if (data.status === 'pagado') estadoHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGADO</span>`;
+                else if (data.status === 'pendiente') estadoHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR</span>`;
+                else if (data.status === 'vencido') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">SUSPENDIDO</span>`;
+                else if (data.status === 'rechazado') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">RECHAZADO</span>`;
+                else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA${diasPruebaTexto}</span>`;
+
+                let botonesHtml = `<div class="flex justify-end gap-1 flex-wrap">`;
+                if (data.status !== 'pendiente') {
+                    if (data.status === 'pagado') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>`;
+                    }
+                    if (esPrueba || data.status === 'vencido') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 px-2 py-1 rounded text-[10px] font-bold transition-colors flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Extender Prueba</button>`;
+                    } else if (data.status === 'rechazado') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Dar Prueba</button>`;
+                    }
+                }
+                botonesHtml += `</div>`;
+
+                html += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                        <td class="p-3 font-semibold text-slate-800 text-xs">${data.email}</td>
+                        <td class="p-3 text-slate-500 text-xs">${fecha}</td>
+                        <td class="p-3">${estadoHtml}</td>
+                        <td class="p-3">${botonesHtml}</td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        };
+
+        // --- INICIALIZADOR DE SESIÓN ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                if (ADMIN_EMAILS.includes(user.email)) {
+                    document.getElementById('loginDiv').classList.add('hidden');
+                    document.getElementById('adminDiv').classList.remove('hidden');
+                    document.getElementById('adminEmail').innerText = user.email;
+                    window.cargarDatos();
+                } else {
+                    alert("⚠️ Acceso denegado. Área exclusiva de administración."); signOut(auth);
+                }
+            } else {
+                document.getElementById('loginDiv').classList.remove('hidden');
+                document.getElementById('adminDiv').classList.add('hidden');
+            }
+        });
+    </script>
+</head>
+<body class="bg-background text-slate-800 font-body min-h-screen">
+    
+    <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4 bg-slate-900/5 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full border border-slate-100">
+            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-display font-black mb-2">Bóveda de Control</h1>
+            <p class="text-slate-500 text-sm mb-6 font-medium">Iniciá sesión con tu correo de administrador</p>
+            <button onclick="login()" class="w-full px-6 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
+        </div>
+    </div>
+
+    <div id="adminDiv" class="hidden max-w-5xl mx-auto p-4 sm:p-6 mt-4">
+        
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 bg-white p-5 rounded-3xl shadow-sm border border-slate-100 gap-4">
+            <div>
+                <h1 class="text-2xl font-display font-black text-slate-900 tracking-tight">Centro de <span class="text-primary">Mando</span></h1>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Administrador: <span id="adminEmail" class="font-bold text-slate-700"></span></p>
+            </div>
+            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> Salir
+            </button>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Usuarios</p><p class="text-3xl font-display font-black text-slate-800" id="statTotal">0</p></div>
+            <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1">Pagados <svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></p><p class="text-3xl font-display font-black text-emerald-700" id="statPagados">0</p></div>
+            <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">Pendientes <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></p><p class="text-3xl font-display font-black text-amber-700" id="statPendientes">0</p></div>
+            <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 shadow-sm flex flex-col justify-center"><p class="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1 flex items-center gap-1">Socios Partner <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg></p><p class="text-3xl font-display font-black text-blue-700" id="statPartners">0</p></div>
+            <div class="md:col-span-2 lg:col-span-1 bg-slate-900 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden flex flex-col justify-center">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-2xl -mr-8 -mt-8"></div>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 relative z-10">Métricas Reales Firebase</p>
+                <div class="flex justify-between items-end relative z-10">
+                    <div><p class="text-[10px] text-slate-500 mb-0.5">Ingresos (Gs)</p><p class="text-2xl font-display font-black text-emerald-400 leading-none" id="statIngresos">0</p></div>
+                    <div class="text-right"><p class="text-[9px] text-slate-500 mb-0.5" id="statSyncs">0 Sincronizaciones</p><p class="text-sm font-display font-bold text-rose-400 leading-none">Costo: <span id="statCostos">0</span> Gs</p></div>
+                </div>
             </div>
         </div>
+
+        <details class="group bg-white rounded-3xl shadow-sm border border-amber-200 overflow-hidden mb-4" open>
+            <summary class="flex items-center justify-between p-5 cursor-pointer bg-amber-50/50 hover:bg-amber-50 transition-colors list-none">
+                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Requieren Aprobación</span>
+                <svg class="w-5 h-5 text-amber-500 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="border-t border-amber-100 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-amber-50/30 text-[10px] text-amber-600 uppercase tracking-widest border-b border-amber-100">
+                            <th class="p-4 font-bold">Correo del Cliente</th>
+                            <th class="p-4 font-bold">Fecha</th>
+                            <th class="p-4 font-bold">Estado</th>
+                            <th class="p-4 font-bold text-right">Acción Rápida</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaPendientes"></tbody>
+                </table>
+            </div>
+        </details>
+
+        <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-4">
+            <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg> Radar de Socios Comerciales</span>
+                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="flex gap-2 p-4 bg-slate-50 border-t border-slate-100 overflow-x-auto">
+                <button onclick="setFiltroPartner('monto')" id="btnFiltroPartner_monto" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-sm whitespace-nowrap transition-colors flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg> Mayor Monto</button>
+                <button onclick="setFiltroPartner('cobrar')" id="btnFiltroPartner_cobrar" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Listos para Cobrar</button>
+                <button onclick="setFiltroPartner('abc')" id="btnFiltroPartner_abc" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 whitespace-nowrap transition-colors flex items-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg> Orden A-Z</button>
+            </div>
+            <div class="border-t border-slate-100 bg-slate-50/30" id="listaPartnersUI"></div>
+        </details>
+
+        <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Directorio de Clientes</span>
+                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            <div class="flex flex-col md:flex-row gap-3 p-4 bg-slate-50 border-t border-slate-100">
+                <input type="text" onkeyup="setFiltroDirectorio('busqueda', this.value)" placeholder="Buscar por correo..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold w-full md:w-72 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-slate-700 bg-white">
+                <select onchange="setFiltroDirectorio('estado', this.value)" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold outline-none focus:border-primary focus:ring-1 focus:ring-primary text-slate-600 bg-white cursor-pointer">
+                    <option value="todos">Todos los Estados</option>
+                    <option value="pagado">Pagados</option>
+                    <option value="prueba">En Prueba</option>
+                    <option value="pendiente">Pendientes</option>
+                    <option value="vencido">Suspendidos / Vencidos</option>
+                </select>
+            </div>
+            <div class="border-t border-slate-100 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-slate-50 text-[10px] text-slate-500 uppercase tracking-widest border-b border-slate-200 cursor-pointer select-none">
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('email')">Correo del Cliente <span class="sort-icon" id="sortIcon_email" style="opacity: 0.3;"></span></th>
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('fecha')">Inicio <span class="sort-icon sort-desc" id="sortIcon_fecha" style="opacity: 1;"></span></th>
+                            <th class="p-4 font-bold hover:bg-slate-100 transition-colors" onclick="setOrdenDirectorio('estado')">Estado <span class="sort-icon" id="sortIcon_estado" style="opacity: 0.3;"></span></th>
+                            <th class="p-4 font-bold text-right cursor-default">Acciones Rápidas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaTodos"></tbody>
+                </table>
+            </div>
+        </details>
+
     </div>
 </body>
 </html>
