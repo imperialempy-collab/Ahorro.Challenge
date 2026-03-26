@@ -58,13 +58,11 @@ window.login = () => {
     const spinner = document.getElementById('loadingSpinner');
     const textLogin = document.getElementById('loginText');
 
-    // Cambiar estado visual a "Cargando" apenas se hace clic
     if (btnLogin) btnLogin.classList.add('hidden');
     if (spinner) spinner.classList.remove('hidden');
     if (textLogin) textLogin.innerText = "Accediendo...";
 
     signInWithPopup(auth, provider).catch(error => { 
-        // Si el usuario cancela o hay error, restauramos el botón visualmente
         if (btnLogin) btnLogin.classList.remove('hidden');
         if (spinner) spinner.classList.add('hidden');
         if (textLogin) textLogin.innerText = "Iniciá sesión para gestionar tus metas";
@@ -106,8 +104,11 @@ window.logout = async () => {
 
 // --- CONTROL DE UI Y BOTÓN PARTNER ---
 window.actualizarUI_Pago = () => {
+    // Buscamos el botón de pago directamente
     const btnPagar = document.getElementById('btnSidebarPagar');
-    const btnPartner = document.getElementById('btnSidebarPartner');
+    
+    // Eliminamos el código que forzaba a ocultar el btnPartner. 
+    // Ahora el botón Programa Partner siempre será visible en el menú.
     
     if(window.userAccessStatus === 'pagado') { 
         if (btnPagar) { 
@@ -115,10 +116,6 @@ window.actualizarUI_Pago = () => {
             btnPagar.onclick = null; 
             btnPagar.classList.replace('bg-slate-900', 'bg-emerald-50'); 
             btnPagar.classList.replace('text-white', 'text-emerald-700'); 
-        }
-        if (btnPartner) {
-            btnPartner.classList.remove('hidden'); 
-            btnPartner.classList.add('flex'); 
         }
     } 
     else if (window.userAccessStatus === 'pendiente') { 
@@ -128,10 +125,6 @@ window.actualizarUI_Pago = () => {
             btnPagar.classList.replace('bg-slate-900', 'bg-amber-100'); 
             btnPagar.classList.replace('text-white', 'text-amber-700'); 
         }
-        if (btnPartner) { 
-            btnPartner.classList.add('hidden'); 
-            btnPartner.classList.remove('flex'); 
-        }
     } 
     else { 
         if (btnPagar) { 
@@ -139,10 +132,6 @@ window.actualizarUI_Pago = () => {
             btnPagar.onclick = () => window.location.href = 'activar.html'; 
             btnPagar.classList.replace('bg-emerald-50', 'bg-slate-900'); 
             btnPagar.classList.replace('text-emerald-700', 'text-white');
-        }
-        if (btnPartner) { 
-            btnPartner.classList.add('hidden'); 
-            btnPartner.classList.remove('flex'); 
         }
     }
 };
@@ -411,7 +400,6 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch (error) { console.error("Error nube:", error); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); }
     } else { 
-        // Restaurar estado visual del login para que al cerrar sesión o al entrar fresco se vea el botón
         loginScreen.classList.remove('hidden'); 
         appContent.classList.add('hidden'); 
         if (loadingSpinner) loadingSpinner.classList.add('hidden'); 
