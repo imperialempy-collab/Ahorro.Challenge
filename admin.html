@@ -302,17 +302,35 @@
             let html = '';
             clientes.forEach(data => {
                 const fecha = new Date(data.fechaInicio).toLocaleDateString('es-PY');
+                
+                // CALCULAR DÍAS DE PRUEBA
+                let diasPruebaTexto = '';
+                const esPrueba = data.status === 'prueba' || (!data.status && data.status !== 'pagado' && data.status !== 'pendiente' && data.status !== 'vencido' && data.status !== 'rechazado');
+                
+                if (esPrueba) {
+                    const start = new Date(data.fechaInicio || new Date());
+                    const now = new Date();
+                    const diffDays = Math.ceil(Math.abs(now - start) / (1000 * 60 * 60 * 24));
+                    diasPruebaTexto = ` (Día ${Math.min(diffDays, 7)}/7)`;
+                }
+
                 let estadoHtml = '';
                 if (data.status === 'pagado') estadoHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PAGADO</span>`;
                 else if (data.status === 'pendiente') estadoHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">REVISAR</span>`;
                 else if (data.status === 'vencido') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">SUSPENDIDO</span>`;
                 else if (data.status === 'rechazado') estadoHtml = `<span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">RECHAZADO</span>`;
-                else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA</span>`;
+                else estadoHtml = `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider">PRUEBA${diasPruebaTexto}</span>`;
 
                 let botonesHtml = `<div class="flex justify-end gap-1 flex-wrap">`;
                 if (data.status !== 'pendiente') {
-                    if (data.status === 'pagado') botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>`;
-                    if (data.status !== 'prueba' && data.status !== 'pagado') botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Dar Prueba</button>`;
+                    if (data.status === 'pagado') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'vencido')" class="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Suspender</button>`;
+                    }
+                    if (esPrueba || data.status === 'vencido') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Extender Prueba 🔄</button>`;
+                    } else if (data.status === 'rechazado') {
+                        botonesHtml += `<button onclick="cambiarEstado('${data.email}', 'prueba')" class="bg-slate-50 text-slate-600 hover:bg-slate-200 border border-slate-200 px-2 py-1 rounded text-[10px] font-bold transition-colors">Dar Prueba</button>`;
+                    }
                 }
                 botonesHtml += `</div>`;
 
@@ -349,7 +367,7 @@
     
     <div id="loginDiv" class="flex items-center justify-center min-h-screen px-4 bg-slate-900/5 backdrop-blur-sm">
         <div class="bg-white p-8 rounded-3xl shadow-2xl text-center max-w-sm w-full border border-slate-100">
-            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div>
+            <div class="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg text-3xl">🏦</div>
             <h1 class="text-2xl font-display font-black mb-2">Bóveda de Control</h1>
             <p class="text-slate-500 text-sm mb-6 font-medium">Iniciá sesión con tu correo de administrador</p>
             <button onclick="login()" class="w-full px-6 py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md">Acceder al Sistema</button>
@@ -363,8 +381,8 @@
                 <h1 class="text-2xl font-display font-black text-slate-900 tracking-tight">Centro de <span class="text-primary">Mando</span></h1>
                 <p class="text-xs text-slate-500 mt-1 font-medium">Administrador: <span id="adminEmail" class="font-bold text-slate-700"></span></p>
             </div>
-            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg> Salir
+            <button onclick="logout()" class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm flex items-center gap-2">
+                🚪 Salir
             </button>
         </div>
 
@@ -385,8 +403,8 @@
 
         <details class="group bg-white rounded-3xl shadow-sm border border-amber-200 overflow-hidden mb-4" open>
             <summary class="flex items-center justify-between p-5 cursor-pointer bg-amber-50/50 hover:bg-amber-50 transition-colors list-none">
-                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Requieren Aprobación</span>
-                <svg class="w-5 h-5 text-amber-500 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <span class="font-bold text-amber-700 flex items-center gap-2 text-sm uppercase tracking-wide">⏳ Requieren Aprobación</span>
+                <svg class="w-5 h-5 text-amber-500 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
             <div class="border-t border-amber-100 overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[600px]">
@@ -406,7 +424,7 @@
         <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden mb-4">
             <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
                 <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">🤝 Radar de Socios Comerciales</span>
-                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
             <div class="flex gap-2 p-4 bg-slate-50 border-t border-slate-100 overflow-x-auto">
                 <button onclick="setFiltroPartner('monto')" id="btnFiltroPartner_monto" class="btn-filtro-partner px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white shadow-sm whitespace-nowrap transition-colors">💰 Mayor Monto</button>
@@ -418,8 +436,8 @@
 
         <details class="group bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <summary class="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors list-none">
-                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg> Directorio de Clientes</span>
-                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                <span class="font-bold text-slate-700 flex items-center gap-2 text-sm uppercase tracking-wide">👥 Directorio de Clientes</span>
+                <svg class="w-5 h-5 text-slate-400 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
             </summary>
             <div class="flex flex-col md:flex-row gap-3 p-4 bg-slate-50 border-t border-slate-100">
                 <input type="text" onkeyup="setFiltroDirectorio('busqueda', this.value)" placeholder="🔍 Buscar por correo..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-bold w-full md:w-72 outline-none focus:border-primary focus:ring-1 focus:ring-primary text-slate-700 bg-white">
