@@ -32,7 +32,6 @@ window.logout = async () => { localStorage.removeItem('local_user_status'); sign
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen'); const appContent = document.getElementById('appContent');
     if (user) {
-        // Enviar email al menu maestro
         const sidebarEmail = document.querySelector('app-sidebar')?.querySelector('#sidebarUserEmail');
         if (sidebarEmail) sidebarEmail.innerText = user.email;
 
@@ -51,7 +50,7 @@ onAuthStateChanged(auth, async (user) => {
                     loginScreen.classList.add('hidden'); 
                     appContent.classList.remove('hidden'); 
                     iniciarPortal(data);
-                    window.verificarAutoSync(); // Verifica sync en background
+                    window.verificarAutoSync(); 
                 } else {
                     window.location.href = '../activar.html';
                 }
@@ -112,7 +111,10 @@ window.guardarPerfilPartner = async () => {
 
     const btn = document.getElementById('btnGuardarPartner');
     const textoOriginal = btn.innerHTML;
-    btn.innerHTML = "Guardando... ⏳"; btn.disabled = true;
+    
+    // Ícono de carga limpio SVG
+    btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Guardando...`; 
+    btn.disabled = true;
 
     try {
         const userRef = doc(db, "usuarios_multimeta", auth.currentUser.email);
@@ -149,13 +151,11 @@ async function cargarDashboardPartner(userData) {
     window.currentPartnerPerfil = perfil; 
     const formatGs = (n) => new Intl.NumberFormat('es-PY').format(n) + ' Gs.';
     
-    // UI BÁSICA
     document.getElementById('partnerCodigoUI').innerText = perfil.codigo;
     document.getElementById('bancoActualUI').innerText = `${perfil.banco} • ${perfil.nombre}`;
     document.getElementById('cuentaActualUI').innerText = `Cuenta: ${perfil.cuenta} | CI/Alias: ${perfil.ci}`;
     document.getElementById('partnerHistoricoUI').innerText = formatGs(userData.partner_historico || 0);
 
-    // LÓGICA DE SALDO Y BARRA DE PROGRESO
     const saldo = userData.partner_saldo || 0;
     document.getElementById('partnerSaldoUI').innerText = formatGs(saldo);
     
@@ -163,25 +163,25 @@ async function cargarDashboardPartner(userData) {
     const porc = Math.min((saldo / metaCobro) * 100, 100);
     document.getElementById('partnerBarraProgreso').style.width = `${porc}%`;
     
-    // TEXTO MOTIVACIONAL DINÁMICO
+    // TEXTOS MOTIVACIONALES LIMPIOS (Sin Emojis)
     const txtMotivacional = document.getElementById('partnerMensajeMotivacional');
     if (saldo === 0) {
         txtMotivacional.innerText = "";
     } else if (saldo >= 5000 && saldo < 10000) {
-        txtMotivacional.innerText = "¡Buen inicio! 🚀";
+        txtMotivacional.innerText = "¡Buen inicio!";
         txtMotivacional.className = "text-center text-sm font-bold text-slate-500 mt-4 h-5 transition-all";
     } else if (saldo >= 10000 && saldo < 15000) {
-        txtMotivacional.innerText = "Estás cerca de tu próxima acreditación 👀";
+        txtMotivacional.innerText = "Estás cerca de tu próxima acreditación";
         txtMotivacional.className = "text-center text-sm font-bold text-amber-500 mt-4 h-5 transition-all";
     } else if (saldo >= 15000 && saldo < 20000) {
-        txtMotivacional.innerText = "¡Un pasito más y lo lograste! 🔥";
+        txtMotivacional.innerText = "¡Un pasito más y lo lograste!";
         txtMotivacional.className = "text-center text-sm font-bold text-orange-500 mt-4 h-5 transition-all";
     } else if (saldo >= 20000) {
-        txtMotivacional.innerText = "¡Felicidades! Recibirás tu incentivo a la brevedad posible 💸";
+        txtMotivacional.innerText = "¡Felicidades! Recibirás tu incentivo a la brevedad posible.";
         txtMotivacional.className = "text-center text-sm font-bold text-primary mt-4 h-5 transition-all";
     }
 
-    // CARGAR LISTA DE INVITADOS
+    // CARGAR LISTA DE INVITADOS CON ICONOS SVG LIMPIOS
     const listUI = document.getElementById('listaReferidosUI');
     listUI.innerHTML = '<div class="text-center py-6"><span class="animate-pulse text-slate-400 text-xs">Buscando invitados...</span></div>';
 
@@ -200,17 +200,17 @@ async function cargarDashboardPartner(userData) {
             let estadoHtml = "";
             
             if (refData.status === 'pagado') {
-                estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black shadow-sm">✅ Pagado (+5k)</span>`;
+                estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Pagado (+5k)</span>`;
             } else if (refData.status === 'pendiente') {
-                estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-black shadow-sm">⏳ Verificando</span>`;
+                estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Verificando</span>`;
             } else {
                 const start = new Date(refData.fechaInicio || new Date());
                 const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
                 const quedan = Math.max(7 - diffDays, 0);
                 if (quedan > 0) {
-                    estadoHtml = `<span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded-lg font-black shadow-sm">⏳ Prueba (${quedan} d)</span>`;
+                    estadoHtml = `<span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Prueba (${quedan} d)</span>`;
                 } else {
-                    estadoHtml = `<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-1 rounded-lg font-black shadow-sm">⚠️ Vencido</span>`;
+                    estadoHtml = `<span class="text-[10px] bg-rose-100 text-rose-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> Vencido</span>`;
                 }
             }
 
@@ -230,13 +230,13 @@ async function cargarDashboardPartner(userData) {
     }
 }
 
-// BOTONES DE ACCIÓN (Sin WhatsApp verde)
+// BOTONES DE ACCIÓN (Alerta Limpia)
 window.copiarDato = (tipo) => {
     const codigo = document.getElementById('partnerCodigoUI').innerText;
     let texto = (tipo === 'codigo') ? codigo : `https://imperialempy-collab.github.io/Ahorro.Challenge/activar.html?ref=${codigo}`;
     
     navigator.clipboard.writeText(texto).then(() => {
-        window.mostrarAlerta("¡Copiado al portapapeles! 📄");
+        window.mostrarAlerta("¡Copiado al portapapeles!");
     });
 };
 
@@ -250,7 +250,7 @@ window.compartirWhatsApp = () => {
 // --- MOTOR DE SINCRONIZACIÓN (TOTALMENTE SILENCIOSO) ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
-    if (manual && !window.ENABLE_MANUAL_SYNC) return; // Silencio total si está desactivada
+    if (manual && !window.ENABLE_MANUAL_SYNC) return; 
 
     try {
         document.querySelectorAll('.sync-dot').forEach(el => el.className = "sync-dot absolute top-0 right-0 w-2 h-2 bg-amber-400 border border-white rounded-full animate-ping");
