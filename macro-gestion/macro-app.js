@@ -53,7 +53,6 @@ window.closeCustomAlert = () => {
     const alertModal = document.getElementById('customAlert');
     if(alertModal) alertModal.classList.add('hidden'); 
 };
-// -------------------------------------------------------------------
 
 window.actualizarUI_Pago = () => {
     const btnPagar = document.getElementById('btnSidebarPagar');
@@ -237,7 +236,11 @@ window.renderizarReportes = () => {
     document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
     let fijos = gastos.reduce((acc, g) => acc + g.monto, 0); let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0); let granTotalGastos = agujeroNegro + fijosPagadosTotales;
     let flujoDeCajaActual = ingresoTotal - granTotalGastos; document.getElementById('repFlujoCaja').innerText = window.formatoGs(flujoDeCajaActual).replace(' Gs', ''); document.getElementById('graficoFlujo').innerHTML = window.dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
-    let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0; let porcAhorro = Math.max(0, 100 - porcFijos - porcVar); document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`; document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
+    
+    // --- CORRECCIÓN MATEMÁTICA APLICADA ACÁ ---
+    let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; 
+    
+    let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0; let porcAhorro = Math.max(0, 100 - porcFijos - porcVar); document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`; document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
     const hoy = new Date().getDate(); const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); const porcentajeTiempo = (hoy / diasMes) * 100; const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
     let ratioCarrera = 0; if (porcentajeTiempo > 0) { ratioCarrera = porcentajeGasto / porcentajeTiempo; }
     let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100); let velocidad = "Sin Datos"; let colorClase = "text-slate-300"; let msgQuema = "Tocá el ⚙️ para calcular.";
@@ -276,3 +279,23 @@ window.cambiarMontoGasto = async (id) => { const gasto = gastos.find(g => g.id =
 window.tildarGasto = (id) => { const gasto = gastos.find(g => g.id === id); gasto.pagado = !gasto.pagado; gasto.fechaPago = gasto.pagado ? window.obtenerFechaHoy() : ""; if(gasto.pagado) { window.registrarMovimiento("Gasto Tildado (Pagado)", `${gasto.nombre} desde ${gasto.cuenta}`, -gasto.monto); } else { window.registrarMovimiento("Gasto Destildado (Anulado)", `${gasto.nombre}`, gasto.monto); } window.guardarDatos(); };
 window.cerrarMes = async () => { const r = await window.interactuarApp('confirm', 'Cerrar Mes', 'Esto destildará todos los gastos fijos para empezar de cero. (Tus saldos de cuentas no se borrarán).'); if (r) { gastos.forEach(g => { g.pagado = false; g.fechaPago = ""; }); window.registrarMovimiento("Cierre de Mes", "Se reinició la lista de gastos fijos", 0); window.guardarDatos(); window.interactuarApp('alert', '¡Éxito!', 'El mes se cerró correctamente. Todo listo para arrancar.'); } };
 window.descargarDatosCSV = () => { if (historialMovimientos.length === 0) { window.interactuarApp('alert', 'Sin historial', 'No hay movimientos registrados para descargar todavía. Usá la app un poco más.'); return; } let csvContenido = "FECHA;ACCION;DETALLE;MONTO (Gs)\n"; historialMovimientos.forEach(h => { csvContenido += `"${h.fecha}";"${h.accion}";"${h.detalle}";"${h.monto}"\n`; }); const blob = new Blob(["\uFEFF" + csvContenido], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const btn = document.createElement("a"); btn.setAttribute("href", url); btn.setAttribute("download", `MacroGestion_Historial_${window.obtenerFechaHoy().replace(/\//g, '-')}.csv`); document.body.appendChild(btn); btn.click(); btn.remove(); };
+
+// --- MAGIA UX: RENDERIZADO CON PANTALLA DE CARGA ---
+const localEmail = localStorage.getItem('local_user_email');
+const localStatus = localStorage.getItem('local_user_status');
+if (localEmail && localStatus) {
+    setTimeout(() => {
+        const loader = document.getElementById('loadingScreen');
+        if(loader) {
+            loader.classList.add('hidden');
+            loader.style.display = 'none';
+        }
+    }, 150);
+
+    try {
+        window.renderizarSelectorIconos();
+        window.renderizarApp();
+    } catch (error) {
+        console.error("Error al renderizar los datos:", error);
+    }
+}
