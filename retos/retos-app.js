@@ -26,9 +26,34 @@ let unsubscribeReto = null;
 window.formatoGs = (n) => new Intl.NumberFormat('es-PY').format(Math.round(n || 0)) + ' Gs.';
 window.formatoEnVivo = (e) => { let val = e.target.value.replace(/\D/g, ''); e.target.value = val ? new Intl.NumberFormat('es-PY').format(val) : ''; };
 
-// ACÁ ESTÁ EL CAMBIO 2: .innerHTML en vez de .innerText para que lea las negritas y saltos
-window.mostrarAlerta = (mensaje) => { document.getElementById('customAlertMessage').innerHTML = mensaje; document.getElementById('customAlert').classList.remove('hidden'); };
+// ALERTA INTELIGENTE: Alterna entre el diseño de juego y el Paywall VIP
+window.mostrarAlerta = (mensaje, esPaywall = false) => { 
+    document.getElementById('customAlertMessage').innerHTML = mensaje; 
+    
+    const btnActivar = document.getElementById('btnAlertActivar');
+    const btnGratis = document.getElementById('btnProbarGratis');
+    const btnOk = document.getElementById('btnAlertOk');
+    const title = document.getElementById('customAlertTitle');
+    const icon = document.getElementById('customAlertIcon');
+
+    if (esPaywall) {
+        if (btnActivar) btnActivar.classList.remove('hidden');
+        if (btnGratis) btnGratis.classList.remove('hidden');
+        if (btnOk) btnOk.classList.add('hidden');
+        if (title) title.innerHTML = "Acceso VIP Requerido";
+        if (icon) icon.innerHTML = '<span class="text-3xl">👑</span>';
+    } else {
+        if (btnActivar) btnActivar.classList.add('hidden');
+        if (btnGratis) btnGratis.classList.add('hidden');
+        if (btnOk) btnOk.classList.remove('hidden');
+        if (title) title.innerHTML = "Ahorro <span class='text-primary'>Multijugador</span>";
+        if (icon) icon.innerHTML = '<img src="../icon.png" alt="Logo" class="w-full h-full object-cover rounded-2xl">';
+    }
+
+    document.getElementById('customAlert').classList.remove('hidden'); 
+};
 window.closeCustomAlert = () => { document.getElementById('customAlert').classList.add('hidden'); };
+
 window.mostrarConfirm = (mensaje) => { return new Promise((resolve) => { document.getElementById('customConfirmMessage').innerText = mensaje; const modal = document.getElementById('customConfirm'); const btnOk = document.getElementById('btnConfirmOk'); const btnCancel = document.getElementById('btnConfirmCancel'); const cleanUp = () => { modal.classList.add('hidden'); btnOk.onclick = null; btnCancel.onclick = null; }; btnOk.onclick = () => { cleanUp(); resolve(true); }; btnCancel.onclick = () => { cleanUp(); resolve(false); }; modal.classList.remove('hidden'); }); };
 
 window.openCreateRetoModal = () => { document.getElementById('crearRetoNombre').value=''; document.getElementById('crearRetoMonto').value=''; document.getElementById('crearRetoSemanas').value=''; document.getElementById('crearRetoApodo').value=''; document.getElementById('createRetoModal').classList.remove('hidden'); };
