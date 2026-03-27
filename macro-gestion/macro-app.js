@@ -203,7 +203,6 @@ window.formatoInputEnVivo = (e) => { let val = e.target.value.replace(/\D/g, '')
 const logosDisponibles = [ 'itau.png', 'ueno.png', 'familiar.png', 'continental.png', 'bnf.png', 'tigo.png', 'personal.png', 'mango.png', 'wally.png', 'zimple.png', 'iconotarjeta.png', 'tarjetas.png', 'efectivo1.png', 'efectivo2.png', 'efectivo3.png', 'efectivo4.png', 'efectivo5.png' ];
 let iconoSeleccionado = '🏦';
 
-// --- SOLUCIÓN PROFESIONAL DE ICONOS (A prueba de balas y asincronía) ---
 window.reemplazarPorTexto = (imgElement, texto) => {
     if (!imgElement) return;
     const span = document.createElement('span');
@@ -220,7 +219,6 @@ window.renderizarSelectorIconos = () => {
         grilla.innerHTML = logosDisponibles.map(logo => { 
             const logoId = logo.replace('.png', ''); 
             const nombreCorto = logoId.substring(0, 2).toUpperCase();
-            // Ruta corregida: logos/ en lugar de ../logos/
             return `<div id="logo-${logoId}" onclick="seleccionarIcono('${logo}')" class="logo-opt w-14 h-14 shrink-0 bg-white border-2 border-slate-100 rounded-xl p-0.5 cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-center shadow-sm overflow-hidden">
                         <img src="logos/${logo}?v=2" onerror="window.reemplazarPorTexto(this, '${nombreCorto}')" class="w-full h-full object-contain scale-125 transform transition-transform" alt="${logo}">
                     </div>`; 
@@ -257,7 +255,6 @@ window.renderizarReportes = () => {
     let fijos = gastos.reduce((acc, g) => acc + g.monto, 0); let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0); let granTotalGastos = agujeroNegro + fijosPagadosTotales;
     let flujoDeCajaActual = ingresoTotal - granTotalGastos; document.getElementById('repFlujoCaja').innerText = window.formatoGs(flujoDeCajaActual).replace(' Gs', ''); document.getElementById('graficoFlujo').innerHTML = window.dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
     
-    // CORRECCIÓN MATEMÁTICA: Usar fijosPagadosTotales para la barra
     let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; 
     
     let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0; let porcAhorro = Math.max(0, 100 - porcFijos - porcVar); document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`; document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
@@ -284,7 +281,6 @@ window.renderizarCuentas = () => {
             nombreCorto = c.icono.replace('.png', '').substring(0, 2).toUpperCase(); 
         }
         
-        // Ruta corregida: logos/ en lugar de ../logos/
         let iconoHtml = (c.icono && c.icono.includes('.png')) 
             ? `<img src="logos/${c.icono}?v=2" onerror="window.reemplazarPorTexto(this, '${nombreCorto}')" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` 
             : `<span class="text-xl">${c.icono || '💳'}</span>`; 
@@ -309,7 +305,55 @@ document.addEventListener('DOMContentLoaded', () => {
 let formActualTipo = ''; let formActualId = null;
 window.abrirModalForm = (tipo, id = null) => { formActualTipo = tipo; formActualId = id; const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); const i1 = document.getElementById('modalFormInput1'); const i2 = document.getElementById('modalFormInput2'); const i3 = document.getElementById('modalFormInput3'); const btnEliminar = document.getElementById('btnEliminarItem'); i1.value = ''; i2.value = ''; i3.value = ''; i3.addEventListener('input', window.formatoInputEnVivo); if (tipo === 'cuenta') { document.getElementById('selectorIconosContainer').classList.remove('hidden'); document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Ueno Bank)'; document.getElementById('lblInput2').innerText = 'Descripción (Ej: Billetera)'; document.getElementById('lblInput3').innerText = 'Saldo Actual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); iconoSeleccionado = c.icono || '🏦'; if(iconoSeleccionado.includes('.png')){ setTimeout(() => window.seleccionarIcono(iconoSeleccionado), 50); } else { window.limpiarSeleccionIconos(); } } else { document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); iconoSeleccionado = '🏦'; window.limpiarSeleccionIconos(); } } else if (tipo === 'gasto') { document.getElementById('selectorIconosContainer').classList.add('hidden'); document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Internet)'; document.getElementById('lblInput2').innerText = 'Cuenta Asociada (Ej: Itaú, Efectivo)'; document.getElementById('lblInput3').innerText = 'Monto Mensual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; const g = gastos.find(x => x.id === id); i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; btnEliminar.classList.add('hidden'); } } modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10); };
 window.cerrarModalForm = () => { const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); cuerpo.classList.add('scale-95', 'opacity-0'); setTimeout(() => modal.classList.add('hidden'), 200); };
-window.guardarFormulario = () => { const v1 = document.getElementById('modalFormInput1').value.trim(); const v2 = document.getElementById('modalFormInput2').value.trim(); const v3 = document.getElementById('modalFormInput3').value.replace(/\./g, ''); if(!v1 || !v3 || isNaN(v3)) { window.interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.'); return; } if (formActualTipo === 'cuenta') { if (formActualId) { const c = cuentas.find(x => x.id === formActualId); c.nombre = v1; c.descripcion = v2 || "Sin descripción"; c.icono = iconoSeleccionado; if(c.saldo !== parseInt(v3)) { window.registrarMovimiento("Actualización de Saldo", c.nombre, parseInt(v3) - c.saldo); c.saldo = parseInt(v3); const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; } } else { cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: iconoSeleccionado }); window.registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); } } else if (formActualTipo === 'gasto') { if (formActualId) { const g = gastos.find(x => x.id === formActualId); g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); } else { gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); window.registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); } } window.guardarDatos(); window.cerrarModalForm(); };
+
+// --- NUEVO: Candado de seguridad para evitar duplicados ---
+let isSavingForm = false;
+
+window.guardarFormulario = () => { 
+    if (isSavingForm) return; // Rebota el click si ya está guardando
+    
+    const v1 = document.getElementById('modalFormInput1').value.trim(); 
+    const v2 = document.getElementById('modalFormInput2').value.trim(); 
+    const v3 = document.getElementById('modalFormInput3').value.replace(/\./g, ''); 
+    
+    if(!v1 || !v3 || isNaN(v3)) { 
+        window.interactuarApp('alert', 'Datos incompletos', 'Por favor completá al menos el nombre y el monto para guardar.'); 
+        return; 
+    } 
+    
+    isSavingForm = true; // Cierra el candado
+    
+    if (formActualTipo === 'cuenta') { 
+        if (formActualId) { 
+            const c = cuentas.find(x => x.id === formActualId); 
+            c.nombre = v1; c.descripcion = v2 || "Sin descripción"; c.icono = iconoSeleccionado; 
+            if(c.saldo !== parseInt(v3)) { 
+                window.registrarMovimiento("Actualización de Saldo", c.nombre, parseInt(v3) - c.saldo); 
+                c.saldo = parseInt(v3); 
+                const hoy = new Date(); 
+                c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; 
+            } 
+        } else { 
+            cuentas.push({ id: Date.now(), nombre: v1, descripcion: v2 || "Sin descripción", saldo: parseInt(v3), ultimaAct: "Recién creada", icono: iconoSeleccionado }); 
+            window.registrarMovimiento("Nueva Cuenta Creada", v1, parseInt(v3)); 
+        } 
+    } else if (formActualTipo === 'gasto') { 
+        if (formActualId) { 
+            const g = gastos.find(x => x.id === formActualId); 
+            g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); 
+        } else { 
+            gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); 
+            window.registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); 
+        } 
+    } 
+    
+    window.guardarDatos(); 
+    window.cerrarModalForm(); 
+    
+    // Abre el candado después de medio segundo (cuando la ventana ya desapareció)
+    setTimeout(() => { isSavingForm = false; }, 500);
+};
+
 window.eliminarItemActual = () => { window.cerrarModalForm(); setTimeout(async () => { const confirmacion = await window.interactuarApp('confirm', '⚠️ ¿Eliminar Definitivamente?', 'Esta acción no se puede deshacer. ¿Aceptás borrarlo?'); if (confirmacion) { let nombreBorrado = ""; if (formActualTipo === 'cuenta') { nombreBorrado = cuentas.find(x => x.id === formActualId).nombre; cuentas = cuentas.filter(x => x.id !== formActualId); } else { nombreBorrado = gastos.find(x => x.id === formActualId).nombre; gastos = gastos.filter(x => x.id !== formActualId); } window.registrarMovimiento(`Eliminación de ${formActualTipo}`, nombreBorrado, 0); window.guardarDatos(); } else { window.abrirModalForm(formActualTipo, formActualId); } }, 250);  };
 window.actualizarSaldo = async (id) => { const cuenta = cuentas.find(c => c.id === id); const r = await window.interactuarApp('prompt', 'Actualizar Saldo', `Ingresá el saldo actual de ${cuenta.nombre}.`, cuenta.saldo, true); if (r) { const nuevoMonto = parseInt(r.replace(/\./g, '')); window.registrarMovimiento("Actualización de Saldo", cuenta.nombre, nuevoMonto - cuenta.saldo); cuenta.saldo = nuevoMonto; const hoy = new Date(); cuenta.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`; window.guardarDatos(); } };
 window.cambiarMontoGasto = async (id) => { const gasto = gastos.find(g => g.id === id); const r = await window.interactuarApp('prompt', 'Cambiar Monto', `Ingresá el nuevo monto para ${gasto.nombre}.`, gasto.monto, true); if (r) { gasto.monto = parseInt(r.replace(/\./g, '')); window.guardarDatos(); } };
