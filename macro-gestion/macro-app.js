@@ -249,20 +249,8 @@ window.configurarIngreso = async () => { const actual = parseInt(localStorage.ge
 window.dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => { if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`; let flujoActual = ingresoBase - totalGastado; let puntos = [flujoActual]; let saldoTemp = flujoActual; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historial.filter(h => h.fecha.includes(mesStr)); for(let i = 0; i < historialMes.length; i++) { if(puntos.length >= 6) break; let h = historialMes[i]; if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) { saldoTemp = saldoTemp + Math.abs(h.monto); puntos.unshift(saldoTemp); } } while(puntos.length < 6) { puntos.unshift(ingresoBase); } let max = ingresoBase; let min = 0; let pathD = "M0 25 "; let xStep = 100 / 5; puntos.forEach((p, index) => { let x = index * xStep; let pNorm = Math.max(0, Math.min(p, max)); let y = 25 - ((pNorm - min) / (max - min)) * 20; pathD += `L${x} ${y} `; }); let colorLinea = flujoActual < (ingresoBase * 0.2) ? "text-rose-500" : "text-primary"; return `<svg class="w-full h-8 ${colorLinea}" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor"><path d="${pathD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathD} L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/></svg>`; };
 
 window.renderizarReportes = () => {
-    let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0; 
-    const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; 
-    const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
-    
-    let agujeroNegro = 0; 
-    let fugasPorCuenta = {}; 
-    
-    // CORRECCIÓN REPORTE TRADICIONAL: Extrae los gastos variables leyendo directamente el historial del mes
-    historialMes.forEach(h => { 
-        if (h.accion === "Actualización de Saldo" && h.monto < 0) { 
-            agujeroNegro += Math.abs(h.monto); 
-            fugasPorCuenta[h.detalle] = (fugasPorCuenta[h.detalle] || 0) + Math.abs(h.monto);
-        } 
-    });
+    let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
+    let agujeroNegro = 0; let fugasPorCuenta = {}; cuentas.forEach(c => fugasPorCuenta[c.nombre] = 0); historialMes.forEach(h => { if (h.accion === "Actualización de Saldo" && h.monto < 0) { agujeroNegro += Math.abs(h.monto); if(fugasPorCuenta[h.detalle] !== undefined) fugasPorCuenta[h.detalle] += Math.abs(h.monto); } });
     
     document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); 
     let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; 
