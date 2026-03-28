@@ -199,7 +199,7 @@ let modalResolve = null;
 window.formatoGs = (num) => new Intl.NumberFormat('es-PY').format(num) + " Gs";
 window.obtenerFechaHoy = () => { const hoy = new Date(); return `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`; };
 
-// NUEVO: Formato de input que NO vuelve loco al cursor
+// Cursor Perfecto
 window.formatoInputEnVivo = (e) => { 
     const el = e.target;
     let val = el.value.replace(/\D/g, '');
@@ -253,20 +253,20 @@ window.guardarDatos = () => {
     window.renderizarApp(); 
 };
 
-// NUEVO: Se añade el ID de la cuenta al historial para que sobreviva a los cambios de nombre
+// Historial blindado por ID de cuenta
 window.registrarMovimiento = (accion, detalle, monto = 0, cuentaId = null) => { 
     const f = new Date(); 
     const fechaHora = `${f.getDate().toString().padStart(2, '0')}/${(f.getMonth()+1).toString().padStart(2, '0')}/${f.getFullYear()} ${f.getHours()}:${f.getMinutes().toString().padStart(2, '0')}`; 
     historialMovimientos.unshift({ fecha: fechaHora, accion: accion, detalle: detalle, monto: monto, cuentaId: cuentaId }); 
 };
 
-// NUEVO: Ingreso promedio desde Modal Info
 window.guardarIngresoPromedio = () => {
     const input = document.getElementById('inputIngresoPromedio').value.replace(/\./g, '');
     if(!input || isNaN(input)) return;
     localStorage.setItem('mg_ingreso', parseInt(input));
     window.renderizarReportes();
     window.renderizarCuentas(); 
+    window.renderizarGastos();
     window.guardarDatos();
     
     const btn = document.getElementById('btnGuardarIngreso');
@@ -355,7 +355,6 @@ window.renderizarReportes = () => {
     }
 };
 
-// NUEVO: CUENTAS DESPLEGABLES CON HISTORIAL Y PORCENTAJE INDIVIDUAL
 window.renderizarCuentas = () => { 
     const cont = document.getElementById('contenedorCuentas'); 
     cont.innerHTML = ''; 
@@ -376,14 +375,11 @@ window.renderizarCuentas = () => {
             ? `<img src="logos/${c.icono}?v=2" onerror="window.reemplazarPorTexto(this, '${nombreCorto}')" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` 
             : `<span class="text-xl">${c.icono || '💳'}</span>`; 
             
-        // Extraer historial de esta cuenta (gastos variables / ajustes manuales)
-        // Filtramos por id (si existe) o por nombre (para soportar movimientos viejos previos al blindaje)
         let movimientosCuenta = historialMes.filter(h => (h.cuentaId === c.id) || (!h.cuentaId && h.detalle === c.nombre));
         
         let totalGastoCuenta = 0;
         let listaMovimientosHTML = '';
         
-        // Limitamos a los últimos 8 para la vista previa
         let movimientosMostrar = movimientosCuenta.slice(0, 8);
 
         movimientosCuenta.forEach(h => {
@@ -400,10 +396,10 @@ window.renderizarCuentas = () => {
             let montoAbs = Math.abs(h.monto);
             let fechaCorta = h.fecha.substring(0, 5) + ' ' + h.fecha.split(' ')[1];
             
-            if (h.accion === "Actualización de Saldo" || h.accion === "Reinicio de Saldo" || h.accion === "Nueva Cuenta Creada") {
+            if (h.accion === "Actualización de Saldo" || h.accion === "Nueva Cuenta Creada") {
                 listaMovimientosHTML += `
                     <div class="flex justify-between items-center py-1.5 border-b border-slate-100/50 last:border-0">
-                        <span class="text-[10px] font-medium text-slate-500 flex gap-1 items-center">${fechaCorta} <span class="text-[8px] font-bold opacity-50 bg-slate-100 px-1 rounded">${h.accion === "Reinicio de Saldo" ? 'RESET' : ''}</span></span>
+                        <span class="text-[10px] font-medium text-slate-500 flex gap-1 items-center">${fechaCorta}</span>
                         <span class="text-xs font-bold ${colorMonto}">${signo}${window.formatoGs(montoAbs).replace(' Gs', '')}</span>
                     </div>
                 `;
@@ -417,7 +413,7 @@ window.renderizarCuentas = () => {
         let porcCuenta = ingresoTotal > 0 ? Math.min(Math.round((totalGastoCuenta / ingresoTotal) * 100), 100) : 0;
 
         cont.innerHTML += `
-        <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 overflow-hidden mb-3">
+        <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 overflow-hidden">
             <summary class="p-4 flex items-center justify-between cursor-pointer list-none relative transition-colors hover:bg-slate-50">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0 overflow-hidden text-primary">${iconoHtml}</div>
@@ -432,9 +428,12 @@ window.renderizarCuentas = () => {
                         <p class="text-[8px] text-slate-400 mt-0.5">Última act: ${c.ultimaAct}</p>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="font-black text-sm text-slate-900">${window.formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[8px] text-slate-500">Gs</span></p>
-                    <button onclick="event.preventDefault(); event.stopPropagation(); abrirModalActualizar(${c.id})" class="text-[9px] bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg mt-1 font-bold hover:bg-slate-200 transition-colors shadow-sm">ACTUALIZAR</button>
+                <div class="text-right flex flex-col justify-between items-end h-full min-h-[44px]">
+                    <div class="text-right mb-1.5">
+                        <p class="font-black text-sm text-slate-900 leading-none">${window.formatoGs(c.saldo).replace(' Gs', '')} <span class="text-[8px] text-slate-500">Gs</span></p>
+                        <p class="text-[8px] text-slate-400 font-medium leading-none mt-1 uppercase tracking-wider">Saldo</p>
+                    </div>
+                    <button onclick="event.preventDefault(); event.stopPropagation(); abrirModalActualizar(${c.id})" class="text-[8px] bg-slate-100 text-slate-600 px-2.5 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition-colors shadow-sm">ACTUALIZAR</button>
                 </div>
             </summary>
             
@@ -450,23 +449,40 @@ window.renderizarCuentas = () => {
         </details>`; 
     }); 
     
-    // Actualizar la cabecera fina y roja superior
+    // Actualizar cabecera Cuentas
     let txtTotal = document.getElementById('txtTotalGastadoCuentas');
     let txtPorc = document.getElementById('txtPorcGastadoCuentas');
     if(txtTotal && txtPorc) {
         let porcTotalCuentas = ingresoTotal > 0 ? Math.min(Math.round((granTotalVariables / ingresoTotal) * 100), 100) : 0;
         txtTotal.innerText = window.formatoGs(granTotalVariables).replace(' Gs', '');
-        txtPorc.innerText = `(${porcTotalCuentas}%)`;
+        txtPorc.innerText = `${porcTotalCuentas}%`;
     }
 };
 
-window.renderizarGastos = () => { const cont = document.getElementById('contenedorGastos'); cont.innerHTML = ''; let totalSuma = 0; gastos.forEach(g => { if(g.pagado) totalSuma += g.monto; const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800"; cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors"><input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer"><div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div></div>`; }); document.getElementById('totalPagado').innerText = window.formatoGs(totalSuma); };
+window.renderizarGastos = () => { 
+    const cont = document.getElementById('contenedorGastos'); 
+    cont.innerHTML = ''; 
+    let totalSuma = 0; 
+    gastos.forEach(g => { 
+        if(g.pagado) totalSuma += g.monto; 
+        const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800"; 
+        cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors"><input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer"><div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div></div>`; 
+    }); 
+    
+    // Actualizar cabecera Gastos Fijos
+    let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
+    let porc = ingresoTotal > 0 ? Math.min(Math.round((totalSuma / ingresoTotal) * 100), 100) : 0;
+    let elTotal = document.getElementById('totalPagado');
+    if (elTotal) elTotal.innerText = window.formatoGs(totalSuma).replace(' Gs', '');
+    let elPorc = document.getElementById('txtPorcFijosPagados');
+    if (elPorc) elPorc.innerText = `${porc}%`;
+};
+
 window.renderizarApp = () => { 
     window.renderizarCuentas(); 
     window.renderizarGastos(); 
     window.renderizarReportes(); 
     
-    // Auto-completar el input del modal info
     const inputIngreso = document.getElementById('inputIngresoPromedio');
     if(inputIngreso) {
         const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
@@ -484,7 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(btnConfirm) btnConfirm.addEventListener('click', () => { const inputContenedor = document.getElementById('modalAccionInputContenedor'); if (!inputContenedor.classList.contains('hidden')) { window.cerrarModalAccion(document.getElementById('modalAccionInput').value); } else { window.cerrarModalAccion(true); } });
 });
 
-// --- NUEVAS FUNCIONES PARA ACTUALIZAR SALDO ---
 let cuentaAActualizarId = null;
 
 window.abrirModalActualizar = (id) => {
@@ -517,20 +532,6 @@ window.confirmarActualizacionSaldo = () => {
     }
     window.cerrarModalActualizar();
 };
-
-window.resetearSaldoInicial = () => {
-    const input = document.getElementById('inputNuevoSaldo').value.replace(/\./g, '');
-    if(!input || isNaN(input)) return;
-    const nuevoSaldo = parseInt(input);
-    const c = cuentas.find(x => x.id === cuentaAActualizarId);
-    
-    window.registrarMovimiento("Reinicio de Saldo", c.nombre, 0, c.id); // Registra que hubo reset sin generar gasto
-    c.saldo = nuevoSaldo;
-    const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
-    window.guardarDatos();
-    window.cerrarModalActualizar();
-};
-// ---------------------------------------------
 
 let formActualTipo = ''; let formActualId = null;
 window.abrirModalForm = (tipo, id = null) => { formActualTipo = tipo; formActualId = id; const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); const i1 = document.getElementById('modalFormInput1'); const i2 = document.getElementById('modalFormInput2'); const i3 = document.getElementById('modalFormInput3'); const btnEliminar = document.getElementById('btnEliminarItem'); i1.value = ''; i2.value = ''; i3.value = ''; if (tipo === 'cuenta') { document.getElementById('selectorIconosContainer').classList.remove('hidden'); document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Ueno Bank)'; document.getElementById('lblInput2').innerText = 'Descripción (Ej: Billetera)'; document.getElementById('lblInput3').innerText = 'Saldo Actual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); iconoSeleccionado = c.icono || '🏦'; if(iconoSeleccionado.includes('.png')){ setTimeout(() => window.seleccionarIcono(iconoSeleccionado), 50); } else { window.limpiarSeleccionIconos(); } } else { document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); iconoSeleccionado = '🏦'; window.limpiarSeleccionIconos(); } } else if (tipo === 'gasto') { document.getElementById('selectorIconosContainer').classList.add('hidden'); document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Internet)'; document.getElementById('lblInput2').innerText = 'Cuenta Asociada (Ej: Itaú, Efectivo)'; document.getElementById('lblInput3').innerText = 'Monto Mensual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; const g = gastos.find(x => x.id === id); i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; btnEliminar.classList.add('hidden'); } } modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10); };
