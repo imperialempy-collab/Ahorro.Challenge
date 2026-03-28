@@ -391,16 +391,16 @@ window.renderizarCuentas = () => {
         
         movimientosMostrar.forEach(h => {
             let esGasto = h.monto < 0;
-            let colorMonto = esGasto ? 'text-rose-500' : 'text-emerald-500';
             let signo = esGasto ? '-' : '+';
             let montoAbs = Math.abs(h.monto);
             let fechaCorta = h.fecha.substring(0, 5) + ' ' + h.fecha.split(' ')[1];
             
             if (h.accion === "Actualización de Saldo" || h.accion === "Nueva Cuenta Creada") {
                 listaMovimientosHTML += `
-                    <div class="flex justify-between items-center py-1.5 border-b border-slate-100/50 last:border-0">
-                        <span class="text-[10px] font-medium text-slate-500 flex gap-1 items-center">${fechaCorta}</span>
-                        <span class="text-xs font-bold ${colorMonto}">${signo}${window.formatoGs(montoAbs).replace(' Gs', '')}</span>
+                    <div class="flex justify-center items-center py-1.5 border-b border-slate-100/50 last:border-0 gap-2">
+                        <span class="text-[10px] font-medium text-slate-500">${fechaCorta}</span>
+                        <span class="text-[10px] font-bold text-slate-300">-</span>
+                        <span class="text-xs font-bold text-slate-600">${signo}${window.formatoGs(montoAbs).replace(' Gs', '')}</span>
                     </div>
                 `;
             }
@@ -438,9 +438,10 @@ window.renderizarCuentas = () => {
             </summary>
             
             <div class="px-4 pb-4 border-t border-slate-50 bg-slate-50/50">
-                <div class="flex justify-between items-end py-2 border-b border-slate-200 mb-2">
+                <div class="flex justify-center items-center gap-2 py-2 border-b border-slate-200 mb-2">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Suma de Gastos</span>
-                    <span class="text-xs font-black text-rose-500">${window.formatoGs(totalGastoCuenta).replace(' Gs', '')} <span class="text-[9px] font-medium text-slate-400">(${porcCuenta}%)</span></span>
+                    <span class="text-[10px] font-bold text-slate-400">-</span>
+                    <span class="text-xs font-black text-slate-600">${window.formatoGs(totalGastoCuenta).replace(' Gs', '')} <span class="text-[9px] font-medium text-slate-400">(${porcCuenta}%)</span></span>
                 </div>
                 <div class="space-y-0 mt-1 max-h-40 overflow-y-auto no-scrollbar pr-1">
                     ${listaMovimientosHTML}
@@ -449,7 +450,6 @@ window.renderizarCuentas = () => {
         </details>`; 
     }); 
     
-    // Actualizar cabecera Cuentas
     let txtTotal = document.getElementById('txtTotalGastadoCuentas');
     let txtPorc = document.getElementById('txtPorcGastadoCuentas');
     if(txtTotal && txtPorc) {
@@ -469,7 +469,6 @@ window.renderizarGastos = () => {
         cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors"><input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer"><div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div></div>`; 
     }); 
     
-    // Actualizar cabecera Gastos Fijos
     let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
     let porc = ingresoTotal > 0 ? Math.min(Math.round((totalSuma / ingresoTotal) * 100), 100) : 0;
     let elTotal = document.getElementById('totalPagado');
