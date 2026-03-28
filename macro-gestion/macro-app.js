@@ -26,7 +26,7 @@ window.cerrarPaywall = () => {};
 window.abrirPaywall = () => { window.location.href = '../activar.html'; };
 window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
 
-// --- FUNCIONES PARA EL PAYWALL VIP (Llamadas desde menu.js) ---
+// --- FUNCIONES PARA EL PAYWALL VIP ---
 window.mostrarAlerta = (mensaje, esPaywall = false) => { 
     const alertMsg = document.getElementById('customAlertMessage');
     if(alertMsg) alertMsg.innerText = mensaje; 
@@ -73,7 +73,7 @@ window.actualizarUI_Pago = () => {
     }
 };
 
-// --- MOTOR DE SINCRONIZACIÓN Y SEGURIDAD DIFERIDA ---
+// --- MOTOR DE SINCRONIZACIÓN ---
 window.sincronizarNube = async (manual = false) => {
     if (!auth.currentUser) return;
     if (manual && !window.ENABLE_MANUAL_SYNC) {
@@ -249,28 +249,82 @@ window.configurarIngreso = async () => { const actual = parseInt(localStorage.ge
 window.dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => { if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`; let flujoActual = ingresoBase - totalGastado; let puntos = [flujoActual]; let saldoTemp = flujoActual; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historial.filter(h => h.fecha.includes(mesStr)); for(let i = 0; i < historialMes.length; i++) { if(puntos.length >= 6) break; let h = historialMes[i]; if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) { saldoTemp = saldoTemp + Math.abs(h.monto); puntos.unshift(saldoTemp); } } while(puntos.length < 6) { puntos.unshift(ingresoBase); } let max = ingresoBase; let min = 0; let pathD = "M0 25 "; let xStep = 100 / 5; puntos.forEach((p, index) => { let x = index * xStep; let pNorm = Math.max(0, Math.min(p, max)); let y = 25 - ((pNorm - min) / (max - min)) * 20; pathD += `L${x} ${y} `; }); let colorLinea = flujoActual < (ingresoBase * 0.2) ? "text-rose-500" : "text-primary"; return `<svg class="w-full h-8 ${colorLinea}" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor"><path d="${pathD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathD} L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/></svg>`; };
 
 window.renderizarReportes = () => {
-    let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
-    let agujeroNegro = 0; let fugasPorCuenta = {}; cuentas.forEach(c => fugasPorCuenta[c.nombre] = 0); historialMes.forEach(h => { if (h.accion === "Actualización de Saldo" && h.monto < 0) { agujeroNegro += Math.abs(h.monto); if(fugasPorCuenta[h.detalle] !== undefined) fugasPorCuenta[h.detalle] += Math.abs(h.monto); } });
-    document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
-    let fijos = gastos.reduce((acc, g) => acc + g.monto, 0); let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0); let granTotalGastos = agujeroNegro + fijosPagadosTotales;
-    let flujoDeCajaActual = ingresoTotal - granTotalGastos; document.getElementById('repFlujoCaja').innerText = window.formatoGs(flujoDeCajaActual).replace(' Gs', ''); document.getElementById('graficoFlujo').innerHTML = window.dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
+    let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0; 
+    const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; 
+    const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
     
-    // CORRECCIÓN MATEMÁTICA: Usar fijosPagadosTotales para la barra
+    let agujeroNegro = 0; 
+    let fugasPorCuenta = {}; 
+    
+    // CORRECCIÓN REPORTE TRADICIONAL: Extrae los gastos variables leyendo directamente el historial del mes
+    historialMes.forEach(h => { 
+        if (h.accion === "Actualización de Saldo" && h.monto < 0) { 
+            agujeroNegro += Math.abs(h.monto); 
+            fugasPorCuenta[h.detalle] = (fugasPorCuenta[h.detalle] || 0) + Math.abs(h.monto);
+        } 
+    });
+    
+    document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); 
+    let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; 
+    document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
+    
+    let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0); 
+    let granTotalGastos = agujeroNegro + fijosPagadosTotales;
+    
+    let flujoDeCajaActual = ingresoTotal - granTotalGastos; 
+    document.getElementById('repFlujoCaja').innerText = window.formatoGs(flujoDeCajaActual).replace(' Gs', ''); 
+    document.getElementById('graficoFlujo').innerHTML = window.dibujarGraficoFlujo(ingresoTotal, granTotalGastos, historialMovimientos);
+    
     let porcFijos = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; 
+    let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0; 
+    let porcAhorro = Math.max(0, 100 - porcFijos - porcVar); 
     
-    let porcVar = ingresoTotal > 0 ? Math.min(Math.round((agujeroNegro / ingresoTotal) * 100), 100 - porcFijos) : 0; let porcAhorro = Math.max(0, 100 - porcFijos - porcVar); document.getElementById('barFijos').style.width = `${porcFijos}%`; document.getElementById('barVar').style.width = `${porcVar}%`; document.getElementById('barAhorro').style.width = `${porcAhorro}%`; document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; document.getElementById('txtVar').innerText = `${porcVar}% Var`; document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
-    const hoy = new Date().getDate(); const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); const porcentajeTiempo = (hoy / diasMes) * 100; const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
+    document.getElementById('barFijos').style.width = `${porcFijos}%`; 
+    document.getElementById('barVar').style.width = `${porcVar}%`; 
+    document.getElementById('barAhorro').style.width = `${porcAhorro}%`; 
+    document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; 
+    document.getElementById('txtVar').innerText = `${porcVar}% Var`; 
+    document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
+    
+    const hoy = new Date().getDate(); 
+    const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); 
+    const porcentajeTiempo = (hoy / diasMes) * 100; 
+    const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
+    
     let ratioCarrera = 0; if (porcentajeTiempo > 0) { ratioCarrera = porcentajeGasto / porcentajeTiempo; }
-    let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100); let velocidad = "Sin Datos"; let colorClase = "text-slate-300"; let msgQuema = "Tocá el ⚙️ para calcular.";
-    if (ingresoTotal > 0) { if (ratioCarrera < 0.8) { velocidad = "Excelente"; colorClase = "text-primary"; msgQuema = "Vas gastando más lento de lo que avanza el mes."; } else if (ratioCarrera <= 1.1) { velocidad = "Normal"; colorClase = "text-amber-400"; msgQuema = "Ritmo ideal. Vas a la par del calendario."; } else { velocidad = "Peligro"; colorClase = "text-rose-500"; msgQuema = "Alerta: Estás quemando dinero muy rápido."; } }
+    let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100); 
+    let velocidad = "Sin Datos"; let colorClase = "text-slate-300"; let msgQuema = "Tocá el ⚙️ para calcular.";
+    
+    if (ingresoTotal > 0) { 
+        if (ratioCarrera < 0.8) { velocidad = "Excelente"; colorClase = "text-primary"; msgQuema = "Vas gastando más lento de lo que avanza el mes."; } 
+        else if (ratioCarrera <= 1.1) { velocidad = "Normal"; colorClase = "text-amber-400"; msgQuema = "Ritmo ideal. Vas a la par del calendario."; } 
+        else { velocidad = "Peligro"; colorClase = "text-rose-500"; msgQuema = "Alerta: Estás quemando dinero muy rápido."; } 
+    }
     if (granTotalGastos >= ingresoTotal && ingresoTotal > 0) { velocidad = "Agotado"; colorClase = "text-rose-600"; msgQuema = "Has consumido todo tu ingreso del mes."; dialPorcentaje = 100; }
+    
     const circunferenciaTotal = 125.66; const offset = circunferenciaTotal - (dialPorcentaje / 100 * circunferenciaTotal); const rotacionAguja = -90 + (dialPorcentaje / 100 * 180);
     document.getElementById('repBurnRateText').innerText = velocidad; document.getElementById('repBurnRateText').className = `text-sm font-black z-10 -mb-1 ${colorClase}`; document.getElementById('repBurnRateMsg').innerText = msgQuema;
     const pathVelocimetro = document.getElementById('speedoPath'); pathVelocimetro.className = `transition-all duration-1000 ease-out ${colorClase}`; pathVelocimetro.style.strokeDashoffset = offset; document.getElementById('speedoNeedle').style.transform = `rotate(${rotacionAguja}deg)`;
-    const contTrad = document.getElementById('contenedorReporteTradicional'); contTrad.innerHTML = `<div class="text-center mb-5 pb-4 border-b border-slate-100"><p class="text-2xl font-black text-slate-900 tracking-tight">${window.formatoGs(granTotalGastos)}</p><p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p></div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>`;
-    for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) { if (totalFuga > 0) { let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0; contTrad.innerHTML += `<div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-slate-700">${nomCuenta}</span><span class="text-xs font-black text-slate-900">${window.formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div></div>`; } }
-    if (fijosPagadosTotales > 0) { let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; contTrad.innerHTML += `<div class="mb-2 mt-4 pt-4 border-t border-slate-100"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-amber-500 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Gastos Fijos Tildados</span><span class="text-xs font-black text-slate-900">${window.formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: ${porcFijosPagados}%"></div></div></div>`; }
-    if(agujeroNegro === 0 && fijosPagadosTotales === 0) { contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; }
+    
+    // --- LISTA REPORTE TRADICIONAL ---
+    const contTrad = document.getElementById('contenedorReporteTradicional'); 
+    contTrad.innerHTML = `<div class="text-center mb-5 pb-4 border-b border-slate-100"><p class="text-2xl font-black text-slate-900 tracking-tight">${window.formatoGs(granTotalGastos)}</p><p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p></div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>`;
+    
+    for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) { 
+        if (totalFuga > 0) { 
+            let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0; 
+            contTrad.innerHTML += `<div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-slate-700">${nomCuenta}</span><span class="text-xs font-black text-slate-900">${window.formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div></div>`; 
+        } 
+    }
+    
+    if (fijosPagadosTotales > 0) { 
+        let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; 
+        contTrad.innerHTML += `<div class="mb-2 mt-4 pt-4 border-t border-slate-100"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-amber-500 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Gastos Fijos Tildados</span><span class="text-xs font-black text-slate-900">${window.formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: ${porcFijosPagados}%"></div></div></div>`; 
+    }
+    
+    if(agujeroNegro === 0 && fijosPagadosTotales === 0) { 
+        contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; 
+    }
 };
 
 window.renderizarCuentas = () => { 
@@ -282,7 +336,6 @@ window.renderizarCuentas = () => {
             nombreCorto = c.icono.replace('.png', '').substring(0, 2).toUpperCase(); 
         }
         
-        // Ruta corregida: logos/ en lugar de ../logos/
         let iconoHtml = (c.icono && c.icono.includes('.png')) 
             ? `<img src="logos/${c.icono}?v=2" onerror="window.reemplazarPorTexto(this, '${nombreCorto}')" class="w-full h-full object-contain scale-125 transform" alt="${c.nombre}">` 
             : `<span class="text-xl">${c.icono || '💳'}</span>`; 
@@ -314,7 +367,6 @@ window.cerrarModalForm = () => {
     setTimeout(() => { if (modal) modal.classList.add('hidden'); }, 200); 
 };
 
-// --- CANDADO CON CIERRE FORZADO INSTANTÁNEO ---
 let isSavingForm = false;
 
 window.guardarFormulario = () => { 
@@ -356,18 +408,16 @@ window.guardarFormulario = () => {
             } 
         } 
         
-        // 1. CIERRE FORZADO E INMEDIATO DE LA VENTANA
         const modal = document.getElementById('modalFormulario');
         if (modal) modal.classList.add('hidden');
         
-        // 2. GUARDAMOS Y REDIBUJAMOS EN SEGUNDO PLANO
         setTimeout(() => { 
             try {
                 window.guardarDatos(); 
             } catch(e) {
                 console.error("Error al guardar datos:", e);
             } finally {
-                isSavingForm = false; // Abrimos el candado
+                isSavingForm = false; 
             }
         }, 50);
 
