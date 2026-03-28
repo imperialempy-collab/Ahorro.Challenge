@@ -250,7 +250,7 @@ window.dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => { if(ingr
 
 window.renderizarReportes = () => {
     let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
-    let agujeroNegro = 0; let fugasPorCuenta = {}; cuentas.forEach(c => fugasPorCuenta[c.nombre] = 0); historialMes.forEach(h => { if (h.accion === "Actualización de Saldo" && h.monto < 0) { agujeroNegro += Math.abs(h.monto); if(fugasPorCuenta[h.detalle] !== undefined) fugasPorCuenta[h.detalle] += Math.abs(h.monto); } });
+    let agujeroNegro = 0; let fugasPorCuenta = {}; historialMes.forEach(h => { if (h.accion === "Actualización de Saldo" && h.monto < 0) { agujeroNegro += Math.abs(h.monto); fugasPorCuenta[h.detalle] = (fugasPorCuenta[h.detalle] || 0) + Math.abs(h.monto); } });
     
     document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); 
     let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; 
@@ -294,7 +294,6 @@ window.renderizarReportes = () => {
     document.getElementById('repBurnRateText').innerText = velocidad; document.getElementById('repBurnRateText').className = `text-sm font-black z-10 -mb-1 ${colorClase}`; document.getElementById('repBurnRateMsg').innerText = msgQuema;
     const pathVelocimetro = document.getElementById('speedoPath'); pathVelocimetro.className = `transition-all duration-1000 ease-out ${colorClase}`; pathVelocimetro.style.strokeDashoffset = offset; document.getElementById('speedoNeedle').style.transform = `rotate(${rotacionAguja}deg)`;
     
-    // --- LISTA REPORTE TRADICIONAL ---
     const contTrad = document.getElementById('contenedorReporteTradicional'); 
     contTrad.innerHTML = `<div class="text-center mb-5 pb-4 border-b border-slate-100"><p class="text-2xl font-black text-slate-900 tracking-tight">${window.formatoGs(granTotalGastos)}</p><p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p></div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>`;
     
