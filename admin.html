@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Ventas - Ahorro Challenge</title>
+
+<link rel="manifest" href="manifest-admin.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AC Admin">
+    <link rel="apple-touch-icon" href="admin.png">
+    <meta name="theme-color" content="#ec4899">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
@@ -470,5 +479,16 @@
         </details>
 
     </div>
+
+<script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw-admin.js')
+                    .then(reg => console.log('Admin SW registrado correctamente'))
+                    .catch(err => console.error('Error registrando Admin SW', err));
+            });
+        }
+    </script>
+    
 </body>
 </html>
