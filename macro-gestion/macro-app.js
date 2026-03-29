@@ -31,7 +31,6 @@ window.toggleModal = (modalID) => {
         setTimeout(() => {
             const input = document.getElementById('inputIngresoPromedio');
             if(input) {
-                // Busca el ingreso guardado y lo escribe en la caja con formato
                 const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
                 input.value = actual > 0 ? new Intl.NumberFormat('es-PY').format(actual).replace(/,/g, '.') : '';
                 input.focus();
@@ -204,9 +203,12 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-
 // MACRO GESTION LOGIC
-const descripcionesReportes = { flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste. La gráfica te muestra cómo tu sueldo se va consumiendo día a día." }, burnrate: { tit: "⏱️ Velocidad de Quema", desc: "Es una carrera entre tu Dinero y el Calendario.\n\nCompara qué porcentaje de tu Ingreso ya te gastaste, frente a qué porcentaje del mes ya pasó. Si gastaste mucho y apenas estamos a mitad de mes, la aguja irá a ROJO y deberás frenar." }, asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en el ⚙️.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." }, agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma de todo el dinero que gastaste al ir actualizando los saldos de tus cuentas a mano.\n\nIMPORTANTE: Esta suma NO incluye los Gastos Fijos que vas tildando arriba. Es pura y exclusivamente tu gasto variable y hormiga." }, tradicional: { tit: "📊 Reporte Tradicional", desc: "Los porcentajes reflejan cuánto representa cada gasto frente al Ingreso Promedio que configuraste." } };
+const descripcionesReportes = { 
+    flujo: { tit: "📈 Flujo de Caja Mensual", desc: "El dinero que te queda Disponible este mes.\n\nSe calcula restando TODOS tus gastos (fijos y fugas) del Ingreso Promedio que anotaste en la (i). La gráfica te muestra cómo tu sueldo se va consumiendo día a día." }, 
+    asfixia: { tit: "⚖️ Ratio de Asfixia", desc: "Compara tus gastos con el Ingreso Promedio que ingresaste manualmente en la (i) superior.\n\nSi tus gastos fijos (alquiler, deudas) y variables ocupan mucho de tu barra, estás asfixiado. Cualquier imprevisto te va a endeudar." }, 
+    agujero: { tit: "🕳️ El Agujero Negro", desc: "Es la suma total de TODO tu dinero gastado este mes.\n\nIncluye tanto el dinero de las actualizaciones de tus cuentas (gastos variables) como los Gastos Fijos que ya tildaste como pagados." } 
+};
 window.infoReporte = (clave) => { window.interactuarApp('alert', descripcionesReportes[clave].tit, descripcionesReportes[clave].desc); };
 
 let modalResolve = null;
@@ -278,7 +280,6 @@ window.guardarIngresoPromedio = () => {
     const input = document.getElementById('inputIngresoPromedio').value.replace(/\./g, '');
     if(!input || isNaN(input)) return;
     
-    // Cierre instantáneo igual que el lápiz
     const modal = document.getElementById('modalInfo');
     if (modal) modal.classList.add('hidden');
 
@@ -299,21 +300,19 @@ window.renderizarReportes = () => {
     const historialMes = historialMovimientos.filter(h => h.fecha.includes(mesStr));
     
     let agujeroNegro = 0; 
-    let fugasPorCuenta = {}; 
     
     historialMes.forEach(h => { 
         if (h.accion === "Actualización de Saldo" && h.monto < 0) { 
             agujeroNegro += Math.abs(h.monto); 
-            fugasPorCuenta[h.detalle] = (fugasPorCuenta[h.detalle] || 0) + Math.abs(h.monto);
         } 
     });
     
-    document.getElementById('repAgujeroTotal').innerText = window.formatoGs(agujeroNegro).replace(' Gs', ''); 
-    let porcAgujero = ingresoTotal > 0 ? Math.round((agujeroNegro / ingresoTotal) * 100) : 0; 
-    document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
-    
     let fijosPagadosTotales = gastos.filter(g => g.pagado).reduce((acc, g) => acc + g.monto, 0); 
     let granTotalGastos = agujeroNegro + fijosPagadosTotales;
+    
+    document.getElementById('repAgujeroTotal').innerText = window.formatoGs(granTotalGastos).replace(' Gs', ''); 
+    let porcAgujero = ingresoTotal > 0 ? Math.round((granTotalGastos / ingresoTotal) * 100) : 0; 
+    document.getElementById('repAgujeroPorcentaje').innerText = `${porcAgujero}% DE TU INGRESO`;
     
     let flujoDeCajaActual = ingresoTotal - granTotalGastos; 
     document.getElementById('repFlujoCaja').innerText = window.formatoGs(flujoDeCajaActual).replace(' Gs', ''); 
@@ -329,45 +328,6 @@ window.renderizarReportes = () => {
     document.getElementById('txtFijos').innerText = `${porcFijos}% Fijo`; 
     document.getElementById('txtVar').innerText = `${porcVar}% Var`; 
     document.getElementById('txtAhorro').innerText = `${porcAhorro}% Libre`;
-    
-    const hoy = new Date().getDate(); 
-    const diasMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); 
-    const porcentajeTiempo = (hoy / diasMes) * 100; 
-    const porcentajeGasto = ingresoTotal > 0 ? (granTotalGastos / ingresoTotal) * 100 : 0;
-    
-    let ratioCarrera = 0; if (porcentajeTiempo > 0) { ratioCarrera = porcentajeGasto / porcentajeTiempo; }
-    let dialPorcentaje = Math.min((ratioCarrera / 2) * 100, 100); 
-    let velocidad = "Sin Datos"; let colorClase = "text-slate-300"; let msgQuema = "Tocá la (i) arriba para configurar tu ingreso.";
-    
-    if (ingresoTotal > 0) { 
-        if (ratioCarrera < 0.8) { velocidad = "Excelente"; colorClase = "text-primary"; msgQuema = "Vas gastando más lento de lo que avanza el mes."; } 
-        else if (ratioCarrera <= 1.1) { velocidad = "Normal"; colorClase = "text-amber-400"; msgQuema = "Ritmo ideal. Vas a la par del calendario."; } 
-        else { velocidad = "Peligro"; colorClase = "text-rose-500"; msgQuema = "Alerta: Estás quemando dinero muy rápido."; } 
-    }
-    if (granTotalGastos >= ingresoTotal && ingresoTotal > 0) { velocidad = "Agotado"; colorClase = "text-rose-600"; msgQuema = "Has consumido todo tu ingreso del mes."; dialPorcentaje = 100; }
-    
-    const circunferenciaTotal = 125.66; const offset = circunferenciaTotal - (dialPorcentaje / 100 * circunferenciaTotal); const rotacionAguja = -90 + (dialPorcentaje / 100 * 180);
-    document.getElementById('repBurnRateText').innerText = velocidad; document.getElementById('repBurnRateText').className = `text-sm font-black z-10 -mb-1 ${colorClase}`; document.getElementById('repBurnRateMsg').innerText = msgQuema;
-    const pathVelocimetro = document.getElementById('speedoPath'); pathVelocimetro.className = `transition-all duration-1000 ease-out ${colorClase}`; pathVelocimetro.style.strokeDashoffset = offset; document.getElementById('speedoNeedle').style.transform = `rotate(${rotacionAguja}deg)`;
-    
-    const contTrad = document.getElementById('contenedorReporteTradicional'); 
-    contTrad.innerHTML = `<div class="text-center mb-5 pb-4 border-b border-slate-100"><p class="text-2xl font-black text-slate-900 tracking-tight">${window.formatoGs(granTotalGastos)}</p><p class="text-[10px] text-slate-500 mt-1 leading-relaxed px-4">Suma de todos los gastos incluyendo gastos fijos tildados.</p></div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 pl-1">Gastos por Cuentas</h4>`;
-    
-    for (const [nomCuenta, totalFuga] of Object.entries(fugasPorCuenta)) { 
-        if (totalFuga > 0) { 
-            let porcTrad = ingresoTotal > 0 ? Math.min(Math.round((totalFuga / ingresoTotal) * 100), 100) : 0; 
-            contTrad.innerHTML += `<div class="mb-3"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-slate-700">${nomCuenta}</span><span class="text-xs font-black text-slate-900">${window.formatoGs(totalFuga)} <span class="text-[9px] font-normal text-slate-500">(${porcTrad}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-primary h-1.5 rounded-full" style="width: ${porcTrad}%"></div></div></div>`; 
-        } 
-    }
-    
-    if (fijosPagadosTotales > 0) { 
-        let porcFijosPagados = ingresoTotal > 0 ? Math.min(Math.round((fijosPagadosTotales / ingresoTotal) * 100), 100) : 0; 
-        contTrad.innerHTML += `<div class="mb-2 mt-4 pt-4 border-t border-slate-100"><div class="flex justify-between items-end mb-1"><span class="text-xs font-bold text-amber-500 flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Gastos Fijos Tildados</span><span class="text-xs font-black text-slate-900">${window.formatoGs(fijosPagadosTotales)} <span class="text-[9px] font-normal text-slate-500">(${porcFijosPagados}%)</span></span></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: ${porcFijosPagados}%"></div></div></div>`; 
-    }
-    
-    if(agujeroNegro === 0 && fijosPagadosTotales === 0) { 
-        contTrad.innerHTML += '<p class="text-[10px] text-slate-400 text-center py-2">No hay gastos registrados aún este mes.</p>'; 
-    }
 };
 
 window.renderizarCuentas = () => { 
@@ -539,7 +499,6 @@ window.confirmarActualizacionSaldo = () => {
     const input = document.getElementById('inputNuevoSaldo').value.replace(/\./g, '');
     if(!input || isNaN(input)) return;
     
-    // Ocultar al instante igual que el lápiz
     const modal = document.getElementById('modalActualizarSaldo');
     if (modal) modal.classList.add('hidden');
     
@@ -554,7 +513,6 @@ window.confirmarActualizacionSaldo = () => {
             const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
             window.guardarDatos();
         }
-        // Resetea la animación para la próxima vez
         document.getElementById('modalActualizarCuerpo').classList.add('scale-95', 'opacity-0');
     }, 50);
 };
