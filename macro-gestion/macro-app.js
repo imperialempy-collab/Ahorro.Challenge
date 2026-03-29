@@ -24,7 +24,16 @@ window.logout = () => { localStorage.removeItem('local_user_status'); signOut(au
 window.toggleSidebar = () => { const sb = document.getElementById('sidebar'); const ov = document.getElementById('sidebarOverlay'); if(sb.classList.contains('-translate-x-full')) { sb.classList.remove('-translate-x-full'); ov.classList.remove('hidden'); } else { sb.classList.add('-translate-x-full'); ov.classList.add('hidden'); } };
 window.cerrarPaywall = () => {}; 
 window.abrirPaywall = () => { window.location.href = '../activar.html'; };
-window.toggleModal = (modalID) => { document.getElementById(modalID).classList.toggle('hidden'); };
+window.toggleModal = (modalID) => { 
+    const modal = document.getElementById(modalID); 
+    modal.classList.toggle('hidden'); 
+    if (modalID === 'modalInfo' && !modal.classList.contains('hidden')) {
+        setTimeout(() => {
+            const input = document.getElementById('inputIngresoPromedio');
+            if(input) input.focus();
+        }, 10);
+    }
+};
 
 // --- FUNCIONES PARA EL PAYWALL VIP ---
 window.mostrarAlerta = (mensaje, esPaywall = false) => { 
@@ -263,17 +272,18 @@ window.registrarMovimiento = (accion, detalle, monto = 0, cuentaId = null) => {
 window.guardarIngresoPromedio = () => {
     const input = document.getElementById('inputIngresoPromedio').value.replace(/\./g, '');
     if(!input || isNaN(input)) return;
-    localStorage.setItem('mg_ingreso', parseInt(input));
-    window.renderizarReportes();
-    window.renderizarCuentas(); 
-    window.renderizarGastos();
-    window.guardarDatos();
     
-    const btn = document.getElementById('btnGuardarIngreso');
-    const oldText = btn.innerText;
-    btn.innerText = "¡Guardado!";
-    btn.classList.add('bg-emerald-600');
-    setTimeout(() => { btn.innerText = oldText; btn.classList.remove('bg-emerald-600'); }, 1500);
+    // Cierre instantáneo igual que el lápiz
+    const modal = document.getElementById('modalInfo');
+    if (modal) modal.classList.add('hidden');
+
+    setTimeout(() => {
+        localStorage.setItem('mg_ingreso', parseInt(input));
+        window.renderizarReportes();
+        window.renderizarCuentas(); 
+        window.renderizarGastos();
+        window.guardarDatos();
+    }, 50);
 };
 
 window.dibujarGraficoFlujo = (ingresoBase, totalGastado, historial) => { if(ingresoBase <= 0) return `<div class="h-8 flex items-center text-[10px] text-slate-300">Configura tu ingreso ⚙️</div>`; let flujoActual = ingresoBase - totalGastado; let puntos = [flujoActual]; let saldoTemp = flujoActual; const mesStr = "/" + (new Date().getMonth() + 1).toString().padStart(2, '0') + "/"; const historialMes = historial.filter(h => h.fecha.includes(mesStr)); for(let i = 0; i < historialMes.length; i++) { if(puntos.length >= 6) break; let h = historialMes[i]; if (h.accion.includes("Saldo") || h.accion.includes("Gasto")) { saldoTemp = saldoTemp + Math.abs(h.monto); puntos.unshift(saldoTemp); } } while(puntos.length < 6) { puntos.unshift(ingresoBase); } let max = ingresoBase; let min = 0; let pathD = "M0 25 "; let xStep = 100 / 5; puntos.forEach((p, index) => { let x = index * xStep; let pNorm = Math.max(0, Math.min(p, max)); let y = 25 - ((pNorm - min) / (max - min)) * 20; pathD += `L${x} ${y} `; }); let colorLinea = flujoActual < (ingresoBase * 0.2) ? "text-rose-500" : "text-primary"; return `<svg class="w-full h-8 ${colorLinea}" preserveAspectRatio="none" viewBox="0 0 100 30" fill="none" stroke="currentColor"><path d="${pathD}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="${pathD} L100 30 L0 30 Z" fill="currentColor" fill-opacity="0.1" stroke="none"/></svg>`; };
@@ -508,28 +518,42 @@ window.abrirModalActualizar = (id) => {
     const input = document.getElementById('inputNuevoSaldo');
     input.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.');
     document.getElementById('modalActualizarSaldo').classList.remove('hidden');
-    setTimeout(() => document.getElementById('modalActualizarCuerpo').classList.remove('scale-95', 'opacity-0'), 10);
+    
+    setTimeout(() => { 
+        document.getElementById('modalActualizarCuerpo').classList.remove('scale-95', 'opacity-0');
+        input.focus(); // El secreto del lápiz
+    }, 10);
 };
 
 window.cerrarModalActualizar = () => {
-    document.getElementById('modalActualizarCuerpo').classList.add('scale-95', 'opacity-0');
-    setTimeout(() => document.getElementById('modalActualizarSaldo').classList.add('hidden'), 200);
+    const modal = document.getElementById('modalActualizarSaldo');
+    const cuerpo = document.getElementById('modalActualizarCuerpo');
+    if(cuerpo) cuerpo.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => { if(modal) modal.classList.add('hidden'); }, 200);
 };
 
 window.confirmarActualizacionSaldo = () => {
     const input = document.getElementById('inputNuevoSaldo').value.replace(/\./g, '');
     if(!input || isNaN(input)) return;
-    const nuevoSaldo = parseInt(input);
-    const c = cuentas.find(x => x.id === cuentaAActualizarId);
-    const diff = nuevoSaldo - c.saldo;
     
-    if(diff !== 0) {
-        window.registrarMovimiento("Actualización de Saldo", c.nombre, diff, c.id);
-        c.saldo = nuevoSaldo;
-        const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
-        window.guardarDatos();
-    }
-    window.cerrarModalActualizar();
+    // Ocultar al instante igual que el lápiz
+    const modal = document.getElementById('modalActualizarSaldo');
+    if (modal) modal.classList.add('hidden');
+    
+    setTimeout(() => {
+        const nuevoSaldo = parseInt(input);
+        const c = cuentas.find(x => x.id === cuentaAActualizarId);
+        const diff = nuevoSaldo - c.saldo;
+        
+        if(diff !== 0) {
+            window.registrarMovimiento("Actualización de Saldo", c.nombre, diff, c.id);
+            c.saldo = nuevoSaldo;
+            const hoy = new Date(); c.ultimaAct = `Hoy, ${hoy.getHours()}:${hoy.getMinutes().toString().padStart(2, '0')} hs`;
+            window.guardarDatos();
+        }
+        // Resetea la animación para la próxima vez
+        document.getElementById('modalActualizarCuerpo').classList.add('scale-95', 'opacity-0');
+    }, 50);
 };
 
 let formActualTipo = ''; let formActualId = null;
