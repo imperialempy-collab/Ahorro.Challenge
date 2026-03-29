@@ -1,0 +1,20 @@
+{
+  "id": "/ahorro-challenge-admin-v1",
+  "name": "Ahorro Challenge VIP Admin",
+  "short_name": "AC Admin",
+  "description": "Panel de Control para Ahorro Challenge VIP",
+  "start_url": "admin.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#ec4899",
+  "icons": [
+    {
+      "src": "admin.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
