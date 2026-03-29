@@ -407,9 +407,8 @@ window.renderizarCuentas = () => {
             
             if (h.accion === "Actualización de Saldo" || h.accion === "Nueva Cuenta Creada") {
                 listaMovimientosHTML += `
-                    <div class="flex justify-center items-center py-1.5 border-b border-slate-100/50 last:border-0 gap-2">
+                    <div class="flex justify-center items-center py-1.5 border-b border-slate-100/50 last:border-0 gap-3">
                         <span class="text-[10px] font-medium text-slate-500">${fechaCorta}</span>
-                        <span class="text-[10px] font-bold text-slate-300">-</span>
                         <span class="text-xs font-bold text-slate-600">${signo}${window.formatoGs(montoAbs).replace(' Gs', '')}</span>
                     </div>
                 `;
@@ -448,9 +447,8 @@ window.renderizarCuentas = () => {
             </summary>
             
             <div class="px-4 pb-4 border-t border-slate-50 bg-slate-50/50">
-                <div class="flex justify-center items-center gap-2 py-2 border-b border-slate-200 mb-2">
+                <div class="flex justify-center items-center gap-3 py-2 border-b border-slate-200 mb-2">
                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Suma de Gastos</span>
-                    <span class="text-[10px] font-bold text-slate-400">-</span>
                     <span class="text-xs font-black text-slate-600">${window.formatoGs(totalGastoCuenta).replace(' Gs', '')} <span class="text-[9px] font-medium text-slate-400">(${porcCuenta}%)</span></span>
                 </div>
                 <div class="space-y-0 mt-1 max-h-40 overflow-y-auto no-scrollbar pr-1">
