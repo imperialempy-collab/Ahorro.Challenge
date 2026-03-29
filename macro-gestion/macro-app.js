@@ -30,7 +30,12 @@ window.toggleModal = (modalID) => {
     if (modalID === 'modalInfo' && !modal.classList.contains('hidden')) {
         setTimeout(() => {
             const input = document.getElementById('inputIngresoPromedio');
-            if(input) input.focus();
+            if(input) {
+                // Busca el ingreso guardado y lo escribe en la caja con formato
+                const actual = parseInt(localStorage.getItem('mg_ingreso')) || 0;
+                input.value = actual > 0 ? new Intl.NumberFormat('es-PY').format(actual).replace(/,/g, '.') : '';
+                input.focus();
+            }
         }, 10);
     }
 };
