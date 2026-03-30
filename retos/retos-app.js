@@ -270,6 +270,12 @@ window.renderizarTablero = () => {
     document.getElementById('uiRetoTipo').innerText = d.tipo === 'competencia' ? '🏁 Carrera' : '🤝 Equipo';
     document.getElementById('uiRetoCodigo').innerText = d.codigo;
     document.getElementById('uiRetoSemanas').innerText = d.semanas;
+    
+    // Nueva lógica de la meta descriptiva
+    const textoMeta = d.tipo === 'competencia' 
+        ? `Meta: ${window.formatoGs(d.meta)} c/u` 
+        : `Meta de equipo: ${window.formatoGs(d.meta)}`;
+    document.getElementById('uiRetoMetaDescriptiva').innerText = textoMeta;
 
     let granTotalPlata = d.participantes.reduce((acc, curr) => acc + curr.pagado, 0);
     let granMeta = d.tipo === 'competencia' ? (d.meta * d.participantes.length) : d.meta;
