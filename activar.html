@@ -112,13 +112,19 @@
                         localStorage.setItem('local_user_email', user.email);
 
                         // --- MAGIA DE SINCRONIZACIÓN ESTRICTA CON EL ADMIN ---
-                        // Si la BD tiene un referido, lo forzamos a aplicarse
-                        if (data.referido_por && data.referido_por.trim() !== "") {
-                            window.aplicarDescuentoVisual(data.referido_por);
-                        } 
-                        // Si el admin rechazó el pago y borró el referido, reseteamos el celular del cliente
-                        else if (data.status === 'rechazado') {
-                            window.quitarDescuentoVisual();
+                        // Verificamos si la base de datos ya tiene el campo 'referido_por' creado
+                        if (data.hasOwnProperty('referido_por')) {
+                            const codigoLocal = localStorage.getItem('partner_code_saved') || "";
+                            const codigoDB = data.referido_por.trim();
+
+                            // Si el Admin borró el código (está vacío en BD) pero el celular sigue terco con el viejo
+                            if (codigoDB === "" && codigoLocal !== "") {
+                                window.quitarDescuentoVisual();
+                            } 
+                            // Si la BD tiene un código oficial válido, obligamos al celular a usar ese
+                            else if (codigoDB !== "") {
+                                window.aplicarDescuentoVisual(codigoDB);
+                            }
                         }
                         // -----------------------------------------------------
                         
