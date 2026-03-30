@@ -71,8 +71,10 @@
             document.getElementById('precioDescuento').classList.add('hidden');
             document.getElementById('mensajeRegalo').classList.add('hidden');
             
+            // Esta línea es inofensiva: SOLO borra el código del socio, nada más.
             localStorage.removeItem('partner_code_saved');
         };
+
         // --- CEREBRO DE VERIFICACIÓN DE PAGOS ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -83,31 +85,31 @@
                     const userRef = doc(db, "usuarios_multimeta", user.email);
                     const docSnap = await getDoc(userRef);
                     
-                 if (docSnap.exists()) {
+                    if (docSnap.exists()) {
                         const data = docSnap.data();
                         
-                        // 🚨 LA SOLUCIÓN AL BUCLE: ACTUALIZAR LA MEMORIA LOCAL 🚨
+                        // Actualizar la memoria local para el estado general
                         localStorage.setItem('local_user_status', data.status);
                         localStorage.setItem('local_user_email', user.email);
 
-                      // --- CEREBRO RÍGIDO DE AFILIADOS (SOLO LINKS) ---
+                        // --- CEREBRO RÍGIDO DE AFILIADOS (SOLO LINKS) ---
                         const urlParams = new URLSearchParams(window.location.search);
                         const refCodeFromUrl = urlParams.get('ref');
 
-                        // 1. Si entra a la página usando un link directo nuevo Y aún no está aprobado/pendiente
+                        // 1. Prioridad Máxima: Si trae un link "fresco" hoy y su cuenta permite cambios
                         if (refCodeFromUrl && (data.status === 'prueba' || data.status === 'rechazado')) {
                             window.aplicarDescuentoVisual(refCodeFromUrl);
                         }
-                        // 2. Si la Base de Datos ya tiene un código oficial guardado (y no trajo link nuevo)
-                        else if (data.referido_por && data.referido_por.trim() !== "") {
-                            window.aplicarDescuentoVisual(data.referido_por);
+                        // 2. Si ya interactuó con la BD antes (El Admin tiene el control absoluto)
+                        else if (data.hasOwnProperty('referido_por')) {
+                            if (data.referido_por && data.referido_por.trim() !== "") {
+                                window.aplicarDescuentoVisual(data.referido_por); // Mantiene el código oficial
+                            } else {
+                                window.quitarDescuentoVisual(); // El Admin le borró el código intencionalmente
+                            }
                         }
-                        // 3. Si el Admin borró el código (BD vacía) y está en estado rechazado (Limpieza obligatoria)
-                        else if (data.status === 'rechazado' && (!data.referido_por || data.referido_por.trim() === "")) {
-                            window.quitarDescuentoVisual();
-                        }
-                        // 4. Si es cliente en prueba, no trajo link, pero ya tenía uno guardado en memoria por navegar antes
-                        else if (data.status === 'prueba' && localStorage.getItem('partner_code_saved')) {
+                        // 3. Es un usuario nuevito (Su BD no tiene la etiqueta referido_por aún). Confiamos en su celular.
+                        else if (localStorage.getItem('partner_code_saved')) {
                             window.aplicarDescuentoVisual(localStorage.getItem('partner_code_saved'));
                         }
                         // -----------------------------------------------------
