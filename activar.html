@@ -44,7 +44,7 @@
             document.getElementById(id).classList.remove('hidden');
         };
 
-        // --- SISTEMA DE PRECIOS Y DESCUENTOS ---
+        // --- SISTEMA DE PRECIOS Y DESCUENTOS (SOLO POR LINK) ---
         window.aplicarDescuentoVisual = (codigo) => {
             codigoReferido = codigo.toUpperCase();
             montoEsperado = 25000;
@@ -56,8 +56,6 @@
             document.getElementById('precioDescuento').classList.remove('hidden');
             document.getElementById('mensajeRegalo').innerText = `🎁 ¡Regalo de ${codigoReferido} aplicado!`;
             document.getElementById('mensajeRegalo').classList.remove('hidden');
-            
-            document.getElementById('cajaCodigoDescuento').classList.add('hidden');
             
             localStorage.setItem('partner_code_saved', codigoReferido);
         };
@@ -73,27 +71,8 @@
             document.getElementById('precioDescuento').classList.add('hidden');
             document.getElementById('mensajeRegalo').classList.add('hidden');
             
-            document.getElementById('cajaCodigoDescuento').classList.remove('hidden');
-            document.getElementById('inputCodigoAmigo').value = "";
-            
-            // Esta es la línea mágica que borra la memoria terca del celular
             localStorage.removeItem('partner_code_saved');
         };
-
-        window.validarCodigoManual = () => {
-            const input = document.getElementById('inputCodigoAmigo').value.trim();
-            if(!input) return alert("Ingresá un código primero.");
-            window.aplicarDescuentoVisual(input);
-        };
-
-        window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const refCode = urlParams.get('ref') || localStorage.getItem('partner_code_saved');
-            if (refCode) {
-                window.aplicarDescuentoVisual(refCode);
-            }
-        };
-
         // --- CEREBRO DE VERIFICACIÓN DE PAGOS ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -111,20 +90,25 @@
                         localStorage.setItem('local_user_status', data.status);
                         localStorage.setItem('local_user_email', user.email);
 
-                        // --- MAGIA DE SINCRONIZACIÓN ESTRICTA CON EL ADMIN ---
-                        // Verificamos si la base de datos ya tiene el campo 'referido_por' creado
-                        if (data.hasOwnProperty('referido_por')) {
-                            const codigoLocal = localStorage.getItem('partner_code_saved') || "";
-                            const codigoDB = data.referido_por.trim();
+                      // --- CEREBRO RÍGIDO DE AFILIADOS (SOLO LINKS) ---
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const refCodeFromUrl = urlParams.get('ref');
 
-                            // Si el Admin borró el código (está vacío en BD) pero el celular sigue terco con el viejo
-                            if (codigoDB === "" && codigoLocal !== "") {
-                                window.quitarDescuentoVisual();
-                            } 
-                            // Si la BD tiene un código oficial válido, obligamos al celular a usar ese
-                            else if (codigoDB !== "") {
-                                window.aplicarDescuentoVisual(codigoDB);
-                            }
+                        // 1. Si entra a la página usando un link directo nuevo Y aún no está aprobado/pendiente
+                        if (refCodeFromUrl && (data.status === 'prueba' || data.status === 'rechazado')) {
+                            window.aplicarDescuentoVisual(refCodeFromUrl);
+                        }
+                        // 2. Si la Base de Datos ya tiene un código oficial guardado (y no trajo link nuevo)
+                        else if (data.referido_por && data.referido_por.trim() !== "") {
+                            window.aplicarDescuentoVisual(data.referido_por);
+                        }
+                        // 3. Si el Admin borró el código (BD vacía) y está en estado rechazado (Limpieza obligatoria)
+                        else if (data.status === 'rechazado' && (!data.referido_por || data.referido_por.trim() === "")) {
+                            window.quitarDescuentoVisual();
+                        }
+                        // 4. Si es cliente en prueba, no trajo link, pero ya tenía uno guardado en memoria por navegar antes
+                        else if (data.status === 'prueba' && localStorage.getItem('partner_code_saved')) {
+                            window.aplicarDescuentoVisual(localStorage.getItem('partner_code_saved'));
                         }
                         // -----------------------------------------------------
                         
@@ -290,15 +274,7 @@
                     </div>
                     <div id="mensajeRegalo" class="text-[10px] font-bold text-emerald-600 text-right hidden mt-1"></div>
                 </div>
-
-                <div id="cajaCodigoDescuento" class="bg-blue-50 border border-blue-100 p-4 rounded-2xl mb-6 shadow-sm">
-                    <p class="text-xs font-bold text-blue-600 mb-2 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path></svg> ¿Tenés Código de Afiliado?</p>
-                    <div class="flex gap-2">
-                        <input type="text" id="inputCodigoAmigo" placeholder="Ej: JUAN123" class="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 uppercase font-bold tracking-wider">
-                        <button onclick="validarCodigoManual()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition-colors whitespace-nowrap">Aplicar</button>
-                    </div>
-                </div>
-
+                
                 <div class="space-y-4">
                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest text-center">Enviá tu comprobante</h3>
                     
