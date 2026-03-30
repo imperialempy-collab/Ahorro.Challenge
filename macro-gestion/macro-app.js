@@ -256,8 +256,8 @@ window.renderizarSelectorIconos = () => {
 window.seleccionarIcono = (logo) => { iconoSeleccionado = logo; document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); const elementId = 'logo-' + logo.replace('.png', ''); const seleccionado = document.getElementById(elementId); if (seleccionado) { seleccionado.classList.remove('border-slate-100'); seleccionado.classList.add('ring-2', 'ring-primary', 'border-primary'); seleccionado.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } };
 window.limpiarSeleccionIconos = () => { document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); };
 
-let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [ { id: 1, nombre: "Itaú 1845", descripcion: "Gastos Generales", saldo: 1250000, ultimaAct: "Nunca", icono: "🏦" }, { id: 2, nombre: "Efectivo", descripcion: "Billetera diaria", saldo: 350000, ultimaAct: "Nunca", icono: "💵" } ];
-let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [ { id: 1, nombre: "Alquiler", cuenta: "Itaú 1845", monto: 1500000, pagado: false, fechaPago: "" }, { id: 2, nombre: "Luz (ANDE)", cuenta: "Efectivo", monto: 250000, pagado: false, fechaPago: "" } ];
+let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
+let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [];
 let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
 
 window.guardarDatos = () => { 
