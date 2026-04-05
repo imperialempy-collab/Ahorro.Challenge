@@ -12,6 +12,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
     <script>
         tailwind.config = { theme: { extend: { colors: { primary: '#10b981', background: '#f8fafc', surface: '#ffffff' }, fontFamily: { display: ['Outfit', 'sans-serif'], body: ['Plus Jakarta Sans', 'sans-serif'] } } } }
     </script>
@@ -20,6 +22,7 @@
     <style>
         summary::-webkit-details-marker { display: none; }
         .progress-bar { transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sortable-ghost { opacity: 0.4; transform: scale(0.98); } /* Efecto visual al levantar la tarjeta */
     </style>
     
     <script type="module" src="macro-app.js"></script>
@@ -230,10 +233,17 @@
     <div id="modalFormulario" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity">
         <div id="modalFormCuerpo" class="bg-surface rounded-3xl p-6 max-w-sm w-full shadow-2xl relative border border-slate-100 transform transition-all scale-95 opacity-0">
             <h3 id="modalFormTitulo" class="font-black font-display text-slate-900 text-xl mb-4">Título</h3>
+            
             <div id="selectorIconosContainer" class="hidden mb-5">
                 <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Elegí el Logo de la cuenta</label>
                 <div id="grillaIconos" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1"></div>
             </div>
+
+            <div id="selectorColorContainer" class="hidden mb-5">
+                <label class="block text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">Color de Etiqueta</label>
+                <div id="grillaColores" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar px-1 -mx-1"></div>
+            </div>
+
             <div class="space-y-4 mb-6">
                 <div><label id="lblInput1" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 1</label><input type="text" id="modalFormInput1" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
                 <div><label id="lblInput2" class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Campo 2</label><input type="text" id="modalFormInput2" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-semibold"></div>
