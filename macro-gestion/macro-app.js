@@ -417,8 +417,6 @@ window.renderizarCuentas = () => {
 
         let porcCuenta = ingresoTotal > 0 ? Math.min(Math.round((totalGastoCuenta / ingresoTotal) * 100), 100) : 0;
 
-        let porcCuenta = ingresoTotal > 0 ? Math.min(Math.round((totalGastoCuenta / ingresoTotal) * 100), 100) : 0;
-
         cont.innerHTML += `
         <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 overflow-hidden" data-id="${c.id}">
             <summary class="p-4 flex items-center justify-between cursor-pointer list-none relative transition-colors hover:bg-slate-50">
