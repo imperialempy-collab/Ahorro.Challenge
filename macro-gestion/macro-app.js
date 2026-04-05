@@ -417,8 +417,10 @@ window.renderizarCuentas = () => {
 
         let porcCuenta = ingresoTotal > 0 ? Math.min(Math.round((totalGastoCuenta / ingresoTotal) * 100), 100) : 0;
 
+        let porcCuenta = ingresoTotal > 0 ? Math.min(Math.round((totalGastoCuenta / ingresoTotal) * 100), 100) : 0;
+
         cont.innerHTML += `
-        <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 overflow-hidden">
+        <details class="group bg-surface rounded-2xl shadow-md border border-slate-100 overflow-hidden" data-id="${c.id}">
             <summary class="p-4 flex items-center justify-between cursor-pointer list-none relative transition-colors hover:bg-slate-50">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center shrink-0 overflow-hidden text-primary">${iconoHtml}</div>
@@ -489,10 +491,47 @@ window.renderizarGastos = () => {
     if (elPorc) elPorc.innerText = `${porc}%`;
 };
 
+// --- MOTOR DE ORDENAMIENTO (DRAG & DROP) ---
+window.inicializarDragAndDrop = () => {
+    const opts = {
+        animation: 200,
+        delay: 400, // Medio segundo de presión para agarrar (evita que se trabe el scroll)
+        delayOnTouchOnly: true, // En PC funciona con click instantáneo
+        ghostClass: 'sortable-ghost'
+    };
+
+    const contCuentas = document.getElementById('contenedorCuentas');
+    if (contCuentas) {
+        if(window.sortCuentas) window.sortCuentas.destroy();
+        window.sortCuentas = Sortable.create(contCuentas, { ...opts, 
+            onEnd: () => {
+                const nuevoOrdenDOM = Array.from(contCuentas.children);
+                cuentas = nuevoOrdenDOM.map(el => cuentas.find(c => c.id === parseInt(el.getAttribute('data-id')))).filter(Boolean);
+                window.guardarDatos();
+                if (typeof window.sincronizarNube === 'function') window.sincronizarNube(false); // Sincronización silenciosa
+            }
+        });
+    }
+
+    const contGastos = document.getElementById('contenedorGastos');
+    if (contGastos) {
+        if(window.sortGastos) window.sortGastos.destroy();
+        window.sortGastos = Sortable.create(contGastos, { ...opts, 
+            onEnd: () => {
+                const nuevoOrdenDOM = Array.from(contGastos.children);
+                gastos = nuevoOrdenDOM.map(el => gastos.find(g => g.id === parseInt(el.getAttribute('data-id')))).filter(Boolean);
+                window.guardarDatos();
+                if (typeof window.sincronizarNube === 'function') window.sincronizarNube(false); // Sincronización silenciosa
+            }
+        });
+    }
+};
+
 window.renderizarApp = () => { 
     window.renderizarCuentas(); 
     window.renderizarGastos(); 
     window.renderizarReportes(); 
+    window.inicializarDragAndDrop(); // Enciende el drag & drop
     
     const inputIngreso = document.getElementById('inputIngresoPromedio');
     if(inputIngreso) {
