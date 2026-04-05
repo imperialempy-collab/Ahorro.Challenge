@@ -256,6 +256,24 @@ window.renderizarSelectorIconos = () => {
 window.seleccionarIcono = (logo) => { iconoSeleccionado = logo; document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); const elementId = 'logo-' + logo.replace('.png', ''); const seleccionado = document.getElementById(elementId); if (seleccionado) { seleccionado.classList.remove('border-slate-100'); seleccionado.classList.add('ring-2', 'ring-primary', 'border-primary'); seleccionado.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } };
 window.limpiarSeleccionIconos = () => { document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); };
 
+// --- SISTEMA DE COLORES PARA GASTOS ---
+const coloresGastos = ['bg-slate-400', 'bg-rose-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500'];
+let colorSeleccionado = 'bg-slate-400';
+
+window.renderizarSelectorColores = () => { 
+    const grilla = document.getElementById('grillaColores'); 
+    if(grilla) { 
+        grilla.innerHTML = coloresGastos.map(c => `<div id="color-${c}" onclick="seleccionarColor('${c}')" class="color-opt w-8 h-8 shrink-0 ${c} rounded-full cursor-pointer hover:opacity-80 transition-all shadow-sm border-2 border-transparent flex items-center justify-center m-1"></div>`).join(''); 
+    } 
+};
+
+window.seleccionarColor = (color) => { 
+    colorSeleccionado = color; 
+    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110')); 
+    const seleccionado = document.getElementById(`color-${color}`); 
+    if (seleccionado) seleccionado.classList.add('border-slate-800', 'scale-110'); 
+};
+
 let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
 let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [];
 let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
@@ -437,10 +455,16 @@ window.renderizarGastos = () => {
     cont.innerHTML = ''; 
     let totalSuma = 0; 
     gastos.forEach(g => { 
-        if(g.pagado) totalSuma += g.monto; 
-        const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800"; 
-        cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-start gap-3 hover:bg-slate-50 transition-colors"><input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-0.5 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer"><div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div></div>`; 
-    }); 
+            if(g.pagado) totalSuma += g.monto; 
+            const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800"; 
+            const colorBarra = g.color || 'bg-slate-300';
+            
+            cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-stretch gap-3 hover:bg-slate-50 transition-colors" data-id="${g.id}">
+                <input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer shrink-0">
+                <div class="w-1.5 rounded-full ${colorBarra} shrink-0 mt-1 mb-1 shadow-sm"></div>
+                <div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div>
+            </div>`; 
+        });
     
     let ingresoTotal = parseInt(localStorage.getItem('mg_ingreso')) || 0;
     let porc = ingresoTotal > 0 ? Math.min(Math.round((totalSuma / ingresoTotal) * 100), 100) : 0;
@@ -518,7 +542,61 @@ window.confirmarActualizacionSaldo = () => {
 };
 
 let formActualTipo = ''; let formActualId = null;
-window.abrirModalForm = (tipo, id = null) => { formActualTipo = tipo; formActualId = id; const modal = document.getElementById('modalFormulario'); const cuerpo = document.getElementById('modalFormCuerpo'); const i1 = document.getElementById('modalFormInput1'); const i2 = document.getElementById('modalFormInput2'); const i3 = document.getElementById('modalFormInput3'); const btnEliminar = document.getElementById('btnEliminarItem'); i1.value = ''; i2.value = ''; i3.value = ''; if (tipo === 'cuenta') { document.getElementById('selectorIconosContainer').classList.remove('hidden'); document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Compras de la casa)'; document.getElementById('lblInput2').innerText = 'Descripción (Ej: Ueno nro 6582)'; document.getElementById('lblInput3').innerText = 'Saldo Actual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; const c = cuentas.find(x => x.id === id); i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); iconoSeleccionado = c.icono || '🏦'; if(iconoSeleccionado.includes('.png')){ setTimeout(() => window.seleccionarIcono(iconoSeleccionado), 50); } else { window.limpiarSeleccionIconos(); } } else { document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; btnEliminar.classList.add('hidden'); iconoSeleccionado = '🏦'; window.limpiarSeleccionIconos(); } } else if (tipo === 'gasto') { document.getElementById('selectorIconosContainer').classList.add('hidden'); document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Alquiler)'; document.getElementById('lblInput2').innerText = 'Subtítulo (Ej: pagar de Itaú)'; document.getElementById('lblInput3').innerText = 'Monto Mensual'; if (id) { document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; const g = gastos.find(x => x.id === id); i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); btnEliminar.classList.remove('hidden'); } else { document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; btnEliminar.classList.add('hidden'); } } modal.classList.remove('hidden'); setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10); };
+window.abrirModalForm = (tipo, id = null) => { 
+    formActualTipo = tipo; formActualId = id; 
+    const modal = document.getElementById('modalFormulario'); 
+    const cuerpo = document.getElementById('modalFormCuerpo'); 
+    const i1 = document.getElementById('modalFormInput1'); 
+    const i2 = document.getElementById('modalFormInput2'); 
+    const i3 = document.getElementById('modalFormInput3'); 
+    const btnEliminar = document.getElementById('btnEliminarItem'); 
+    i1.value = ''; i2.value = ''; i3.value = ''; 
+    
+    if (tipo === 'cuenta') { 
+        document.getElementById('selectorIconosContainer').classList.remove('hidden'); 
+        document.getElementById('selectorColorContainer').classList.add('hidden'); 
+        document.getElementById('lblInput1').innerText = 'Nombre de la Cuenta (Ej: Compras de la casa)'; 
+        document.getElementById('lblInput2').innerText = 'Descripción (Ej: Ueno nro 6582)'; 
+        document.getElementById('lblInput3').innerText = 'Saldo Actual'; 
+        
+        if (id) { 
+            document.getElementById('modalFormTitulo').innerText = 'Editar Cuenta'; 
+            const c = cuentas.find(x => x.id === id); 
+            i1.value = c.nombre; i2.value = c.descripcion; i3.value = new Intl.NumberFormat('es-PY').format(c.saldo).replace(/,/g, '.'); 
+            btnEliminar.classList.remove('hidden'); 
+            iconoSeleccionado = c.icono || '🏦'; 
+            if(iconoSeleccionado.includes('.png')){ setTimeout(() => window.seleccionarIcono(iconoSeleccionado), 50); } else { window.limpiarSeleccionIconos(); } 
+        } else { 
+            document.getElementById('modalFormTitulo').innerText = 'Nueva Cuenta'; 
+            btnEliminar.classList.add('hidden'); 
+            iconoSeleccionado = '🏦'; 
+            window.limpiarSeleccionIconos(); 
+        } 
+    } else if (tipo === 'gasto') { 
+        document.getElementById('selectorIconosContainer').classList.add('hidden'); 
+        document.getElementById('selectorColorContainer').classList.remove('hidden'); 
+        document.getElementById('lblInput1').innerText = 'Nombre del Gasto (Ej: Alquiler)'; 
+        document.getElementById('lblInput2').innerText = 'Subtítulo (Ej: pagar de Itaú)'; 
+        document.getElementById('lblInput3').innerText = 'Monto Mensual'; 
+        
+        window.renderizarSelectorColores();
+
+        if (id) { 
+            document.getElementById('modalFormTitulo').innerText = 'Editar Gasto Fijo'; 
+            const g = gastos.find(x => x.id === id); 
+            i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); 
+            btnEliminar.classList.remove('hidden'); 
+            window.seleccionarColor(g.color || 'bg-slate-400');
+        } else { 
+            document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; 
+            btnEliminar.classList.add('hidden'); 
+            window.seleccionarColor('bg-slate-400');
+        } 
+    } 
+    
+    modal.classList.remove('hidden'); 
+    setTimeout(() => { cuerpo.classList.remove('scale-95', 'opacity-0'); i1.focus(); }, 10); 
+};
 
 window.cerrarModalForm = () => { 
     const modal = document.getElementById('modalFormulario'); 
@@ -563,11 +641,12 @@ window.guardarFormulario = () => {
             if (formActualId) { 
                 const g = gastos.find(x => x.id === formActualId); 
                 g.nombre = v1; g.cuenta = v2 || "General"; g.monto = parseInt(v3); 
+                g.color = colorSeleccionado; // GUARDAMOS EL COLOR ELEGIDO
             } else { 
-                gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "" }); 
+                gastos.push({ id: Date.now(), nombre: v1, cuenta: v2 || "General", monto: parseInt(v3), pagado: false, fechaPago: "", color: colorSeleccionado }); 
                 window.registrarMovimiento("Nuevo Gasto Fijo Añadido", v1, parseInt(v3)); 
             } 
-        } 
+        }
         
         const modal = document.getElementById('modalFormulario');
         if (modal) modal.classList.add('hidden');
