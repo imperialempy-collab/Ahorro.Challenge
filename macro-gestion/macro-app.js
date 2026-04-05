@@ -257,26 +257,34 @@ window.seleccionarIcono = (logo) => { iconoSeleccionado = logo; document.querySe
 window.limpiarSeleccionIconos = () => { document.querySelectorAll('.logo-opt').forEach(el => { el.classList.remove('ring-2', 'ring-primary', 'border-primary'); el.classList.add('border-slate-100'); }); };
 
 // --- SISTEMA DE COLORES PARA GASTOS ---
-const coloresGastos = ['bg-slate-400', 'bg-rose-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500'];
-let colorSeleccionado = 'bg-slate-400';
+const coloresGastos = ['bg-rose-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500'];
+let colorSeleccionado = '';
 
 window.renderizarSelectorColores = () => { 
     const grilla = document.getElementById('grillaColores'); 
     if(grilla) { 
-        grilla.innerHTML = coloresGastos.map(c => `<div id="color-${c}" onclick="seleccionarColor('${c}')" class="color-opt w-8 h-8 shrink-0 ${c} rounded-full cursor-pointer hover:opacity-80 transition-all shadow-sm border-2 border-transparent flex items-center justify-center m-1"></div>`).join(''); 
+        // Botón "Sin Color" con una X adentro
+        let html = `<div id="color-none" onclick="limpiarSeleccionColor()" class="color-opt w-8 h-8 shrink-0 bg-white border-2 border-slate-200 border-dashed rounded-full cursor-pointer hover:bg-slate-50 transition-all flex items-center justify-center m-1 text-slate-300" title="Sin color"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`;
+        
+        // Resto de los colores
+        html += coloresGastos.map(c => `<div id="color-${c}" onclick="seleccionarColor('${c}')" class="color-opt w-8 h-8 shrink-0 ${c} rounded-full cursor-pointer hover:opacity-80 transition-all shadow-sm border-2 border-transparent flex items-center justify-center m-1"></div>`).join(''); 
+        
+        grilla.innerHTML = html;
     } 
 };
 
 window.seleccionarColor = (color) => { 
     colorSeleccionado = color; 
-    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110')); 
+    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110', 'border-slate-400')); 
     const seleccionado = document.getElementById(`color-${color}`); 
     if (seleccionado) seleccionado.classList.add('border-slate-800', 'scale-110'); 
 };
 
 window.limpiarSeleccionColor = () => {
     colorSeleccionado = '';
-    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110')); 
+    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110', 'border-slate-400')); 
+    const btnNone = document.getElementById('color-none');
+    if (btnNone) btnNone.classList.add('border-slate-400', 'scale-110');
 };
 
 let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
