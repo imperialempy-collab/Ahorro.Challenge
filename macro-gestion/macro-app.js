@@ -274,6 +274,11 @@ window.seleccionarColor = (color) => {
     if (seleccionado) seleccionado.classList.add('border-slate-800', 'scale-110'); 
 };
 
+window.limpiarSeleccionColor = () => {
+    colorSeleccionado = '';
+    document.querySelectorAll('.color-opt').forEach(el => el.classList.remove('border-slate-800', 'scale-110')); 
+};
+
 let cuentas = JSON.parse(localStorage.getItem('mg_cuentas')) || [];
 let gastos = JSON.parse(localStorage.getItem('mg_gastos')) || [];
 let historialMovimientos = JSON.parse(localStorage.getItem('mg_historial')) || [];
@@ -457,11 +462,13 @@ window.renderizarGastos = () => {
     gastos.forEach(g => { 
             if(g.pagado) totalSuma += g.monto; 
             const clasePagado = g.pagado ? "line-through text-slate-400" : "text-slate-800"; 
-            const colorBarra = g.color || 'bg-slate-300';
+            
+            // Si tiene color, dibuja la barrita. Si no, dibuja un espacio vacío para mantener el margen.
+            const barraHtml = g.color ? `<div class="w-1.5 rounded-full ${g.color} shrink-0 mt-1 mb-1 shadow-sm"></div>` : `<div class="w-1.5 shrink-0"></div>`;
             
             cont.innerHTML += `<div class="py-2.5 border-b border-slate-100 flex items-stretch gap-3 hover:bg-slate-50 transition-colors" data-id="${g.id}">
                 <input type="checkbox" ${g.pagado ? "checked" : ""} onchange="tildarGasto(${g.id})" class="mt-1 w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary bg-white cursor-pointer shrink-0">
-                <div class="w-1.5 rounded-full ${colorBarra} shrink-0 mt-1 mb-1 shadow-sm"></div>
+                ${barraHtml}
                 <div class="flex-grow"><div class="flex justify-between items-start"><div><h3 class="font-bold text-sm ${clasePagado} flex items-center gap-1.5">${g.nombre}<button onclick="abrirModalForm('gasto', ${g.id})" class="text-slate-400 hover:text-primary transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button></h3><p class="text-[10px] text-slate-500">${g.cuenta}</p></div><div class="text-right"><p class="font-bold text-sm ${clasePagado}">${window.formatoGs(g.monto)}</p></div></div><div class="flex justify-${g.pagado ? 'between' : 'end'} items-center mt-0.5">${g.pagado ? `<p class="text-[9px] text-primary font-bold flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>Pagado el ${g.fechaPago}</p>` : ''}<button onclick="cambiarMontoGasto(${g.id})" class="text-[9px] text-primary hover:text-emerald-700 underline">Ingresar otro monto</button></div></div>
             </div>`; 
         });
@@ -586,11 +593,11 @@ window.abrirModalForm = (tipo, id = null) => {
             const g = gastos.find(x => x.id === id); 
             i1.value = g.nombre; i2.value = g.cuenta; i3.value = new Intl.NumberFormat('es-PY').format(g.monto).replace(/,/g, '.'); 
             btnEliminar.classList.remove('hidden'); 
-            window.seleccionarColor(g.color || 'bg-slate-400');
+            if (g.color) { window.seleccionarColor(g.color); } else { window.limpiarSeleccionColor(); }
         } else { 
             document.getElementById('modalFormTitulo').innerText = 'Nuevo Gasto Fijo'; 
             btnEliminar.classList.add('hidden'); 
-            window.seleccionarColor('bg-slate-400');
+            window.limpiarSeleccionColor();
         } 
     } 
     
