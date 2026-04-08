@@ -37,6 +37,13 @@
         let codigoReferido = "";
         let montoEsperado = 30000;
 
+        // --- CAZATALENTOS: ATRAPAR EL CÓDIGO AL INSTANTE ---
+        const urlParamsInicial = new URLSearchParams(window.location.search);
+        const refInicial = urlParamsInicial.get('ref');
+        if (refInicial) {
+            localStorage.setItem('partner_code_saved', refInicial.toUpperCase());
+        }
+
         const showSection = (id) => {
             ['loadingSection', 'uploadSection', 'pendingSection', 'successSection'].forEach(sec => {
                 document.getElementById(sec).classList.add('hidden');
@@ -99,6 +106,10 @@
                         // 1. Prioridad Máxima: Si trae un link "fresco" hoy y su cuenta permite cambios
                         if (refCodeFromUrl && (data.status === 'prueba' || data.status === 'rechazado')) {
                             window.aplicarDescuentoVisual(refCodeFromUrl);
+                            // Actualización silenciosa en BD para el "Nivel de Alcance"
+                            if (data.referido_por !== refCodeFromUrl.toUpperCase()) {
+                                updateDoc(userRef, { referido_por: refCodeFromUrl.toUpperCase() }).catch(e => console.log("Silenced DB error"));
+                            }
                         }
                         // 2. Si ya interactuó con la BD antes (El Admin tiene el control absoluto)
                         else if (data.hasOwnProperty('referido_por')) {
