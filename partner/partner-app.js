@@ -200,6 +200,8 @@ async function cargarDashboardPartner(userData) {
 
         let htmlPagados = "";
         let htmlPrueba = "";
+        let countIlimitados = 0;
+        let countAlcance = 0;
 
         snap.forEach(doc => {
             const refData = doc.data();
@@ -207,11 +209,14 @@ async function cargarDashboardPartner(userData) {
             let esPruebaOCaduco = false; // Bandera para saber a qué lista va
             
            if (refData.status === 'pagado') {
+                countIlimitados++; // Suma contador oficial
                 estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Ilimitado</span>`;
             } else if (refData.status === 'pendiente') {
+                // NO suma en ningún contador (se queda esperando aprobación)
                 estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Verificando</span>`;
             } else {
                 esPruebaOCaduco = true; // Se va a la lista de abajo
+                countAlcance++; // Suma contador de alcance
                 const start = new Date(refData.fechaInicio || new Date());
                 const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
                 const quedan = Math.max(7 - diffDays, 0);
@@ -240,6 +245,13 @@ async function cargarDashboardPartner(userData) {
 
         listUI.innerHTML = htmlPagados !== "" ? htmlPagados : `<div class="text-center py-6 text-slate-400 text-xs font-medium">Aún no hay pagos confirmados o en revisión.</div>`;
         if (alcanceUI) alcanceUI.innerHTML = htmlPrueba !== "" ? htmlPrueba : `<div class="text-center py-6 text-slate-400 text-xs font-medium">Aún no hay visitas en prueba.</div>`;
+
+        // Imprimir contadores en el HTML
+        const uiIlimitados = document.getElementById('contadorIlimitados');
+        if (uiIlimitados) uiIlimitados.innerText = countIlimitados > 0 ? `(${countIlimitados})` : "";
+        
+        const uiAlcance = document.getElementById('contadorAlcance');
+        if (uiAlcance) uiAlcance.innerText = countAlcance > 0 ? `(${countAlcance})` : "";
 
     } catch(e) {
         listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error al cargar historial.</div>`;
