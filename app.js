@@ -347,7 +347,13 @@ onAuthStateChanged(auth, async (user) => {
         try {
             const docSnap = await getDoc(userRef);
             if (!docSnap.exists()) {
-                await setDoc(userRef, { email: user.email, status: 'prueba', fechaInicio: new Date().toISOString() });
+                const codigoGuardado = localStorage.getItem('partner_code_saved') || "";
+                await setDoc(userRef, { 
+                    email: user.email, 
+                    status: 'prueba', 
+                    fechaInicio: new Date().toISOString(),
+                    referido_por: codigoGuardado 
+                });
                 window.userAccessStatus = 'prueba'; window.actualizarUI_Pago(); loginScreen.classList.add('hidden'); appContent.classList.remove('hidden'); window.initApp(); 
             } else {
                 const userData = docSnap.data(); window.userAccessStatus = userData.status || 'prueba'; localStorage.setItem('local_user_status', window.userAccessStatus);
