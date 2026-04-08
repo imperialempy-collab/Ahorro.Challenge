@@ -183,7 +183,10 @@ async function cargarDashboardPartner(userData) {
 
     // CARGAR LISTA DE INVITADOS CON ICONOS SVG LIMPIOS
     const listUI = document.getElementById('listaReferidosUI');
+    const alcanceUI = document.getElementById('listaAlcanceUI'); // Nueva caja
+
     listUI.innerHTML = '<div class="text-center py-6"><span class="animate-pulse text-slate-400 text-xs">Buscando invitados...</span></div>';
+    if (alcanceUI) alcanceUI.innerHTML = '<div class="text-center py-6"><span class="animate-pulse text-slate-400 text-xs">Buscando alcance...</span></div>';
 
     try {
         const q = query(collection(db, "usuarios_multimeta"), where("referido_por", "==", perfil.codigo));
@@ -191,19 +194,24 @@ async function cargarDashboardPartner(userData) {
         
         if (snap.empty) {
             listUI.innerHTML = `<div class="text-center py-6 px-4"><p class="text-xs text-slate-500 font-bold">Aún no tenés invitados registrados.</p><p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Compartí tu link para empezar a sumar.</p></div>`;
+            if (alcanceUI) alcanceUI.innerHTML = `<div class="text-center py-6 px-4"><p class="text-xs text-slate-500 font-bold">Aún no hay visitas registradas.</p></div>`;
             return;
         }
 
-        let html = "";
+        let htmlPagados = "";
+        let htmlPrueba = "";
+
         snap.forEach(doc => {
             const refData = doc.data();
             let estadoHtml = "";
+            let esPruebaOCaduco = false; // Bandera para saber a qué lista va
             
            if (refData.status === 'pagado') {
                 estadoHtml = `<span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> Ilimitado</span>`;
             } else if (refData.status === 'pendiente') {
                 estadoHtml = `<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-black shadow-sm flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Verificando</span>`;
             } else {
+                esPruebaOCaduco = true; // Se va a la lista de abajo
                 const start = new Date(refData.fechaInicio || new Date());
                 const diffDays = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
                 const quedan = Math.max(7 - diffDays, 0);
@@ -214,7 +222,7 @@ async function cargarDashboardPartner(userData) {
                 }
             }
 
-            html += `
+            const itemHtml = `
             <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl mb-2 border border-slate-100">
                 <div class="truncate pr-2">
                     <p class="text-xs font-bold text-slate-800 truncate">${refData.email.split('@')[0]}</p>
@@ -222,11 +230,20 @@ async function cargarDashboardPartner(userData) {
                 </div>
                 <div class="shrink-0 text-right">${estadoHtml}</div>
             </div>`;
+
+            if (esPruebaOCaduco) {
+                htmlPrueba += itemHtml;
+            } else {
+                htmlPagados += itemHtml;
+            }
         });
-        listUI.innerHTML = html;
+
+        listUI.innerHTML = htmlPagados !== "" ? htmlPagados : `<div class="text-center py-6 text-slate-400 text-xs font-medium">Aún no hay pagos confirmados o en revisión.</div>`;
+        if (alcanceUI) alcanceUI.innerHTML = htmlPrueba !== "" ? htmlPrueba : `<div class="text-center py-6 text-slate-400 text-xs font-medium">Aún no hay visitas en prueba.</div>`;
 
     } catch(e) {
         listUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error al cargar historial.</div>`;
+        if (alcanceUI) alcanceUI.innerHTML = `<div class="text-xs text-rose-500 text-center py-4 font-bold">Error al cargar historial.</div>`;
     }
 }
 
